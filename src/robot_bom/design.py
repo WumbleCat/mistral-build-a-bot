@@ -359,6 +359,12 @@ def order_links_document(bom: RobotBOM, design: InferredDesign, plan: SourcingPl
 def infer_and_source(client: VisionClient, bom: RobotBOM, *, model: str, max_retries: int = 2) -> dict:
     """Run both queries in order. Returns ``{"inferred_components": ..., "order_links": ...}``."""
     design = infer_design(client, bom, max_retries=max_retries)
+    # The model decides what it calls a part, so it can relabel a guess as seen. A line stays
+    # `observed` only if the BOM has an observed part of the same category.
+    seen = {c.category for c in bom.components if c.evidence_type.value == "observed" and c.status != "rejected"}
+    for component in design.components:
+        if component.basis == "observed" and component.category not in seen:
+            component.basis = "inferred"
     plan = plan_sourcing(client, design, max_retries=max_retries)
     return {
         "inferred_components": components_document(bom, design, model),

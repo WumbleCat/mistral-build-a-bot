@@ -26,6 +26,7 @@ DESIGN = {
         {"name": "DC gear motor", "category": "motor", "quantity": 2, "specs": {"voltage_v": 6, "note": None},
          "basis": "inferred", "sku": "INVENTED-1", "url": "https://shop.example/invented"},
         {"name": "18650 cell", "category": "not-a-category", "quantity": 2, "basis": "inferred"},
+        {"name": "L298N motor driver", "category": "motor_driver", "quantity": 1, "basis": "observed"},
     ],
 }
 SOURCING = {
@@ -83,7 +84,8 @@ def test_two_queries_run_in_order_and_the_bom_is_not_touched():
     assert design["generated_by"] == "some-model" and "not verified" in design["disclaimer"]
     assert design["design_choices"][0]["choice"] == "2 rear gear motors"
     assert [(c["name"], c["quantity"], c["basis"]) for c in design["components"]] == [
-        ("rubber wheel", 4, "observed"), ("DC gear motor", 2, "inferred"), ("18650 cell", 2, "inferred")]
+        ("rubber wheel", 4, "observed"), ("DC gear motor", 2, "inferred"), ("18650 cell", 2, "inferred"),
+        ("L298N motor driver", 1, "inferred")]  # no motor driver was seen: the model may not call its guess observed
     motor = design["components"][1]
     assert motor["specs"] == {"voltage_v": "6"} and set(motor) == {"name", "category", "quantity", "specs", "basis", "reason"}
     assert design["components"][2]["category"] == "other"
@@ -95,7 +97,7 @@ def test_shop_links_are_built_by_the_app_never_taken_from_the_model():
     assert list(order["sites"]) == ["lcsc", "digikey", "rs", "sparkfun", "mouser", "amazon"]
     assert order["sites"]["amazon"] == {"name": "Amazon.com", "url": "https://www.amazon.com/"}
     assert "Search links only" in order["disclaimer"] and order["power_budget"].startswith("6 V")
-    wheel, motor, cell = order["components"]
+    wheel, motor, cell, _driver = order["components"]
 
     assert motor["search_query"] == "TT gear motor 6V 1:48"  # the model's URL and markup are stripped
     assert motor["recommended_sites"] == ["amazon", "sparkfun"]  # unknown shop and duplicate dropped
