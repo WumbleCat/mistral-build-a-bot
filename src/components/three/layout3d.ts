@@ -107,12 +107,12 @@ export function allInstances3d(parts: Part[]): Instance3D[] {
   return parts.flatMap(instances3dFor);
 }
 
-/** Wire curves: controller board to each motor. */
+/** Wire curves: controller board to each motor, hugging the chassis deck. */
 export function wirePaths3d(): Array<[number, number, number][]> {
-  const from: [number, number, number] = [0, 0.2, -0.3];
+  const from: [number, number, number] = [0, 0.16, -0.28];
   return MOTOR_POS.map((m) => [
     from,
-    [(from[0] + m[0]) / 2, 0.42, (from[2] + m[2]) / 2],
-    [m[0], m[1] + 0.08, m[2]],
+    [(from[0] + m[0]) / 2, 0.22, (from[2] + m[2]) / 2],
+    [m[0], m[1] + 0.06, m[2]],
   ]);
 }

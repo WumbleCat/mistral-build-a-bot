@@ -1,12 +1,11 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import type { AssemblyData, AssemblyStep, Part } from '../types';
 import type { ImageResult } from '../lib/imageGen';
 import type { StepAudioState } from '../hooks/useNarrationEngine';
 import { Illustration } from './Illustration';
-import { AudioControls } from './AudioControls';
+import { PhotoPanel } from './PhotoPanel';
 
 const Robot3DView = lazy(() => import('./three/Robot3DView').then((m) => ({ default: m.Robot3DView })));
-import { PhotoPanel } from './PhotoPanel';
 
 export interface StageCardProps {
   data: AssemblyData;
@@ -32,37 +31,82 @@ export interface StageCardProps {
   onResumeAudio: () => void;
   onPrev: () => void;
   onNext: () => void;
-  /** Called from the last step's primary button to trigger the build-complete screen. */
   onFinish?: () => void;
 }
 
+/**
+ * Left viewer card: segmented Photo / 3D / Drawing control top-left,
+ * icon actions (explode, reset, fullscreen) top-right. Step text and
+ * navigation live in StepPanel (right column).
+ */
 export function StageCard(props: StageCardProps) {
-  const { data, step, partsById } = props;
+  const { data, step } = props;
   const [view, setView] = useState<'photo' | '3d' | 'drawing'>('3d');
   const [hoverPart, setHoverPart] = useState<string | null>(null);
-  const required = step.component_ids.map((id) => partsById.get(id)).filter((p): p is Part => Boolean(p));
-  const installedBefore = step.installed_components.filter((id) => !step.component_ids.includes(id));
+  const cardRef = useRef<HTMLElement>(null);
+
+  const dispatchKey = (name: string) =>
+    window.dispatchEvent(new CustomEvent('bfv:key', { detail: { name } }));
+
+  const illustration = (
+    <Illustration
+      data={data}
+      step={step}
+      image={props.image}
+      imageLoading={props.imageLoading}
+      imageAvailable={props.imageAvailable}
+      onGenerateImage={props.onGenerateImage}
+      explodedAvailable={props.explodedAvailable}
+      explodedUrl={props.explodedUrl}
+      explodedOn={props.explodedOn}
+      onToggleExploded={props.onToggleExploded}
+    />
+  );
 
   return (
-    <section className="stage-card" key={step.id}>
-      <div className="stage-enter" key={step.id}>
-        <div className="stage-heading">
-          <span className="step-chip">
-            Step {step.number} / {data.steps.length}
-          </span>
-          <h1 className="stage-title">{step.title}</h1>
-        </div>
-
-        <div className="mode-toggle stage-view-toggle" role="tablist" aria-label="Stage view">
-          <button type="button" role="tab" className={view === 'photo' ? 'active' : ''} aria-selected={view === 'photo'} onClick={() => setView('photo')}>
-            Photo
-          </button>
-          <button type="button" role="tab" className={view === '3d' ? 'active' : ''} aria-selected={view === '3d'} onClick={() => setView('3d')}>
-            3D
-          </button>
-          <button type="button" role="tab" className={view === 'drawing' ? 'active' : ''} aria-selected={view === 'drawing'} onClick={() => setView('drawing')}>
-            Drawing
-          </button>
+    <section className="stage-card" ref={cardRef} aria-label="Robot viewer">
+      <div className="stage-enter">
+        <div className="viewer-head">
+          <div className="mode-toggle stage-view-toggle" role="tablist" aria-label="Stage view">
+            {(['photo', '3d', 'drawing'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                role="tab"
+                className={view === v ? 'active' : ''}
+                aria-selected={view === v}
+                onClick={() => setView(v)}
+              >
+                {v === 'photo' ? 'Photo' : v === '3d' ? '3D' : 'Drawing'}
+              </button>
+            ))}
+          </div>
+          <div className="viewer-actions">
+            <button type="button" className="icon-btn" onClick={() => dispatchKey('explode')} title="Toggle explode" aria-label="Toggle explode">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <path d="M12 3v18M3 12h18" /><circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+            <button type="button" className="icon-btn" onClick={() => dispatchKey('resetCam')} title="Reset camera view" aria-label="Reset camera view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => {
+                if (document.fullscreenElement) void document.exitFullscreen();
+                else cardRef.current?.requestFullscreen?.();
+              }}
+              title="Fullscreen"
+              aria-label="Toggle fullscreen"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {view === 'photo' ? (
@@ -73,20 +117,7 @@ export function StageCard(props: StageCardProps) {
             onHoverPart={setHoverPart}
           />
         ) : view === '3d' ? (
-          <Suspense fallback={
-            <Illustration
-              data={data}
-              step={step}
-              image={props.image}
-              imageLoading={props.imageLoading}
-              imageAvailable={props.imageAvailable}
-              onGenerateImage={props.onGenerateImage}
-              explodedAvailable={props.explodedAvailable}
-              explodedUrl={props.explodedUrl}
-              explodedOn={props.explodedOn}
-              onToggleExploded={props.onToggleExploded}
-            />
-          }>
+          <Suspense fallback={illustration}>
             <Robot3DView
               parts={data.parts}
               steps={data.steps}
@@ -99,90 +130,8 @@ export function StageCard(props: StageCardProps) {
             />
           </Suspense>
         ) : (
-          <Illustration
-            data={data}
-            step={step}
-            image={props.image}
-            imageLoading={props.imageLoading}
-            imageAvailable={props.imageAvailable}
-            onGenerateImage={props.onGenerateImage}
-            explodedAvailable={props.explodedAvailable}
-            explodedUrl={props.explodedUrl}
-            explodedOn={props.explodedOn}
-            onToggleExploded={props.onToggleExploded}
-          />
+          illustration
         )}
-
-        <p className="stage-instruction">{step.instruction}</p>
-
-        {step.tip && (
-          <div className="stage-tip">
-            <span className="stage-tip-icon" aria-hidden>💡</span>
-            <span>{step.tip}</span>
-          </div>
-        )}
-        {step.tools && step.tools.length > 0 && (
-          <div className="stage-tools">
-            <span className="stage-tools-label">Tools</span>
-            {step.tools.map((t) => (
-              <span key={t} className="chip chip-muted">🔧 {t}</span>
-            ))}
-          </div>
-        )}
-
-        <div className="stage-parts">
-          <div className="parts-group">
-            <span className="parts-label">Add in this step</span>
-            <div className="chip-row">
-              {required.length === 0 && <span className="chip chip-muted">No new parts</span>}
-              {required.map((p) => (
-                <span key={p.id} className="chip chip-accent">
-                  {p.name}
-                  {p.quantity > 1 ? ` ×${p.quantity}` : ''}
-                </span>
-              ))}
-            </div>
-          </div>
-          {installedBefore.length > 0 && (
-            <div className="parts-group">
-              <span className="parts-label">Already installed</span>
-              <div className="chip-row">
-                {installedBefore.map((id) => (
-                  <span key={id} className="chip chip-muted">
-                    {partsById.get(id)?.name ?? id}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <AudioControls
-          step={step}
-          audio={props.audio}
-          isCurrent={props.isCurrentAudio}
-          playing={props.audioPlaying}
-          paused={props.audioPaused}
-          onPlay={props.onPlayAudio}
-          onPause={props.onPauseAudio}
-          onResume={props.onResumeAudio}
-          onRegenerate={props.onRegenerateAudio}
-        />
-
-        <div className="stage-nav">
-          <button type="button" className="btn btn-secondary btn-nav" onClick={props.onPrev} disabled={props.isFirst}>
-            ← Previous
-          </button>
-          {props.isLast && props.onFinish ? (
-            <button type="button" className="btn btn-primary btn-nav" onClick={props.onFinish}>
-              Finish build ▶
-            </button>
-          ) : (
-            <button type="button" className="btn btn-primary btn-nav" onClick={props.onNext} disabled={props.isLast}>
-              Next →
-            </button>
-          )}
-        </div>
       </div>
     </section>
   );

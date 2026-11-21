@@ -8,6 +8,7 @@ import { useNarrationEngine } from './hooks/useNarrationEngine';
 import { useGameFx } from './hooks/useGameFx';
 import { Header, type ViewMode } from './components/Header';
 import { StageCard } from './components/StageCard';
+import { StepPanel } from './components/StepPanel';
 import { Sidebar } from './components/Sidebar';
 import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { ImportDialog } from './components/ImportDialog';
@@ -48,6 +49,7 @@ export default function App() {
   const fx = useGameFx();
   const [toast, setToast] = useState<string | null>(null);
   const [complete, setComplete] = useState(false);
+  const [hintOpen, setHintOpen] = useState(false);
   const prevIndexRef = useRef(index);
   const toastTimer = useRef<number | null>(null);
   // Exploded-view asset produced by the teardown skill (public/illustrations/manifest.json).
@@ -427,6 +429,25 @@ export default function App() {
           onNext={workbookNext}
           onFinish={finishBuild}
         />
+        <div className="right-col">
+        <StepPanel
+          data={data}
+          step={step}
+          partsById={partsById}
+          isFirst={index === 0}
+          isLast={index === data.steps.length - 1}
+          audio={audio}
+          isCurrentAudio={isCurrentAudio}
+          audioPlaying={isCurrentAudio && !isPaused && playingKey !== null}
+          audioPaused={isCurrentAudio && isPaused}
+          onPlayAudio={playAudio}
+          onPauseAudio={pause}
+          onResumeAudio={resume}
+          onRegenerateAudio={regenerateAudio}
+          onPrev={workbookPrev}
+          onNext={workbookNext}
+          onFinish={finishBuild}
+        />
         <Sidebar
           data={data}
           currentIndex={index}
@@ -442,6 +463,7 @@ export default function App() {
           allTools={allTools}
           onLoadUpstream={() => void loadUpstreamSample()}
         />
+        </div>
       </main>
 
       {mode === 'guided' && (
@@ -509,13 +531,25 @@ export default function App() {
         </div>
       )}
 
-      <div className="key-hints" aria-hidden>
-        <span><b>SPACE/→</b> next</span>
-        <span><b>←</b> prev</span>
-        <span><b>R</b> reset view</span>
-        <span><b>E</b> explode</span>
-        <span><b>{fx.muted ? 'SND OFF' : 'SND ON'}</b> header toggle</span>
-      </div>
+      <button
+        type="button"
+        className="hint-fab"
+        onClick={() => setHintOpen((v) => !v)}
+        aria-label="Keyboard shortcuts"
+        aria-expanded={hintOpen}
+        title="Keyboard shortcuts"
+      >
+        ?
+      </button>
+      {hintOpen && (
+        <div className="hint-tip" role="tooltip">
+          <div><b>SPACE / →</b> next step</div>
+          <div><b>←</b> previous step</div>
+          <div><b>R</b> reset 3D camera</div>
+          <div><b>E</b> toggle explode</div>
+          <div>sound toggle in the top bar</div>
+        </div>
+      )}
 
       {complete && (
         <div className="complete-overlay" role="dialog" aria-label="Build complete">

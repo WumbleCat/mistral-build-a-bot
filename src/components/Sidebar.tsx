@@ -2,7 +2,7 @@ import type { AssemblyData } from '../types';
 import type { StepAudioState } from '../hooks/useNarrationEngine';
 
 /** Tiny pixel-style category icon (original, crisp rects). */
-function PartIcon({ category, name }: { category?: string; name: string }) {
+export function PartIcon({ category, name }: { category?: string; name: string }) {
   const c = (category || '').toLowerCase();
   const hay = `${c} ${name}`.toLowerCase();
   const P = '#FF8205';
@@ -76,55 +76,55 @@ export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadU
 
   return (
     <aside className="sidebar">
-      {checklist && onToggleChecklist && (
-        <section className="card">
-          <h2 className="card-title">Pre-assembly checklist</h2>
-          <p className="checklist-progress">Tick off parts you have physically located: {checkedCount}/{data.parts.length}</p>
-          <ul className="parts-list">
-            {data.parts.map((p) => {
-              const checked = checklist.has(p.id);
-              const state = activeSet.has(p.id) ? 'active' : installedSet.has(p.id) ? 'installed' : 'pending';
-              return (
-                <li key={p.id} className={`part-row part-${state} checklist-row ${checked ? 'checked' : ''}`} onClick={() => onToggleChecklist(p.id)}>
-                  <input type="checkbox" checked={checked} onChange={() => onToggleChecklist(p.id)} onClick={(e) => e.stopPropagation()} aria-label={`Mark ${p.name} as located`} />
-                  <span className="part-status" aria-hidden>
-                    {state === 'installed' ? '✓' : state === 'active' ? '●' : '○'}
-                  </span>
-                  <span className="part-name">{p.name}</span>
-                  <span className="part-qty">×{p.quantity}</span>
-                </li>
-              );
-            })}
-          </ul>
-          {allChecked && <p className="checklist-ready">✓ All parts located — ready to build!</p>}
-          {allTools && allTools.length > 0 && (
-            <div className="checklist-tools">
-              <span className="parts-label">Tools needed</span>
-              <div className="chip-row" style={{ marginTop: 6 }}>
-                {allTools.map((t) => (
-                  <span key={t} className="chip chip-muted">🔧 {t}</span>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-      <section className="card">
-        <h2 className="card-title">Inventory</h2>
-        <ul className="inv-grid">
+      <details className="card collapsible" open>
+        <summary>
+          <h2 className="card-title">All parts</h2>
+          <span className="count">({data.parts.length})</span>
+          {checklist && <span className="count" style={{ marginLeft: 'auto' }}>{checkedCount}/{data.parts.length} located</span>}
+        </summary>
+        <ul className="parts-list">
           {data.parts.map((p) => {
+            const checked = checklist?.has(p.id) ?? false;
             const state = activeSet.has(p.id) ? 'active' : installedSet.has(p.id) ? 'installed' : 'pending';
             return (
-              <li key={p.id} className={`inv-slot state-${state}`} title={`${p.name} ×${p.quantity}${p.unit_price != null ? ` · £${p.unit_price.toFixed(2)}` : ''}`}>
-                <PartIcon category={p.category} name={p.name} />
-                <span className="inv-qty">×{p.quantity}</span>
-                {p.unit_price != null && <span className="inv-price">£{p.unit_price.toFixed(2)}</span>}
+              <li
+                key={p.id}
+                className={`part-row part-${state}`}
+                onClick={() => onToggleChecklist?.(p.id)}
+                title={`${p.name} — ${state}`}
+              >
+                {checklist && onToggleChecklist && (
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onToggleChecklist(p.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Mark ${p.name} as located`}
+                  />
+                )}
+                <span className="part-icon"><PartIcon category={p.category} name={p.name} /></span>
+                <span className="part-status" aria-hidden>
+                  {state === 'installed' ? '✓' : state === 'active' ? '●' : '○'}
+                </span>
+                <span className="part-name">{p.name}</span>
+                <span className="part-qty">×{p.quantity}</span>
+                {p.unit_price != null && <span className="part-price">£{p.unit_price.toFixed(2)}</span>}
               </li>
             );
           })}
         </ul>
-        <p className="inv-legend">slot border: amber = installed · flame = in current step · dim = pending</p>
-      </section>
+        {allChecked && <p className="checklist-ready">✓ All parts located — ready to build!</p>}
+        {allTools && allTools.length > 0 && (
+          <div className="checklist-tools">
+            <span className="parts-label">Tools needed</span>
+            <div className="chip-row" style={{ marginTop: 6 }}>
+              {allTools.map((t) => (
+                <span key={t} className="chip">{t}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </details>
 
       {data.relationships && data.relationships.length > 0 && (
         <section className="card">

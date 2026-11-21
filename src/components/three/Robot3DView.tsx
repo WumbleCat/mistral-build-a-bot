@@ -1,13 +1,13 @@
 import { Component, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Bounds, ContactShadows, Environment, Html, Line, OrbitControls } from '@react-three/drei';
+import { ContactShadows, Environment, Html, Line, OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { ACESFilmicToneMapping, SRGBColorSpace, Vector3 } from 'three';
+import { ACESFilmicToneMapping, OrthographicCamera, SRGBColorSpace, Vector3 } from 'three';
 import type { Group, Mesh } from 'three';
 import type { AssemblyStep, Part } from '../../types';
 import { allInstances3d, type Instance3D } from './layout3d';
-import { COLORS, Outline, PartMesh } from './partMeshes';
+import { COLORS, Outline, PartMesh, SceneWireSet } from './partMeshes';
 
 export interface Robot3DViewProps {
   parts: Part[];
@@ -175,12 +175,11 @@ function AnimatedPart({
       {status === 'pending' ? (
         <SlotMarker pos={inst.slot.pos} />
       ) : (
-        <>
+        <Outline active={isActive}>
           <PartMesh kind={inst.kind} part={inst.part} status={status} />
-          <Outline active={isActive} />
-        </>
+        </Outline>
       )}
-      {strong && status !== 'pending' && (
+      {strong && !isActive && status !== 'pending' && inst.kind !== 'wire' && (
         <Html position={[0, 0.3, 0]} center className="part3d-label" wrapperClass="part3d-label-wrap">
           <span className="part3d-label-text">{inst.part.name.toUpperCase()}{inst.part.quantity > 1 ? ` ×${inst.part.quantity}` : ''}</span>
         </Html>
@@ -206,9 +205,10 @@ function TypeLabels({ instances, activeIds, highlightId }: {
     return m;
   }, [instances]);
   const active = new Set(activeIds);
+  const entries = [...byPart.entries()].sort((a, b) => Number(active.has(b[0])) - Number(active.has(a[0]))).slice(0, 3);
   return (
     <>
-      {[...byPart.entries()].map(([partId, arr]) => {
+      {entries.map(([partId, arr]) => {
         const first = arr[0];
         const show = active.has(partId) || highlightId === partId;
         if (!show) return null;
@@ -239,42 +239,86 @@ function Turntable({ children, interacting }: { children: ReactNode; interacting
   return <group ref={ref}>{children}</group>;
 }
 
-/** Damped camera glide toward the active parts' centroid. */
-function CameraFocus({ instances, activeIds }: { instances: Instance3D[]; activeIds: string[] }) {
-  const { controls } = useThree();
+/**
+ * Manual framing for the orthographic camera: compute the robot's bounding
+ * box from the slot layout, fit it to ~62% of the canvas (whole robot in
+ * frame, no wheels cut off), then damp the zoom + target toward it on every
+ * step change / resize. Target also glides slightly toward the active parts
+ * centroid so the camera "focuses" the current step without losing the robot.
+ */
+function CameraRig({ instances, activeIds, fx, fittedZoom }: {
+  instances: Instance3D[];
+  activeIds: string[];
+  fx: React.MutableRefObject<Fx>;
+  fittedZoom: React.MutableRefObject<number>;
+}) {
+  const { camera, size, controls } = useThree();
   const active = useMemo(() => new Set(activeIds), [activeIds]);
-  useFrame((_, dt) => {
-    const c = controls as unknown as { target: Vector3 } | null;
-    if (!c?.target) return;
-    const act = instances.filter((i) => active.has(i.part.id) && i.kind !== 'wire');
-    const desired = act.length
-      ? new Vector3(
-          act.reduce((s, i) => s + i.slot.pos[0], 0) / act.length,
-          0.15,
-          act.reduce((s, i) => s + i.slot.pos[2], 0) / act.length,
-        )
-      : new Vector3(0, 0.1, 0);
-    const k = 1 - Math.exp(-dt * 2.2);
-    c.target.lerp(desired, k);
-  });
-  return null;
-}
 
-function CameraNudge({ fx, baseZoom }: { fx: React.MutableRefObject<Fx>; baseZoom: number }) {
-  const { camera } = useThree();
+  const box = useMemo(() => {
+    let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity, maxY = 0;
+    for (const i of instances) {
+      const r = i.kind === 'wheel' ? 0.38 : i.kind === 'chassis' ? 0.12 : 0.26;
+      const [x, y, z] = i.slot.pos;
+      minX = Math.min(minX, x - r); maxX = Math.max(maxX, x + r);
+      minZ = Math.min(minZ, z - r); maxZ = Math.max(maxZ, z + r);
+      maxY = Math.max(maxY, y + r);
+    }
+    if (!isFinite(minX)) { minX = -1; maxX = 1; minZ = -1; maxZ = 1; }
+    return { minX, maxX, minZ, maxZ, maxY, cx: (minX + maxX) / 2, cz: (minZ + maxZ) / 2 };
+  }, [instances]);
+
+  // zoom needed so the box fills FILL of the limiting canvas dimension
+  const targetZoom = useMemo(() => {
+    const cam = camera as OrthographicCamera;
+    cam.updateMatrixWorld();
+    const inv = cam.matrixWorldInverse;
+    const v = new Vector3();
+    let mx = 0, my = 0;
+    const FILL = 0.62;
+    for (const cx of [box.minX, box.maxX]) {
+      for (const cy of [0, box.maxY]) {
+        for (const cz of [box.minZ, box.maxZ]) {
+          v.set(cx, cy, cz).applyMatrix4(inv);
+          mx = Math.max(mx, Math.abs(v.x));
+          my = Math.max(my, Math.abs(v.y));
+        }
+      }
+    }
+    const zx = mx > 1e-6 ? (FILL * size.width) / (2 * mx) : 100;
+    const zy = my > 1e-6 ? (FILL * size.height) / (2 * my) : 100;
+    return Math.min(zx, zy);
+  }, [box, size, camera]);
+
+  const savedRef = useRef(false);
   useFrame((_, dt) => {
-    if (fx.current.nudge <= 0) return;
-    fx.current.nudge = Math.max(0, fx.current.nudge - dt * 2.2);
-    const z = baseZoom * (1 + fx.current.nudge * 0.06);
-    if (Math.abs(camera.zoom - z) > 0.001) {
-      camera.zoom = z;
-      camera.updateProjectionMatrix();
+    const cam = camera as OrthographicCamera;
+    const c = controls as unknown as { target: Vector3; minZoom: number; maxZoom: number; saveState?: () => void } | null;
+    const k = 1 - Math.exp(-dt * 3.2); // ~0.8 s glide
+    if (fx.current.nudge > 0) fx.current.nudge = Math.max(0, fx.current.nudge - dt * 2.2);
+    const goal = targetZoom * (1 + fx.current.nudge * 0.05);
+    cam.zoom += (goal - cam.zoom) * k;
+    cam.updateProjectionMatrix();
+    fittedZoom.current = targetZoom;
+    if (c) {
+      c.minZoom = targetZoom * 0.55;
+      c.maxZoom = targetZoom * 2.4;
+      const act = instances.filter((i) => active.has(i.part.id) && i.kind !== 'wire');
+      const ax = act.length ? act.reduce((s, i) => s + i.slot.pos[0], 0) / act.length : box.cx;
+      const az = act.length ? act.reduce((s, i) => s + i.slot.pos[2], 0) / act.length : box.cz;
+      // keep the whole robot framed: only 22% of the way toward the active centroid
+      const desired = new Vector3(box.cx + (ax - box.cx) * 0.22, 0.12, box.cz + (az - box.cz) * 0.22);
+      c.target.lerp(desired, k);
+      if (!savedRef.current && Math.abs(cam.zoom - targetZoom) < targetZoom * 0.01) {
+        savedRef.current = true;
+        c.saveState?.();
+      }
     }
   });
   return null;
 }
 
-function Scene({ parts, installedIds, activeIds, explode, selectedId, highlightId, fx, controlsRef, interacting, onSelect, onHover }: {
+function Scene({ parts, installedIds, activeIds, explode, selectedId, highlightId, fx, fittedZoom, controlsRef, interacting, onSelect, onHover }: {
   parts: Part[];
   installedIds: string[];
   activeIds: string[];
@@ -282,6 +326,7 @@ function Scene({ parts, installedIds, activeIds, explode, selectedId, highlightI
   selectedId: string | null;
   highlightId: string | null;
   fx: React.MutableRefObject<Fx>;
+  fittedZoom: React.MutableRefObject<number>;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
   interacting: React.MutableRefObject<boolean>;
   onSelect?: (partId: string) => void;
@@ -320,34 +365,33 @@ function Scene({ parts, installedIds, activeIds, explode, selectedId, highlightI
         material-depthWrite={false}
       />
       <ContactShadows position={[0, 0.002, 0]} opacity={0.55} scale={8} blur={2.6} far={4.5} resolution={512} color="#000000" />
-      <Bounds fit clip margin={1.12}>
-        <Turntable interacting={interacting}>
-          <group>
-            {instances.map((inst) => {
-              const status: Status = active.has(inst.part.id) ? 'active' : installed.has(inst.part.id) ? 'installed' : 'pending';
-              return (
-                <AnimatedPart
-                  key={`${inst.part.id}-${inst.index}`}
-                  inst={inst}
-                  status={status}
-                  explode={explode}
-                  selected={selectedId === inst.part.id}
-                  highlighted={highlightId === inst.part.id}
-                  fx={fx}
-                  onBurst={handleBurst}
-                  onSelect={onSelect}
-                  onHover={onHover}
-                />
-              );
-            })}
-            <TypeLabels instances={instances} activeIds={activeIds} highlightId={highlightId} />
-            {bursts.map((b) => (
-              <Burst key={b.id} origin={b.pos} onDone={() => setBursts((arr) => arr.filter((x) => x.id !== b.id))} />
-            ))}
-          </group>
-        </Turntable>
-      </Bounds>
-      <CameraFocus instances={instances} activeIds={activeIds} />
+      <Turntable interacting={interacting}>
+        <group>
+          {instances.map((inst) => {
+            const status: Status = active.has(inst.part.id) ? 'active' : installed.has(inst.part.id) ? 'installed' : 'pending';
+            return (
+              <AnimatedPart
+                key={`${inst.part.id}-${inst.index}`}
+                inst={inst}
+                status={status}
+                explode={explode}
+                selected={selectedId === inst.part.id}
+                highlighted={highlightId === inst.part.id}
+                fx={fx}
+                onBurst={handleBurst}
+                onSelect={onSelect}
+                onHover={onHover}
+              />
+            );
+          })}
+          <TypeLabels instances={instances} activeIds={activeIds} highlightId={highlightId} />
+          {instances.some((i) => i.kind === 'wire' && (active.has(i.part.id) || installed.has(i.part.id))) && <SceneWireSet />}
+          {bursts.map((b) => (
+            <Burst key={b.id} origin={b.pos} onDone={() => setBursts((arr) => arr.filter((x) => x.id !== b.id))} />
+          ))}
+        </group>
+      </Turntable>
+      <CameraRig instances={instances} activeIds={activeIds} fx={fx} fittedZoom={fittedZoom} />
       <OrbitControls
         makeDefault
         ref={controlsRef}
@@ -372,14 +416,13 @@ class CanvasErrorBoundary extends Component<{ onFallback?: () => void; children:
   render() { return this.state.failed ? null : this.props.children; }
 }
 
-const BASE_ZOOM = 78; // robot fills ~70% of the canvas
-
 export function Robot3DView(props: Robot3DViewProps) {
   const { parts, installedIds, activeIds, onSelect, onFallback, highlightId, onHoverPart } = props;
   const [explode, setExplode] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const fx = useRef<Fx>({ nudge: 0 });
+  const fittedZoom = useRef(60);
   const interacting = useRef(false);
 
   useEffect(() => {
@@ -399,12 +442,13 @@ export function Robot3DView(props: Robot3DViewProps) {
         <Canvas
           orthographic
           dpr={[1, 2]}
-          camera={{ position: [4.6, 4.0, 4.6], zoom: BASE_ZOOM, near: 0.1, far: 60 }}
+          camera={{ position: [4.6, 4.0, 4.6], zoom: 60, near: 0.1, far: 60 }}
           onCreated={(state) => {
             (state.controls as OrbitControlsImpl | null)?.saveState?.();
             state.scene.environmentIntensity = 0.35;
             state.gl.toneMapping = ACESFilmicToneMapping;
             state.gl.outputColorSpace = SRGBColorSpace;
+            (window as unknown as { __scene?: unknown }).__scene = state.scene;
           }}
           gl={{ antialias: true }}
         >
@@ -416,12 +460,12 @@ export function Robot3DView(props: Robot3DViewProps) {
             selectedId={selectedId}
             highlightId={highlightId ?? null}
             fx={fx}
+            fittedZoom={fittedZoom}
             controlsRef={controlsRef}
             interacting={interacting}
             onSelect={(id) => { setSelectedId(id); onSelect?.(id); }}
             onHover={onHoverPart}
           />
-          <CameraNudge fx={fx} baseZoom={BASE_ZOOM} />
         </Canvas>
       </CanvasErrorBoundary>
       <div className="robot3d-toolbar">

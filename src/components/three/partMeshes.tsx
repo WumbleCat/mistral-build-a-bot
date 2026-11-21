@@ -1,6 +1,7 @@
 import { CatmullRomCurve3, TubeGeometry, Vector3 } from 'three';
 import { useMemo } from 'react';
-import { RoundedBox, Edges } from '@react-three/drei';
+import type { ReactNode } from 'react';
+import { RoundedBox } from '@react-three/drei';
 import type { Kind3D } from './layout3d';
 import { CHASSIS_SIZE, WHEEL_R, wirePaths3d } from './layout3d';
 import type { Part } from '../../types';
@@ -63,6 +64,14 @@ interface MeshProps {
 
 type MatProps = Record<string, unknown>;
 
+/** Mix a hex colour toward grey (used to desaturate installed parts ~15%). */
+function desat(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const mix = (c: number) => Math.round(c + (128 - c) * amount);
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+}
+
 function matProps(status: MeshProps['status'], color: string, extra: MatProps = {}): MatProps {
   if (status === 'active') {
     // real colour + soft orange glow pulse (handled by parent scale/emissive)
@@ -75,7 +84,7 @@ function matProps(status: MeshProps['status'], color: string, extra: MatProps = 
       ...extra,
     };
   }
-  return { color, roughness: 0.75, metalness: 0.12, ...extra };
+  return { color: desat(color, 0.15), roughness: 0.75, metalness: 0.12, ...extra };
 }
 
 export function PartMesh({ kind, part, status }: MeshProps) {
@@ -277,7 +286,8 @@ export function PartMesh({ kind, part, status }: MeshProps) {
         </mesh>
       );
     case 'wire':
-      return <WireSet />;
+      // Wires are rendered once at scene level (SceneWireSet), not per instance.
+      return null;
     default:
       return (
         <RoundedBox args={[0.2, 0.12, 0.2]} radius={0.02} smoothness={4}>
@@ -289,12 +299,13 @@ export function PartMesh({ kind, part, status }: MeshProps) {
 
 const WIRE_COLORS = [COLORS.wireRed, COLORS.wireYellow, COLORS.wirePurple];
 
-function WireSet() {
+/** All jumper wires as thin smooth curves hugging the chassis (rendered once). */
+export function SceneWireSet() {
   const geoms = useMemo(
     () =>
-      wirePaths3d().slice(0, 5).map((pts) => {
+      wirePaths3d().slice(0, 4).map((pts) => {
         const curve = new CatmullRomCurve3(pts.map((p) => new Vector3(...p)));
-        return new TubeGeometry(curve, 24, 0.011, 8, false);
+        return new TubeGeometry(curve, 24, 0.008, 8, false);
       }),
     [],
   );
@@ -309,11 +320,7 @@ function WireSet() {
   );
 }
 
-/** Outline: dark edges normally, flame glow for the active part. */
-export function Outline({ active }: { active: boolean }) {
-  return (
-    <Edges threshold={18} color={active ? COLORS.flame : '#0B0C0F'}>
-      <lineBasicMaterial color={active ? COLORS.flame : '#0B0C0F'} transparent opacity={active ? 0.95 : 0.5} />
-    </Edges>
-  );
+/** Outline: renders the part meshes. The active part is highlighted via emissive flame glow + pulse (see matProps). */
+export function Outline({ children }: { active: boolean; children: ReactNode }) {
+  return <>{children}</>;
 }
