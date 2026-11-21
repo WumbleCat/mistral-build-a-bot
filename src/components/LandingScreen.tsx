@@ -1,11 +1,13 @@
-import { ArrowRight, BookOpen, Boxes, Camera, FileJson, Headphones, Link2, ListChecks, ScanSearch } from 'lucide-react';
+import { BookOpen, Boxes, FileJson, Headphones, Link2, ListChecks, ScanSearch } from 'lucide-react';
+import type { AssemblyData } from '../types';
+import { PhotoBuild } from './PhotoBuild';
 import { Footer, TopBar } from './Shell';
 
 export interface LandingScreenProps {
   onLoadSample: () => void;
   onLoadUpstream: () => void;
   onImport: () => void;
-  onPhotoAnalysis: () => void;
+  onGenerated: (data: AssemblyData, notes: string[]) => void;
 }
 
 const PIPELINE = [
@@ -16,10 +18,10 @@ const PIPELINE = [
 ];
 
 /**
- * Entry screen. Entry points: paired photo + JSON analysis, raw JSON import,
- * or the bundled samples.
+ * Entry screen. Main entry point: upload a photo (analysed by the robot_bom
+ * pipeline). Also: assembly JSON import, or the bundled samples.
  */
-export function LandingScreen({ onLoadSample, onLoadUpstream, onImport, onPhotoAnalysis }: LandingScreenProps) {
+export function LandingScreen({ onLoadSample, onLoadUpstream, onImport, onGenerated }: LandingScreenProps) {
   return (
     <div className="flex min-h-dvh flex-col">
       <TopBar />
@@ -49,33 +51,28 @@ export function LandingScreen({ onLoadSample, onLoadUpstream, onImport, onPhotoA
           <div className="card space-y-5 p-5 sm:p-6">
             <div>
               <h2 className="text-base font-semibold">Start a build</h2>
-              <p className="mt-0.5 text-xs text-muted">Upload a photo with its analysis, or open one of the samples.</p>
+              <p className="mt-0.5 text-xs text-muted">Upload a photo. The parts list and build guide are generated for you.</p>
             </div>
 
-            <button type="button" className="btn-primary w-full py-3" onClick={onPhotoAnalysis}>
-              <Camera className="size-4" />
-              Upload robot photo + analysis JSON
-              <ArrowRight className="size-4" />
-            </button>
+            <PhotoBuild onGenerated={onGenerated} />
 
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              <button type="button" className="btn-ghost justify-start" onClick={onImport}>
-                <FileJson className="size-4 text-flame-400" />
-                Import assembly JSON
-              </button>
-              <button type="button" className="btn-ghost justify-start" onClick={onLoadSample}>
-                <BookOpen className="size-4 text-flame-400" />
-                Try the sample robot
-              </button>
-              <button type="button" className="btn-ghost justify-start sm:col-span-2" onClick={onLoadUpstream}>
-                <Link2 className="size-4 text-flame-400" />
-                Load hein-parts team output (obstacle-avoiding car)
-              </button>
+            <div className="border-t border-line-soft pt-4">
+              <p className="label mb-2">Or open existing data</p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="btn-ghost px-3 py-2 text-xs" onClick={onLoadSample}>
+                  <BookOpen className="size-3.5 text-flame-400" />
+                  Sample robot
+                </button>
+                <button type="button" className="btn-ghost px-3 py-2 text-xs" onClick={onImport}>
+                  <FileJson className="size-3.5 text-flame-400" />
+                  Import assembly JSON
+                </button>
+                <button type="button" className="btn-ghost px-3 py-2 text-xs" onClick={onLoadUpstream}>
+                  <Link2 className="size-3.5 text-flame-400" />
+                  hein-parts output
+                </button>
+              </div>
             </div>
-
-            <p className="text-center text-[11px] text-muted">
-              The sample is a four-wheel robot car with narration and an exploded view.
-            </p>
           </div>
         </section>
 

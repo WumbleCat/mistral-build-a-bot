@@ -1,21 +1,9 @@
-import { lazy, Suspense, useState } from 'react';
-import { ArrowLeft, ArrowRight, ArrowUpRight, Lightbulb, TriangleAlert, Wrench } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Lightbulb, TriangleAlert, Wrench } from 'lucide-react';
 import type { AssemblyData, AssemblyStep, Part } from '../types';
 import type { ImageResult } from '../lib/imageGen';
 import type { StepAudioState } from '../hooks/useNarrationEngine';
 import { Illustration } from './Illustration';
 import { AudioControls } from './AudioControls';
-import { PhotoPanel } from './PhotoPanel';
-
-// three.js is large: load it only when the 3D view is shown.
-const Robot3DView = lazy(() => import('./three/Robot3DView').then((m) => ({ default: m.Robot3DView })));
-
-type StageView = '3d' | 'drawing' | 'photo';
-const VIEWS: Array<{ key: StageView; label: string }> = [
-  { key: '3d', label: '3D' },
-  { key: 'drawing', label: 'Drawing' },
-  { key: 'photo', label: 'Photo' },
-];
 
 export interface StageCardProps {
   data: AssemblyData;
@@ -47,8 +35,6 @@ export function StageCard(props: StageCardProps) {
   const { data, step, partsById } = props;
   const required = step.component_ids.map((id) => partsById.get(id)).filter((p): p is Part => Boolean(p));
   const installedBefore = step.installed_components.filter((id) => !step.component_ids.includes(id));
-  const [view, setView] = useState<StageView>('3d');
-  const [hoverPart, setHoverPart] = useState<string | null>(null);
 
   return (
     <section className="card min-w-0 p-5 sm:p-6" key={step.id}>
@@ -66,55 +52,18 @@ export function StageCard(props: StageCardProps) {
           {step.uncertain && <span className="chip ml-auto">Not verified</span>}
         </div>
 
-        <div className="space-y-3">
-          <div role="group" aria-label="Stage view" className="inline-flex rounded-xl border border-line bg-sunken/60 p-1">
-            {VIEWS.map((v) => (
-              <button
-                key={v.key}
-                type="button"
-                aria-pressed={view === v.key}
-                onClick={() => setView(v.key)}
-                className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${
-                  view === v.key ? 'bg-surface text-strong shadow-sm' : 'text-muted hover:text-strong'
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-
-          {view === '3d' && (
-            <Suspense fallback={<div className="skeleton h-[460px] rounded-2xl" />}>
-              <Robot3DView
-                parts={data.parts}
-                steps={data.steps}
-                currentStepIndex={step.number - 1}
-                installedIds={step.installed_components}
-                activeIds={step.component_ids}
-                highlightId={hoverPart}
-                onHoverPart={setHoverPart}
-                onFallback={() => setView('drawing')}
-              />
-            </Suspense>
-          )}
-          {view === 'photo' && (
-            <PhotoPanel data={data} activeIds={step.component_ids} highlightId={hoverPart} onHoverPart={setHoverPart} />
-          )}
-          {view === 'drawing' && (
-            <Illustration
-              data={data}
-              step={step}
-              image={props.image}
-              imageLoading={props.imageLoading}
-              imageAvailable={props.imageAvailable}
-              onGenerateImage={props.onGenerateImage}
-              explodedAvailable={props.explodedAvailable}
-              explodedUrl={props.explodedUrl}
-              explodedOn={props.explodedOn}
-              onToggleExploded={props.onToggleExploded}
-            />
-          )}
-        </div>
+        <Illustration
+          data={data}
+          step={step}
+          image={props.image}
+          imageLoading={props.imageLoading}
+          imageAvailable={props.imageAvailable}
+          onGenerateImage={props.onGenerateImage}
+          explodedAvailable={props.explodedAvailable}
+          explodedUrl={props.explodedUrl}
+          explodedOn={props.explodedOn}
+          onToggleExploded={props.onToggleExploded}
+        />
 
         <p className="max-w-[70ch] text-[16px] leading-relaxed text-body">{step.instruction}</p>
 
@@ -138,25 +87,9 @@ export function StageCard(props: StageCardProps) {
             <div className="flex flex-wrap gap-1.5">
               {required.length === 0 && <span className="chip text-muted">No new parts</span>}
               {required.map((p) => (
-                <span
-                  key={p.id}
-                  className="chip border-flame-500/40 bg-flame-500/10 text-flame-600"
-                  onMouseEnter={() => setHoverPart(p.id)}
-                  onMouseLeave={() => setHoverPart(null)}
-                >
+                <span key={p.id} className="chip border-flame-500/40 bg-flame-500/10 text-flame-600">
                   {p.name}
                   {p.quantity > 1 ? ` ×${p.quantity}` : ''}
-                  {(p.product_url || (p.url && p.url !== 'TODO')) && (
-                    <a
-                      href={p.product_url || p.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-0.5 font-semibold underline underline-offset-2"
-                    >
-                      Buy
-                      <ArrowUpRight className="size-3" />
-                    </a>
-                  )}
                 </span>
               ))}
             </div>
