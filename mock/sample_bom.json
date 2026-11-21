@@ -1,0 +1,103 @@
+{
+  "robot_name": "Obstacle-avoiding car",
+  "recipe_id": "obstacle_avoider_car",
+  "confidence": 0.82,
+  "parts": [
+    { "id": "arduino_uno", "name": "Arduino Uno R3", "category": "controller", "qty": 1, "visible_in_photo": true },
+    { "id": "l298n", "name": "L298N Dual H-Bridge Motor Driver", "category": "motor_driver", "qty": 1, "visible_in_photo": true },
+    { "id": "motor_tt", "name": "TT DC Gear Motor 3-6V", "category": "motor", "qty": 2, "visible_in_photo": true },
+    { "id": "hcsr04", "name": "HC-SR04 Ultrasonic Sensor", "category": "sensor", "qty": 1, "visible_in_photo": true },
+    { "id": "chassis_2wd", "name": "2WD Chassis Kit", "category": "chassis", "qty": 1, "visible_in_photo": true },
+    { "id": "wheel_65mm", "name": "65mm Wheel for TT motor", "category": "wheel", "qty": 2, "visible_in_photo": true },
+    { "id": "batt_holder_18650", "name": "2x18650 Battery Holder (7.4V)", "category": "power", "qty": 1, "visible_in_photo": false }
+  ],
+  "bom": [
+    { "part_id": "arduino_uno", "name": "Arduino Uno R3", "category": "controller", "shop": "RS Components UK", "url": "TODO", "unit_price_gbp": 18.50, "qty": 1, "line_total_gbp": 18.50, "owned": false, "added_from_recipe": false },
+    { "part_id": "l298n", "name": "L298N Dual H-Bridge Motor Driver", "category": "motor_driver", "shop": "SparkFun", "url": "TODO", "unit_price_gbp": 3.80, "qty": 1, "line_total_gbp": 3.80, "owned": false, "added_from_recipe": false },
+    { "part_id": "motor_tt", "name": "TT DC Gear Motor 3-6V", "category": "motor", "shop": "SparkFun", "url": "TODO", "unit_price_gbp": 2.50, "qty": 2, "line_total_gbp": 5.00, "owned": false, "added_from_recipe": false },
+    { "part_id": "wheel_65mm", "name": "65mm Wheel for TT motor", "category": "wheel", "shop": "SparkFun", "url": "TODO", "unit_price_gbp": 1.00, "qty": 2, "line_total_gbp": 2.00, "owned": false, "added_from_recipe": false },
+    { "part_id": "caster_ball", "name": "Ball Caster", "category": "wheel", "shop": "SparkFun", "url": "TODO", "unit_price_gbp": 1.20, "qty": 1, "line_total_gbp": 1.20, "owned": false, "added_from_recipe": true },
+    { "part_id": "chassis_2wd", "name": "2WD Chassis Kit", "category": "chassis", "shop": "SparkFun", "url": "TODO", "unit_price_gbp": 8.50, "qty": 1, "line_total_gbp": 8.50, "owned": false, "added_from_recipe": false },
+    { "part_id": "hcsr04", "name": "HC-SR04 Ultrasonic Sensor", "category": "sensor", "shop": "SparkFun", "url": "TODO", "unit_price_gbp": 2.80, "qty": 1, "line_total_gbp": 2.80, "owned": false, "added_from_recipe": false },
+    { "part_id": "batt_holder_18650", "name": "2x18650 Battery Holder (7.4V)", "category": "power", "shop": "RS Components UK", "url": "TODO", "unit_price_gbp": 2.50, "qty": 1, "line_total_gbp": 2.50, "owned": false, "added_from_recipe": true },
+    { "part_id": "breadboard_mini", "name": "Mini Breadboard 170pt", "category": "wiring", "shop": "SparkFun", "url": "TODO", "unit_price_gbp": 1.50, "qty": 1, "line_total_gbp": 1.50, "owned": false, "added_from_recipe": true },
+    { "part_id": "jumpers_mm", "name": "Jumper Wires M-M 40pc", "category": "wiring", "shop": "SparkFun", "url": "TODO", "unit_price_gbp": 2.00, "qty": 1, "line_total_gbp": 2.00, "owned": false, "added_from_recipe": true },
+    { "part_id": "screws_m3_kit", "name": "M3 Screws + Standoffs kit", "category": "fasteners", "shop": "RS Components UK", "url": "TODO", "unit_price_gbp": 2.50, "qty": 1, "line_total_gbp": 2.50, "owned": false, "added_from_recipe": true },
+    { "part_id": "switch_spst", "name": "SPST Slide Switch", "category": "wiring", "shop": "RS Components UK", "url": "TODO", "unit_price_gbp": 0.80, "qty": 1, "line_total_gbp": 0.80, "owned": false, "added_from_recipe": true },
+    { "part_id": "usb_cable", "name": "USB A to B Cable", "category": "wiring", "shop": "SparkFun", "url": "TODO", "unit_price_gbp": 2.50, "qty": 1, "line_total_gbp": 2.50, "owned": false, "added_from_recipe": true }
+  ],
+  "bom_total_gbp": 53.60,
+  "unmatched": [],
+  "steps": [
+    {
+      "n": 1,
+      "title": "Mount the motors",
+      "instruction": "Attach both TT motors to the chassis using the brackets and M3 screws.",
+      "parts_used": ["motor_tt", "chassis_2wd", "screws_m3_kit"],
+      "tools": ["screwdriver"],
+      "tip": "Make sure both motor shafts point outward.",
+      "anim": [
+        { "part_id": "chassis_2wd", "slot": "chassis" },
+        { "part_id": "motor_tt", "slot": "motor_left" },
+        { "part_id": "motor_tt", "slot": "motor_right" }
+      ]
+    },
+    {
+      "n": 2,
+      "title": "Attach the wheels",
+      "instruction": "Push the 65mm wheels onto the motor shafts until they click.",
+      "parts_used": ["wheel_65mm"],
+      "tools": [],
+      "tip": "Wheels should spin freely without rubbing the chassis.",
+      "anim": [
+        { "part_id": "wheel_65mm", "slot": "wheel_left" },
+        { "part_id": "wheel_65mm", "slot": "wheel_right" }
+      ]
+    },
+    {
+      "n": 3,
+      "title": "Fit the caster",
+      "instruction": "Screw the ball caster under the front (or rear) of the chassis so the car sits level.",
+      "parts_used": ["caster_ball", "screws_m3_kit"],
+      "tools": ["screwdriver"],
+      "tip": "The chassis should not wobble.",
+      "anim": [{ "part_id": "caster_ball", "slot": "caster" }]
+    },
+    {
+      "n": 4,
+      "title": "Battery and switch",
+      "instruction": "Mount the 18650 battery holder and wire the SPST switch in line with the positive lead.",
+      "parts_used": ["batt_holder_18650", "switch_spst", "screws_m3_kit"],
+      "tools": ["screwdriver", "wire strippers"],
+      "tip": "Insert two charged 18650 cells, positive end first.",
+      "anim": [
+        { "part_id": "batt_holder_18650", "slot": "battery" },
+        { "part_id": "switch_spst", "slot": "switch" }
+      ]
+    },
+    {
+      "n": 5,
+      "title": "Mount the electronics",
+      "instruction": "Fix the Arduino Uno and the L298N driver board to the chassis on M3 standoffs.",
+      "parts_used": ["arduino_uno", "l298n", "screws_m3_kit"],
+      "tools": ["screwdriver"],
+      "tip": "Leave room at the front for the ultrasonic sensor.",
+      "anim": [
+        { "part_id": "arduino_uno", "slot": "board" },
+        { "part_id": "l298n", "slot": "driver" }
+      ]
+    },
+    {
+      "n": 6,
+      "title": "Wire it up and add the sensor",
+      "instruction": "Connect motors to the L298N outputs, power to the VIN/GND, and the HC-SR04 to pins 9/10. Use the breadboard and jumpers.",
+      "parts_used": ["hcsr04", "breadboard_mini", "jumpers_mm", "usb_cable"],
+      "tools": [],
+      "tip": "Upload the sketch over the USB cable; the car is ready.",
+      "anim": [
+        { "part_id": "hcsr04", "slot": "sensor_front" },
+        { "part_id": "breadboard_mini", "slot": "breadboard" }
+      ]
+    }
+  ]
+}
