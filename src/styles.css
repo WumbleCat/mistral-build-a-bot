@@ -1,22 +1,27 @@
-/* BuildFromVision Assembly Studio — minimalist technical-manual style */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+/* BuildFromVision Assembly Studio — "Mistral robot hangar" pixel-HUD theme */
 :root {
-  --ink: #17181a;
-  --bg: #f6f5f2;
-  --card: #ffffff;
-  --line: #e6e3dc;
-  --muted: #6d7278;
-  --faint: #9aa0a6;
-  /* Mistral ramp (Le Chonk nod) */
+  --ink: #E8E6E1;
+  --bg: #0E1016;
+  --card: #161A22;
+  --line: #262C38;
+  --muted: #8A90A0;
+  --faint: #5A6070;
+  /* Mistral ramp — the only accents allowed */
   --mistral-yellow: #FFD800;
   --mistral-amber: #FFAF00;
   --mistral-orange: #FF8205;
   --mistral-flame: #FA500F;
   --mistral-red: #E10500;
   --accent: var(--mistral-flame);
-  --accent-soft: #ffd9c2;
-  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --radius: 14px;
-  --shadow: 0 1px 2px rgba(23, 24, 26, 0.05), 0 6px 24px rgba(23, 24, 26, 0.06);
+  --accent-soft: rgba(250, 80, 15, 0.16);
+  --success: var(--mistral-amber);
+  --font-sans: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-pixel: "Press Start 2P", var(--font-mono);
+  --radius: 4px;
+  --shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 * { box-sizing: border-box; }
@@ -427,3 +432,181 @@ html, body {
 .part3d-label-wrap { z-index: 5; }
 .robot3d-toolbar { top: auto; bottom: 10px; }
 .robot3d-wrap .illustrative-badge { bottom: auto; top: 10px; }
+
+/* ================= Mistral robot hangar — theme overrides (hein-3d) ================= */
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+/* faint 8px grid + ultra-subtle scanlines */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 7px, rgba(38, 44, 56, 0.5) 7px 8px),
+    repeating-linear-gradient(90deg, transparent 0 7px, rgba(38, 44, 56, 0.5) 7px 8px);
+  opacity: 0.35;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
+}
+.app { position: relative; z-index: 2; }
+
+h1, h2, h3, .stage-title, .brand-name, .card-title { font-family: var(--font-sans); letter-spacing: 0.2px; }
+
+/* HUD panels: square corners, 1px lines, corner brackets */
+.card, .stage-card, .illustration-frame, .robot3d-wrap, .app-header, .landing, .dialog, .toast {
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--line);
+  background: var(--card);
+  position: relative;
+}
+.card::before, .stage-card::before, .illustration-frame::before, .robot3d-wrap::before {
+  content: "";
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 10px; height: 10px;
+  border-top: 2px solid var(--mistral-orange);
+  border-left: 2px solid var(--mistral-orange);
+  pointer-events: none;
+  z-index: 3;
+}
+.card::after, .stage-card::after, .illustration-frame::after, .robot3d-wrap::after {
+  content: "";
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 10px; height: 10px;
+  border-bottom: 2px solid var(--mistral-orange);
+  border-right: 2px solid var(--mistral-orange);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.app-header { background: rgba(22, 26, 34, 0.94); border-bottom: 1px solid var(--line); }
+
+/* buttons: chunky HUD */
+.btn { border-radius: var(--radius); font-family: var(--font-mono); font-weight: 600; }
+.btn-primary { background: var(--mistral-flame); color: #0E1016; border: 1px solid var(--mistral-flame); }
+.btn-primary:hover:not(:disabled) { background: var(--mistral-orange); border-color: var(--mistral-orange); }
+.btn-secondary { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+.btn-secondary:hover:not(:disabled) { border-color: var(--mistral-amber); color: var(--mistral-amber); }
+.btn-ghost { color: var(--muted); }
+.btn-ghost:hover:not(:disabled) { color: var(--mistral-flame); background: rgba(250, 80, 15, 0.08); }
+.btn:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--mistral-flame); outline-offset: 1px; }
+
+/* mode toggle + stage view toggle: segmented HUD */
+.mode-toggle { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); }
+.mode-toggle button { border-radius: 3px; font-family: var(--font-mono); }
+.mode-toggle button.active, .stage-view-toggle button.active { background: var(--mistral-flame); color: #0E1016; }
+.stage-view-toggle { border: 1px solid var(--line); background: var(--bg); border-radius: var(--radius); }
+
+/* XP / progress bar: pixel segments in the ramp */
+.header-progress-text { font-family: var(--font-mono); color: var(--muted); }
+.progress-track { height: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 2px; }
+.progress-fill {
+  background: linear-gradient(90deg,
+    var(--mistral-yellow) 0 20%, var(--mistral-amber) 20% 40%,
+    var(--mistral-orange) 40% 60%, var(--mistral-flame) 60% 80%, var(--mistral-red) 80% 100%);
+  background-size: 100cqw 100%;
+  background-repeat: no-repeat;
+}
+.level-tag { font-family: var(--font-pixel); font-size: 10px; color: var(--mistral-orange); }
+
+/* header mascot */
+.mascot { width: 34px; height: 34px; image-rendering: pixelated; }
+
+/* inventory slots */
+.inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; list-style: none; padding: 0; margin: 8px 0 0; }
+.inv-slot {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg);
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: default;
+}
+.inv-slot svg { width: 26px; height: 26px; }
+.inv-slot .inv-qty {
+  position: absolute; top: 2px; right: 3px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--ink);
+}
+.inv-slot .inv-price {
+  position: absolute; bottom: 2px; left: 3px;
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+}
+.inv-slot.state-installed { border-color: var(--mistral-amber); box-shadow: inset 0 0 0 1px var(--mistral-amber); }
+.inv-slot.state-active { border-color: var(--mistral-flame); box-shadow: inset 0 0 0 1px var(--mistral-flame), 0 0 8px rgba(250, 80, 15, 0.45); }
+.inv-slot.state-pending { opacity: 0.75; }
+.inv-legend { font-family: var(--font-mono); font-size: 10px; color: var(--faint); margin-top: 6px; }
+
+/* keep checklist rows readable in dark theme */
+.part-row { border-bottom: 1px solid var(--line); }
+.part-row .part-status { font-family: var(--font-mono); }
+.part-active .part-status, .step-current .step-num { color: var(--mistral-flame); }
+.part-installed .part-status, .step-done .step-num { color: var(--mistral-amber); }
+.part-qty, .step-num { font-family: var(--font-mono); }
+.chip { border-radius: 3px; font-family: var(--font-mono); font-size: 11px; }
+.chip-accent { background: var(--accent-soft); color: var(--mistral-flame); border-color: var(--mistral-flame); }
+.step-chip { background: var(--bg); border: 1px solid var(--line); color: var(--mistral-orange); border-radius: 3px; font-size: 11px; }
+
+/* toast */
+.toast {
+  position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+  z-index: 60; padding: 10px 18px; background: var(--card); border: 1px solid var(--mistral-amber);
+  box-shadow: 0 0 0 1px rgba(255, 175, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: toast-in 0.18s ease-out;
+  text-align: center;
+}
+.toast-title { font-family: var(--font-pixel); font-size: 11px; color: var(--mistral-amber); display: block; margin-bottom: 4px; }
+.toast-sub { font-family: var(--font-mono); font-size: 11px; color: var(--ink); }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* key hints */
+.key-hints {
+  position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 55; display: flex; gap: 14px; padding: 6px 14px;
+  background: rgba(22, 26, 34, 0.92); border: 1px solid var(--line); border-radius: var(--radius);
+  font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+}
+.key-hints b { color: var(--mistral-orange); font-weight: 700; }
+
+/* build-complete overlay */
+.complete-overlay {
+  position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center;
+  background: rgba(14, 16, 22, 0.88);
+}
+.complete-card { padding: 32px 40px; text-align: center; max-width: 520px; }
+.complete-title { font-family: var(--font-pixel); font-size: 20px; color: var(--mistral-flame); margin: 0 0 14px; text-shadow: 3px 3px 0 rgba(225, 5, 0, 0.55); }
+.complete-stats { font-family: var(--font-mono); font-size: 13px; color: var(--ink); line-height: 1.9; }
+.complete-stats .num { color: var(--mistral-amber); font-weight: 700; }
+.confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.confetti i {
+  position: absolute; top: -12px; width: 8px; height: 8px;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+/* 3D view dark scene + labels */
+.robot3d-wrap { background: #0E1016; }
+.robot3d-wrap canvas { background: #0E1016; }
+.robot3d-toolbar { background: rgba(22, 26, 34, 0.92); border: 1px solid var(--line); }
+.robot3d-explode { color: var(--muted); }
+.robot3d-explode input { accent-color: var(--mistral-flame); }
+.robot3d-wrap .illustrative-badge { background: rgba(22, 26, 34, 0.85); color: var(--muted); border: 1px solid var(--line); }
+.part3d-label-text { background: #0E1016; color: var(--mistral-amber); border: 1px solid var(--mistral-orange); font-size: 10px; }
+
+/* misc dark fixes */
+.spinner { border: 2px solid var(--line); border-top-color: var(--mistral-flame); }
+.import-notes li, .card-note { color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+a { color: var(--mistral-orange); }
+.key-hints { left: 10px; transform: none; }

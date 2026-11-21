@@ -7,24 +7,40 @@ export interface HeaderProps {
   mode: ViewMode;
   onModeChange: (mode: ViewMode) => void;
   onImportClick: () => void;
+  muted: boolean;
+  onToggleMuted: () => void;
 }
 
-export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, onImportClick }: HeaderProps) {
+/** Original pixel-cat mascot (not the Mistral logo): rects on a 16x16 grid. */
+function PixelCat() {
+  const px = (x: number, y: number, w = 1, h = 1, fill = '#FF8205') => (
+    <rect key={`${x}-${y}-${fill}`} x={x} y={y} width={w} height={h} fill={fill} />
+  );
+  return (
+    <svg className="mascot" viewBox="0 0 16 16" shapeRendering="crispEdges" aria-hidden>
+      {px(3, 2, 2, 2)} {/* left ear */}
+      {px(11, 2, 2, 2)} {/* right ear */}
+      {px(3, 4, 10, 8, '#FF8205')} {/* head */}
+      {px(2, 5, 1, 5)} {px(13, 5, 1, 5)} {/* side fur */}
+      {px(5, 6, 2, 2, '#0E1016')} {/* eyes */}
+      {px(9, 6, 2, 2, '#0E1016')}
+      {px(7, 9, 2, 1, '#FA500F')} {/* nose/mouth */}
+      {px(1, 9, 2, 1, '#FFD800')} {px(13, 9, 2, 1, '#FFD800')} {/* whiskers */}
+      {px(5, 12, 6, 3, '#FF8205')} {/* body */}
+      {px(6, 15, 1, 1, '#FFD800')} {px(9, 15, 1, 1, '#FFD800')} {/* feet */}
+    </svg>
+  );
+}
+
+export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, onImportClick, muted, onToggleMuted }: HeaderProps) {
   const progress = totalSteps > 0 ? stepNumber / totalSteps : 0;
   return (
     <header className="app-header">
       <div className="brand">
-        <svg className="brand-mark" viewBox="0 0 40 40" aria-hidden>
-          <rect x="2" y="2" width="36" height="36" rx="9" fill="#17181a" />
-          <rect x="11" y="15" width="18" height="13" rx="3" fill="none" stroke="#fff" strokeWidth="2.4" />
-          <circle cx="16.5" cy="21.5" r="1.8" fill="#ff5a1f" />
-          <circle cx="23.5" cy="21.5" r="1.8" fill="#ff5a1f" />
-          <line x1="20" y1="15" x2="20" y2="9" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
-          <circle cx="20" cy="8" r="2.4" fill="#ff5a1f" />
-        </svg>
+        <PixelCat />
         <div className="brand-text">
           <span className="brand-name">BuildFromVision</span>
-          <span className="brand-sub">Assembly Studio</span>
+          <span className="brand-sub">Robot Hangar</span>
         </div>
       </div>
 
@@ -35,7 +51,8 @@ export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, 
 
       <div className="header-progress">
         <div className="header-progress-text">
-          Step {stepNumber} of {totalSteps} · {Math.round(progress * 100)}%
+          <span className="level-tag">LEVEL {stepNumber}/{totalSteps}</span>
+          <span style={{ marginLeft: 10 }}>XP {Math.round(progress * 100)}%</span>
         </div>
         <div className="progress-track">
           <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
@@ -44,15 +61,24 @@ export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, 
 
       <nav className="mode-toggle" aria-label="Viewing mode">
         <button type="button" className={mode === 'workbook' ? 'active' : ''} onClick={() => onModeChange('workbook')}>
-          📖 Workbook
+          Workbook
         </button>
         <button type="button" className={mode === 'guided' ? 'active' : ''} onClick={() => onModeChange('guided')}>
-          🎧 Guided walkthrough
+          Guided
         </button>
       </nav>
 
-      <button type="button" className="btn btn-secondary" onClick={onImportClick}>
-        ⇪ Import JSON
+      <button type="button" className="btn btn-secondary" onClick={onImportClick} title="Import assembly JSON">
+        Import JSON
+      </button>
+      <button
+        type="button"
+        className="btn btn-secondary"
+        onClick={onToggleMuted}
+        title={muted ? 'Unmute UI sounds' : 'Mute UI sounds'}
+        aria-pressed={!muted}
+      >
+        {muted ? 'SND OFF' : 'SND ON'}
       </button>
     </header>
   );
