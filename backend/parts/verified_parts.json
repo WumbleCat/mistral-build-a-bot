@@ -1,0 +1,571 @@
+{
+  "_meta": {
+    "researched_at": "2026-11-21",
+    "note": "Real product pages from RS Components UK and SparkFun. SparkFun prices are USD; convert with USD_TO_GBP in config. RS prices are GBP. Re-check prices before the demo.",
+    "design_choice": "Recipes use the TB6612FNG driver instead of L298N: the L298N loses about 2V, which starves 4.5V TT motors on a 6V AA pack."
+  },
+  "parts": [
+    {
+      "id": "arduino_uno",
+      "name": "Arduino UNO Rev3 (A000066)",
+      "category": "controller",
+      "aliases": [
+        "arduino uno",
+        "uno r3",
+        "arduino board",
+        "blue arduino"
+      ],
+      "specs": {
+        "logic_voltage": 5,
+        "input_voltage_min": 7,
+        "input_voltage_max": 12
+      },
+      "price": 24.88,
+      "currency": "GBP",
+      "price_note": "£20.73 exc. VAT / £24.88 inc. VAT",
+      "shop": "RS Components UK",
+      "sku": "715-4081",
+      "url": "https://uk.rs-online.com/web/p/arduino/7154081",
+      "alternatives": [
+        "arduino_uno_smd"
+      ],
+      "verified": true
+    },
+    {
+      "id": "arduino_uno_smd",
+      "name": "Arduino Uno Rev3 SMD (A000073)",
+      "category": "controller",
+      "aliases": [
+        "arduino uno smd",
+        "uno smd"
+      ],
+      "specs": {
+        "logic_voltage": 5
+      },
+      "price": 23.7,
+      "currency": "GBP",
+      "price_note": "£19.75 exc. VAT / £23.70 inc. VAT",
+      "shop": "RS Components UK",
+      "sku": "769-7409",
+      "url": "https://uk.rs-online.com/web/p/arduino/7697409",
+      "alternatives": [
+        "arduino_uno"
+      ],
+      "verified": true
+    },
+    {
+      "id": "hc_sr04",
+      "name": "Ultrasonic Distance Sensor HC-SR04 5V (Kitronik 46130)",
+      "category": "sensor",
+      "aliases": [
+        "ultrasonic sensor",
+        "distance sensor",
+        "hc-sr04",
+        "sonar eyes",
+        "two eyes sensor"
+      ],
+      "specs": {
+        "voltage": 5,
+        "range_cm": "2-400"
+      },
+      "price": 2.19,
+      "currency": "GBP",
+      "shop": "RS Components UK",
+      "sku": "215-3181",
+      "url": "https://uk.rs-online.com/web/p/bbc-micro-bit-add-ons/2153181",
+      "alternatives": [
+        "hc_sr04_sparkfun"
+      ],
+      "verified": true
+    },
+    {
+      "id": "hc_sr04_sparkfun",
+      "name": "Ultrasonic Distance Sensor - 5V (HC-SR04)",
+      "category": "sensor",
+      "aliases": [
+        "ultrasonic sensor",
+        "hc-sr04"
+      ],
+      "specs": {
+        "voltage": 5,
+        "range_cm": "2-400"
+      },
+      "price": 5.25,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "SEN-15569",
+      "url": "https://www.sparkfun.com/ultrasonic-distance-sensor-hc-sr04.html",
+      "alternatives": [
+        "hc_sr04"
+      ],
+      "verified": true
+    },
+    {
+      "id": "servo_sg90",
+      "name": "Mini 180 Degree Resin Gear Servo SG90 (Kitronik 2565)",
+      "category": "servo",
+      "aliases": [
+        "sg90",
+        "micro servo",
+        "blue servo",
+        "small servo"
+      ],
+      "specs": {
+        "voltage_min": 4.8,
+        "voltage_max": 6,
+        "rotation_deg": 180
+      },
+      "price": 3.9,
+      "currency": "GBP",
+      "shop": "RS Components UK",
+      "sku": "215-3180",
+      "url": "https://uk.rs-online.com/web/p/stem-motion-components/2153180",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "motor_tt_pair",
+      "name": "Hobby Gearmotor - 140 RPM (Pair, DAGU TT-style)",
+      "category": "motor",
+      "aliases": [
+        "tt motor",
+        "yellow gear motor",
+        "yellow motor",
+        "gearmotor",
+        "dc gear motor"
+      ],
+      "specs": {
+        "voltage_nominal": 4.5,
+        "gear_ratio": "48:1",
+        "no_load_rpm": 140,
+        "no_load_current_ma": 190,
+        "pack_size": 2
+      },
+      "price": 7.5,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "ROB-13302",
+      "url": "https://www.sparkfun.com/hobby-gearmotor-140-rpm-pair.html",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "wheel_65mm_pair",
+      "name": "Wheel - 65mm (Rubber Tire, Pair)",
+      "category": "wheel",
+      "aliases": [
+        "wheels",
+        "rubber wheels",
+        "65mm wheel",
+        "tyres"
+      ],
+      "specs": {
+        "diameter_mm": 65,
+        "pack_size": 2
+      },
+      "price": 4.5,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "ROB-13259",
+      "url": "https://www.sparkfun.com/wheel-65mm-rubber-tire-pair.html",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "driver_tb6612fng",
+      "name": "SparkFun Motor Driver - Dual TB6612FNG (with Headers)",
+      "category": "motor_driver",
+      "aliases": [
+        "tb6612",
+        "tb6612fng",
+        "motor driver",
+        "h-bridge",
+        "small red board"
+      ],
+      "specs": {
+        "channels": 2,
+        "current_per_channel_a": 1.2,
+        "motor_voltage_max": 15
+      },
+      "price": 14.5,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "ROB-14450",
+      "url": "https://www.sparkfun.com/sparkfun-motor-driver-dual-tb6612fng-with-headers.html",
+      "alternatives": [
+        "driver_l298n_breakout"
+      ],
+      "verified": true
+    },
+    {
+      "id": "driver_l298n_breakout",
+      "name": "SparkFun Full-Bridge Motor Driver Breakout - L298N",
+      "category": "motor_driver",
+      "aliases": [
+        "l298n",
+        "l298",
+        "dual h-bridge",
+        "motor driver"
+      ],
+      "specs": {
+        "channels": 2,
+        "motor_voltage_max": 46,
+        "voltage_drop_v": 2
+      },
+      "price": 4.5,
+      "currency": "USD",
+      "price_note": "Check on the page whether the L298N chip is included or sold separately (COM-09479).",
+      "shop": "SparkFun",
+      "sku": "BOB-09540",
+      "url": "https://sparkfun.com/products/9540",
+      "alternatives": [
+        "driver_tb6612fng"
+      ],
+      "verified": true
+    },
+    {
+      "id": "battery_4xaa_barrel",
+      "name": "Battery Holder - 4xAA to Barrel Jack Connector",
+      "category": "power",
+      "aliases": [
+        "battery pack",
+        "aa battery holder",
+        "4xaa",
+        "battery box"
+      ],
+      "specs": {
+        "cells": 4,
+        "voltage_nominal": 6,
+        "connector": "5.5x2.1mm barrel"
+      },
+      "price": 2.8,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-09835",
+      "url": "https://www.sparkfun.com/battery-holder-4xaa-to-barrel-jack-connector.html",
+      "alternatives": [
+        "battery_4xaa_leads"
+      ],
+      "verified": true
+    },
+    {
+      "id": "battery_4xaa_leads",
+      "name": "Battery Holder - 4xAA Square (tinned leads)",
+      "category": "power",
+      "aliases": [
+        "battery pack",
+        "aa battery holder",
+        "4xaa"
+      ],
+      "specs": {
+        "cells": 4,
+        "voltage_nominal": 6
+      },
+      "price": 2.25,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-00552",
+      "url": "https://www.sparkfun.com/battery-holder-4xaa-square.html",
+      "alternatives": [
+        "battery_4xaa_barrel"
+      ],
+      "verified": true
+    },
+    {
+      "id": "chassis_shadow",
+      "name": "Shadow Chassis (2WD, snap-together, includes nub caster)",
+      "category": "chassis",
+      "aliases": [
+        "chassis",
+        "robot base",
+        "2wd chassis",
+        "robot frame",
+        "car body"
+      ],
+      "specs": {
+        "dimensions_mm": "196 x 126 x 44",
+        "drive": "2WD",
+        "fits": [
+          "motor_tt_pair",
+          "wheel_65mm_pair"
+        ]
+      },
+      "price": 14.95,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "ROB-13301",
+      "url": "https://www.sparkfun.com/products/13301",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "line_sensor",
+      "name": "Line Follower Sensor (QRE1113, 3.3V)",
+      "category": "sensor",
+      "aliases": [
+        "line sensor",
+        "ir sensor",
+        "line follower",
+        "reflectance sensor"
+      ],
+      "specs": {
+        "voltage": 3.3,
+        "sensing_distance_mm": "5-10"
+      },
+      "price": 4.95,
+      "currency": "USD",
+      "price_note": "Power from the Arduino 3.3V pin.",
+      "shop": "SparkFun",
+      "sku": "SEN-24048",
+      "url": "https://www.sparkfun.com/line-follower-sensor.html",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "jumper_mm_20",
+      "name": "Jumper Wires - Connected 6\" (M/M, 20 pack)",
+      "category": "wiring",
+      "aliases": [
+        "jumper wires",
+        "dupont wires",
+        "male to male wires"
+      ],
+      "specs": {
+        "length_in": 6,
+        "count": 20
+      },
+      "price": 2.95,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-12795",
+      "url": "https://www.sparkfun.com/jumper-wires-connected-6-m-m-20-pack.html",
+      "alternatives": [
+        "jumper_ff_20"
+      ],
+      "verified": true
+    },
+    {
+      "id": "jumper_ff_20",
+      "name": "Jumper Wires - Connected 6\" (F/F, 20 pack)",
+      "category": "wiring",
+      "aliases": [
+        "female jumper wires",
+        "female to female wires"
+      ],
+      "specs": {
+        "length_in": 6,
+        "count": 20
+      },
+      "price": 2.75,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-12796",
+      "url": "https://www.sparkfun.com/jumper-wires-connected-6-f-f-20-pack.html",
+      "alternatives": [
+        "jumper_mm_20"
+      ],
+      "verified": true
+    },
+    {
+      "id": "breadboard_400",
+      "name": "Breadboard - Self-Adhesive (White, 400 points)",
+      "category": "wiring",
+      "aliases": [
+        "breadboard",
+        "solderless breadboard",
+        "proto board"
+      ],
+      "specs": {
+        "tie_points": 400
+      },
+      "price": 6.25,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-12002",
+      "url": "https://www.sparkfun.com/products/12002",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "power_5v_2a",
+      "name": "Wall Adapter Power Supply - 5VDC, 2A (Barrel Jack)",
+      "category": "power",
+      "aliases": [
+        "power supply",
+        "wall adapter",
+        "5v adapter",
+        "plug"
+      ],
+      "specs": {
+        "voltage": 5,
+        "current_a": 2,
+        "connector": "5.5x2.1mm barrel, centre positive"
+      },
+      "price": 9.5,
+      "currency": "USD",
+      "price_note": "US plug style; use a UK adapter or a UK-plug 5V supply.",
+      "shop": "SparkFun",
+      "sku": "TOL-15312",
+      "url": "https://www.sparkfun.com/products/15312",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "mearm_deluxe_kit",
+      "name": "MeArm Deluxe Kit - 4-axis desktop robot arm (Mime Industries)",
+      "category": "chassis",
+      "aliases": [
+        "robot arm",
+        "mearm",
+        "robotic arm kit",
+        "arm kit"
+      ],
+      "specs": {
+        "axes": 4,
+        "includes": [
+          "acrylic parts",
+          "metal gear servos",
+          "Arduino-based Brains board",
+          "joysticks board",
+          "battery pack"
+        ]
+      },
+      "price": 57.75,
+      "currency": "GBP",
+      "shop": "RS Components UK",
+      "sku": "134-0413",
+      "url": "https://uk.rs-online.com/web/p/educational-robots/1340413",
+      "alternatives": [],
+      "verified": true
+    }
+  ],
+  "recipes": [
+    {
+      "id": "obstacle_avoider_car",
+      "name": "Obstacle-avoiding car",
+      "difficulty": "beginner",
+      "description": "2WD car that scans ahead with an ultrasonic sensor on a servo and steers away from obstacles. DEMO ROBOT.",
+      "parts": [
+        {
+          "id": "arduino_uno",
+          "qty": 1
+        },
+        {
+          "id": "driver_tb6612fng",
+          "qty": 1
+        },
+        {
+          "id": "motor_tt_pair",
+          "qty": 1
+        },
+        {
+          "id": "wheel_65mm_pair",
+          "qty": 1
+        },
+        {
+          "id": "chassis_shadow",
+          "qty": 1
+        },
+        {
+          "id": "hc_sr04",
+          "qty": 1
+        },
+        {
+          "id": "servo_sg90",
+          "qty": 1
+        },
+        {
+          "id": "battery_4xaa_barrel",
+          "qty": 1
+        },
+        {
+          "id": "battery_4xaa_leads",
+          "qty": 1
+        },
+        {
+          "id": "breadboard_400",
+          "qty": 1
+        },
+        {
+          "id": "jumper_mm_20",
+          "qty": 1
+        },
+        {
+          "id": "jumper_ff_20",
+          "qty": 1
+        }
+      ],
+      "power_notes": "One 4xAA pack powers the Arduino via barrel jack; the second powers the motors through the TB6612 (VM). Share ground between them."
+    },
+    {
+      "id": "line_follower_car",
+      "name": "Line-following car",
+      "difficulty": "beginner",
+      "description": "2WD car that follows a dark tape line using three reflectance sensors.",
+      "parts": [
+        {
+          "id": "arduino_uno",
+          "qty": 1
+        },
+        {
+          "id": "driver_tb6612fng",
+          "qty": 1
+        },
+        {
+          "id": "motor_tt_pair",
+          "qty": 1
+        },
+        {
+          "id": "wheel_65mm_pair",
+          "qty": 1
+        },
+        {
+          "id": "chassis_shadow",
+          "qty": 1
+        },
+        {
+          "id": "line_sensor",
+          "qty": 3
+        },
+        {
+          "id": "battery_4xaa_barrel",
+          "qty": 1
+        },
+        {
+          "id": "battery_4xaa_leads",
+          "qty": 1
+        },
+        {
+          "id": "breadboard_400",
+          "qty": 1
+        },
+        {
+          "id": "jumper_mm_20",
+          "qty": 1
+        },
+        {
+          "id": "jumper_ff_20",
+          "qty": 1
+        }
+      ],
+      "power_notes": "Line sensors run at 3.3V from the Arduino 3.3V pin."
+    },
+    {
+      "id": "robot_arm",
+      "name": "Desktop robot arm",
+      "difficulty": "intermediate",
+      "description": "4-axis arm controlled by joysticks; kit includes servos and an Arduino-based controller.",
+      "parts": [
+        {
+          "id": "mearm_deluxe_kit",
+          "qty": 1
+        },
+        {
+          "id": "power_5v_2a",
+          "qty": 1
+        }
+      ],
+      "power_notes": "Kit includes a battery pack; the 5V 2A adapter is optional for longer sessions."
+    }
+  ]
+}
