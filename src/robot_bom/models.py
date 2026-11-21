@@ -52,6 +52,8 @@ class Evidence(BaseModel):
     # Normalised x1, y1, x2, y2 in 0..1 on the upright (EXIF-corrected) image.
     # ``None`` when the model gave no supportable location - never guessed.
     bbox_xyxy_norm: tuple[float, float, float, float] | None = None
+    # Who produced this entry: the vision model, or the optional local detector.
+    source: Literal["vlm", "grounding_dino"] = "vlm"
 
     @field_validator("bbox_xyxy_norm")
     @classmethod
@@ -252,6 +254,14 @@ class RobotBOM(BaseModel):
 # --------------------------------------------------------------------------
 
 
+class PartDetection(BaseModel):
+    """A region the optional local detector matched to an observed part."""
+
+    bbox_xyxy_norm: tuple[float, float, float, float]
+    score: float  # detector score; not a calibrated probability
+    mask_score: float | None = None  # SAM 2 mask quality score, if a mask was produced
+
+
 class ObservedPart(BaseModel):
     """One visible part (or group of identical visible parts) in ONE image."""
 
@@ -265,6 +275,8 @@ class ObservedPart(BaseModel):
     parent_assembly: str | None = None
     visible_markings: str | None = None
     confidence: float | None = Field(default=None, ge=0, le=1)
+    # Filled in by the optional grounding stage, never by the vision model's reply.
+    detections: list[PartDetection] = Field(default_factory=list)
 
     @field_validator("bbox_xyxy_norm", mode="before")
     @classmethod

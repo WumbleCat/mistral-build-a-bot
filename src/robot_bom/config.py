@@ -30,6 +30,11 @@ class Settings:
     max_retries: int = 2  # extra attempts after a malformed model response
     mock: bool = False
     verify: bool = True  # visibility re-check after pass 1
+    grounding: bool = False  # local Grounding DINO + SAM 2 stage; off = VLM/LLM only
+    dino_model: str = "IDEA-Research/grounding-dino-tiny"
+    sam_model: str = "facebook/sam2.1-hiera-tiny"
+    box_threshold: float = 0.25
+    text_threshold: float = 0.20
     catalog_api_url: str | None = None
     catalog_api_key: str | None = field(default=None, repr=False)
 
@@ -70,6 +75,8 @@ def load_settings(env: Mapping[str, str] | None = None, *, dotenv: bool = True) 
     try:
         timeout_s = float(get("VISION_TIMEOUT_S") or 120)
         max_retries = int(get("VISION_MAX_RETRIES") or 2)
+        box_threshold = float(get("GROUNDING_BOX_THRESHOLD") or 0.25)
+        text_threshold = float(get("GROUNDING_TEXT_THRESHOLD") or 0.20)
     except ValueError as exc:
         raise ConfigError(f"Invalid numeric setting: {exc}") from None
 
@@ -83,6 +90,11 @@ def load_settings(env: Mapping[str, str] | None = None, *, dotenv: bool = True) 
         max_retries=max(0, max_retries),
         mock=(get("ROBOT_BOM_MOCK") or "").lower() in _TRUTHY,
         verify=(get("VISION_VERIFY") or "1").lower() in _TRUTHY,
+        grounding=(get("ROBOT_BOM_GROUNDING") or "").lower() in _TRUTHY,
+        dino_model=get("GROUNDING_DINO_MODEL") or "IDEA-Research/grounding-dino-tiny",
+        sam_model=get("GROUNDING_SAM_MODEL") or "facebook/sam2.1-hiera-tiny",
+        box_threshold=box_threshold,
+        text_threshold=text_threshold,
         catalog_api_url=get("CATALOG_API_URL"),
         catalog_api_key=get("CATALOG_API_KEY"),
     )

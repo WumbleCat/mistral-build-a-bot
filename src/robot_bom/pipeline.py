@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
 from .catalog import CatalogClient, NullCatalogClient, find_candidates
 from .export import BOMExporter, write_json
 from .extraction import VisionResponseError, extract_observations, run_inference_audit
+from .grounding import Grounder, OverlayRenderer, ground_observations, render_overlays
 from .ingest import ImageInput
 from .models import (
     Component, Connection, EvidenceType, ImageObservation, InferenceAudit, ReviewDocument,
@@ -33,6 +34,7 @@ class AnalysisResult:
     audit: InferenceAudit | None
     review: ReviewDocument
     images: list[ImageInput]
+    overlays: dict[str, bytes] = field(default_factory=dict)  # image id -> JPEG with SAM 2 masks
 
 
 def _apply_audit(
@@ -153,6 +155,41 @@ def _demote_unconfirmed(
     return result, issues
 
 
+def _grounding_issues(components: list[Component], failed_images: list[str]) -> list[ReviewIssue]:
+    """Questions raised by the local detector. It never changes a count by itself."""
+    issues = [
+        ReviewIssue(
+            id=f"grounding.unavailable.{image_id}", severity="warning", component_ids=[],
+            message=(
+                f"Grounding DINO / SAM 2 failed for image '{image_id}'; its outlines are the "
+                "vision model's approximate boxes only."
+            ),
+            next_action="Rerun the analysis, or switch to VLM-only mode.",
+        )
+        for image_id in failed_images
+    ]
+    for component in components:
+        per_image: dict[str, int] = {}
+        for evidence in component.evidence:
+            if evidence.source == "grounding_dino":
+                per_image[evidence.image_id] = per_image.get(evidence.image_id, 0) + 1
+        located = max(per_image.values(), default=0)
+        if located and component.visible_quantity is not None and located != component.visible_quantity:
+            issues.append(
+                ReviewIssue(
+                    id=f"grounding.count_mismatch.{component.id}", severity="info",
+                    component_ids=[component.id],
+                    message=(
+                        f"The detector outlined {located} region(s) for '{component.name}' but the vision "
+                        f"model counted {component.visible_quantity}. Detector boxes can split, merge or "
+                        "miss parts, so visible_quantity was left unchanged."
+                    ),
+                    next_action="Count the parts on the photo and correct visible_quantity if needed.",
+                )
+            )
+    return issues
+
+
 def _is_underside(view: str) -> bool:
     return any(word in view.lower() for word in UNDERSIDE_WORDS)
 
@@ -183,8 +220,13 @@ def analyze(
     mode: str = "live",
     vision_model: str | None = None,
     reasoning_client: VisionClient | None = None,
+    grounder: Grounder | None = None,
 ) -> AnalysisResult:
-    """Run stages B-E on already-ingested images and return a draft BOM for review."""
+    """Run stages B-E on already-ingested images and return a draft BOM for review.
+
+    ``grounder=None`` (the default) is the VLM/LLM-only mode. Passing a grounder adds
+    local Grounding DINO + SAM 2 localisation of the parts the vision model observed.
+    """
     catalog = catalog or NullCatalogClient()
 
     # B - pass 1: observed-only, one structured result per image. A response that never
@@ -192,10 +234,18 @@ def analyze(
     # Each claim is then re-checked for direct visibility; unconfirmed claims are demoted.
     observations = extract_observations(client, images, max_retries=max_retries, verify=verify)
 
+    # Optional - local detector/segmenter locates the observed parts (never adds parts).
+    mask_renderers: dict[str, OverlayRenderer] = {}
+    grounding_failed: list[str] = []
+    if grounder is not None:
+        mask_renderers, grounding_failed = ground_observations(grounder, images, observations)
+
     # C - cross-image reconciliation.
     reconciled = InventoryReconciler().merge(observations)
     components = reconciled.components
     issues = list(reconciled.issues)
+    if grounder is not None:
+        issues += _grounding_issues(components, grounding_failed)
     connections: list[Connection] = []
     model_views: list[ViewRequest] = []
 
@@ -251,12 +301,15 @@ def analyze(
             "stage": "draft",
             "mode": mode,
             "vision_model": vision_model or getattr(client, "name", "unknown"),
+            "detection_mode": "vlm+grounding" if grounder is not None else "vlm_only",
+            "grounder": getattr(grounder, "name", "none") if grounder is not None else "none",
             "analyzed_at": now,
         },
     )
     return AnalysisResult(
         bom=bom, observations=observations, audit=audit,
         review=build_review_document(bom), images=images,
+        overlays=render_overlays(mask_renderers, bom.components),
     )
 
 
@@ -280,4 +333,9 @@ def write_analysis_outputs(result: AnalysisResult, out_dir: str | Path) -> dict[
         "review.json": write_json(directory / "review.json", result.review.model_dump(mode="json")),
     }
     written.update(BOMExporter().export(result.bom, directory))
+    for image_id, jpeg in result.overlays.items():
+        path = directory / "overlays" / f"{image_id}.jpg"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(jpeg)
+        written[f"overlays/{image_id}.jpg"] = path
     return written
