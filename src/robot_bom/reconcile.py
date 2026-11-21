@@ -19,6 +19,14 @@ from .taxonomy import IdAllocator, name_similarity, name_tokens, normalize_categ
 
 MERGE_THRESHOLD = 0.6
 
+# Only these parent categories are single purchasable assemblies whose soldered-on parts
+# must not become BOM lines. A chassis or breadboard is NOT such a parent: things mounted
+# on a frame or plugged into a breadboard are separate parts.
+FOLDABLE_PARENTS = {
+    "relay_module", "motor_driver", "pcb_module", "microcontroller", "single_board_computer",
+    "sensor", "motor", "servo",
+}
+
 
 @dataclass
 class _LocalGroup:
@@ -66,11 +74,17 @@ class InventoryReconciler:
         parts = [p for p in observation.parts if p.visible_quantity != 0]
         by_name = {normalize_name(p.name): p for p in parts}
 
-        def parent_of(part: ObservedPart) -> ObservedPart | None:
+        def named_parent(part: ObservedPart) -> ObservedPart | None:
             if not part.parent_assembly:
                 return None
             parent = by_name.get(normalize_name(part.parent_assembly))
             return parent if parent is not None and parent is not part else None
+
+        def parent_of(part: ObservedPart) -> ObservedPart | None:
+            parent = named_parent(part)
+            if parent is None or normalize_category(parent.category) not in FOLDABLE_PARENTS:
+                return None
+            return parent
 
         groups: dict[tuple[str, str], _LocalGroup] = {}
         children: list[tuple[ObservedPart, ObservedPart]] = []
@@ -99,7 +113,9 @@ class InventoryReconciler:
                     markings=[part.visible_markings] if part.visible_markings else [],
                     notes=[],
                 )
-                if part.parent_assembly:
+                if named_parent(part) is not None:
+                    groups[key].notes.append(f"Mounted on / attached to '{part.parent_assembly}'.")
+                elif part.parent_assembly:
                     groups[key].notes.append(
                         f"Model described this as part of '{part.parent_assembly}', which was not "
                         "listed; kept as its own line - check for double counting."
@@ -118,9 +134,11 @@ class InventoryReconciler:
 
         for child, parent in children:
             key = (normalize_category(parent.category), normalize_name(parent.name))
+            markings = f" Marking read on it: '{child.visible_markings}'." if child.visible_markings else ""
             groups[key].notes.append(
                 f"Contains {_pluralise(child.visible_quantity, child.name)} "
                 f"(subcomponent seen in {observation.image_id}; not counted as a separate BOM line)."
+                + markings
             )
 
         # Heuristic guard: an assembly and its bare subcomponent both listed as top-level.

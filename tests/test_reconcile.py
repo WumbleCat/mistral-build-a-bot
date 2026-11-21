@@ -103,3 +103,29 @@ def test_readable_markings_are_kept_as_a_spec_not_as_a_model_number():
     component = result.components[0]
     assert component.specs == {"visible_markings": "L298N"}
     assert component.model is None and component.sku is None and component.manufacturer is None
+
+
+def test_parts_mounted_on_the_chassis_or_breadboard_stay_separate_lines():
+    result = merge(obs("img1", view(
+        "top",
+        part("chassis", "green frame", 1),
+        part("breadboard", "solderless breadboard", 1, parent_assembly="green frame"),
+        part("relay_module", "relay module", 1, parent_assembly="green frame"),
+        part("relay", "relay block", 2, parent_assembly="relay module"),
+        part("microcontroller", "controller board", 1, parent_assembly="solderless breadboard"),
+    )))
+    categories = [c.category for c in result.components]
+    assert categories == ["chassis", "breadboard", "relay_module", "microcontroller"]
+    by_category = {c.category: c for c in result.components}
+    assert "Mounted on / attached to 'green frame'." in by_category["breadboard"].notes
+    assert any("2 x relay block" in n for n in by_category["relay_module"].notes)
+    assert by_category["chassis"].notes == []
+
+
+def test_marking_read_on_a_folded_subcomponent_is_kept_in_the_note():
+    result = merge(obs("img1", view(
+        "top",
+        part("relay_module", "relay module", 1),
+        part("relay", "relay block", 2, parent_assembly="relay module", visible_markings="SONGLE"),
+    )))
+    assert any("Marking read on it: 'SONGLE'" in n for n in result.components[0].notes)
