@@ -64,6 +64,7 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
         project_name=args.project_name or Path(args.images[0]).stem,
         catalog=build_catalog_client(settings),
         max_retries=settings.max_retries,
+        verify=settings.verify,
         mode="mock" if mock else "live",
         vision_model=model,
         reasoning_client=reasoning_client,

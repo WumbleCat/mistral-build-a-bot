@@ -9,9 +9,12 @@ from typing import TypeVar
 from pydantic import BaseModel, ValidationError
 
 from .ingest import ImageInput
-from .models import Component, ImageObservation, InferenceAudit
-from .prompts import PASS1_SYSTEM, PASS2_SYSTEM, pass1_user_prompt, pass2_user_prompt
-from .vision import VisionClient
+from .models import Component, ImageObservation, InferenceAudit, UnconfirmedPart, VisibilityAudit
+from .prompts import (
+    PASS1_SYSTEM, PASS2_SYSTEM, VERIFY_SYSTEM, pass1_user_prompt, pass2_user_prompt,
+    verify_user_prompt,
+)
+from .vision import VisionAPIError, VisionClient
 
 log = logging.getLogger(__name__)
 
@@ -90,8 +93,47 @@ def call_structured(
     raise VisionResponseError(stage, attempts, errors)
 
 
+def verify_observation(
+    client: VisionClient, image: ImageInput, observation: ImageObservation, *, max_retries: int = 2
+) -> None:
+    """Re-check each pass-1 claim against the image; move unconfirmed ones aside.
+
+    Vision models sometimes list parts that are implied rather than seen (four wheels ->
+    "four motors"). A claim that fails this check is no longer an observation.
+    """
+    if not observation.parts:
+        observation.verification = "ok"
+        return
+    claims = [
+        {"index": i, "category": p.category, "name": p.name,
+         "claimed_quantity": p.visible_quantity, "claimed_description": p.description}
+        for i, p in enumerate(observation.parts)
+    ]
+    try:
+        audit = call_structured(
+            client, [image], VERIFY_SYSTEM, verify_user_prompt(image.image_id, claims),
+            VisibilityAudit, stage=f"visibility re-check ({image.image_id})", max_retries=max_retries,
+        )
+    except (VisionResponseError, VisionAPIError) as exc:
+        log.warning("visibility re-check unavailable for %s: %s", image.image_id, exc)
+        observation.verification = "failed"
+        return
+    rejected = {c.index: c.reason for c in audit.checks if not c.directly_visible}
+    kept = []
+    for index, part in enumerate(observation.parts):
+        if index in rejected:
+            observation.unconfirmed.append(
+                UnconfirmedPart(category=part.category, name=part.name,
+                                reason=rejected[index] or "not confirmed as directly visible")
+            )
+        else:
+            kept.append(part)
+    observation.parts = kept
+    observation.verification = "ok"
+
+
 def extract_observations(
-    client: VisionClient, images: list[ImageInput], *, max_retries: int = 2
+    client: VisionClient, images: list[ImageInput], *, max_retries: int = 2, verify: bool = True
 ) -> list[ImageObservation]:
     """Pass 1 - observed-only extraction, one structured result per image."""
     observations: list[ImageObservation] = []
@@ -107,6 +149,9 @@ def extract_observations(
             max_retries=max_retries,
         )
         observation.image_id = image.image_id  # authoritative id comes from ingestion
+        observation.unconfirmed, observation.verification = [], "not_run"  # never model-supplied
+        if verify:
+            verify_observation(client, image, observation, max_retries=max_retries)
         observations.append(observation)
         for part in observation.parts:
             pair = (part.category, part.name)

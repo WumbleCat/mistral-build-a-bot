@@ -21,7 +21,7 @@ from pydantic import BaseModel
 
 from .config import Settings
 from .ingest import ImageInput
-from .models import ImageObservation, InferenceAudit
+from .models import ImageObservation, InferenceAudit, VisibilityAudit
 
 log = logging.getLogger(__name__)
 
@@ -110,6 +110,7 @@ class OpenAICompatVisionClient:
         payload: dict = {
             "model": self._model,
             "temperature": 0,
+            "top_p": 1,  # some Mistral models reject greedy sampling unless top_p is explicit
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": content},
@@ -306,6 +307,8 @@ class MockVisionClient:
             return json.dumps(_MOCK_UNDERSIDE_VIEW if is_underside else _MOCK_TOP_VIEW)
         if response_schema is InferenceAudit:
             return json.dumps(_MOCK_AUDIT)
+        if response_schema is VisibilityAudit:
+            return json.dumps({"checks": []})  # canned parts are all "visible"
         raise ValueError(f"MockVisionClient has no canned response for {response_schema.__name__}")
 
 

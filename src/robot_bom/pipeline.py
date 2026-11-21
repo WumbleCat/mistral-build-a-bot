@@ -18,7 +18,9 @@ from .models import (
 from .reconcile import InventoryReconciler
 from .review import build_review_document
 from .taxonomy import IdAllocator, name_similarity, normalize_category
-from .validation import RequirementsValidator, ensure_critical_placeholders, purchase_blockers
+from .validation import (
+    UNDERSIDE_WORDS, RequirementsValidator, ensure_critical_placeholders, purchase_blockers,
+)
 from .vision import VisionAPIError, VisionClient
 
 log = logging.getLogger(__name__)
@@ -102,10 +104,69 @@ def _apply_audit(
     return result, connections, issues, views
 
 
+def _demote_unconfirmed(
+    observations: list[ImageObservation], components: list[Component]
+) -> tuple[list[Component], list[ReviewIssue]]:
+    """Pass-1 claims that failed the visibility re-check become INFERRED lines + a question."""
+    result = list(components)
+    issues: list[ReviewIssue] = []
+    ids = IdAllocator([c.id for c in components])
+    for observation in observations:
+        if observation.verification == "failed":
+            issues.append(
+                ReviewIssue(
+                    id=f"verify.unavailable.{observation.image_id}", severity="warning", component_ids=[],
+                    message=(
+                        f"The visibility re-check for image '{observation.image_id}' did not produce a "
+                        "valid result, so its observed parts were not double-checked."
+                    ),
+                    next_action="Compare each observed line against the photo before confirming it.",
+                )
+            )
+        for claim in observation.unconfirmed:
+            category = normalize_category(claim.category)
+            if any(c.category == category and name_similarity(c.name, claim.name) >= 0.6 for c in result):
+                continue  # already listed (seen in another photo, or proposed by pass 2)
+            component = Component(
+                id=ids.new(category),
+                category=category,
+                name=claim.name.strip(),
+                evidence_type=EvidenceType.INFERRED,
+                notes=[
+                    f"Listed by the first pass for {observation.image_id}, but the visibility re-check "
+                    f"could not confirm it is directly visible: {claim.reason}",
+                    "Not counted as observed.",
+                ],
+            )
+            result.append(component)
+            issues.append(
+                ReviewIssue(
+                    id=f"verify.unconfirmed.{component.id}", severity="warning",
+                    component_ids=[component.id],
+                    message=(
+                        f"'{claim.name}' was claimed for image '{observation.image_id}' but could not be "
+                        "confirmed as directly visible, so it is listed as inferred, not observed."
+                    ),
+                    next_action="Look at the photo: confirm the line only if you can see or verify the part.",
+                )
+            )
+    return result, issues
+
+
+def _is_underside(view: str) -> bool:
+    return any(word in view.lower() for word in UNDERSIDE_WORDS)
+
+
 def _merge_views(rule_views: list[ViewRequest], model_views: list[ViewRequest]) -> list[ViewRequest]:
     merged = list(rule_views)
     for view in model_views:
-        if any(name_similarity(view.view, existing.view) >= 0.6 for existing in merged):
+        if " " not in view.view:  # snake_case label such as "side_left"; keep ids like pcb_module-1
+            view.view = view.view.replace("_", " ").strip()
+        if any(
+            name_similarity(view.view, existing.view) >= 0.6
+            or (_is_underside(view.view) and _is_underside(existing.view))
+            for existing in merged
+        ):
             continue
         merged.append(view)
     return sorted(merged, key=lambda v: v.priority)
@@ -118,6 +179,7 @@ def analyze(
     project_name: str = "robot",
     catalog: CatalogClient | None = None,
     max_retries: int = 2,
+    verify: bool = True,
     mode: str = "live",
     vision_model: str | None = None,
     reasoning_client: VisionClient | None = None,
@@ -127,7 +189,8 @@ def analyze(
 
     # B - pass 1: observed-only, one structured result per image. A response that never
     # validates raises VisionResponseError; nothing is built from a malformed reply.
-    observations = extract_observations(client, images, max_retries=max_retries)
+    # Each claim is then re-checked for direct visibility; unconfirmed claims are demoted.
+    observations = extract_observations(client, images, max_retries=max_retries, verify=verify)
 
     # C - cross-image reconciliation.
     reconciled = InventoryReconciler().merge(observations)
@@ -158,6 +221,9 @@ def analyze(
         else:
             components, connections, audit_issues, model_views = _apply_audit(audit, components)
             issues += audit_issues
+
+    components, demotion_issues = _demote_unconfirmed(observations, components)
+    issues += demotion_issues
 
     # D - deterministic requirement checks.
     components = ensure_critical_placeholders(components)

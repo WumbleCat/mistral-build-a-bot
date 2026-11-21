@@ -287,6 +287,14 @@ class ObservedPart(BaseModel):
         return clean_identifier(value)
 
 
+class UnconfirmedPart(BaseModel):
+    """A pass-1 claim that the visibility re-check could not confirm."""
+
+    category: str
+    name: str
+    reason: str
+
+
 class ImageObservation(BaseModel):
     """Pass 1 result for a single image."""
 
@@ -296,6 +304,25 @@ class ImageObservation(BaseModel):
     parts: list[ObservedPart] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
     image_id: str = ""  # filled in by the pipeline, never trusted from the model
+    # Filled in by the visibility re-check, never by the model's first reply.
+    unconfirmed: list[UnconfirmedPart] = Field(default_factory=list)
+    verification: Literal["not_run", "ok", "failed"] = "not_run"
+
+
+class PartCheck(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    index: int = Field(ge=0)
+    directly_visible: bool
+    reason: str = ""
+
+
+class VisibilityAudit(BaseModel):
+    """Re-check of pass-1 claims against the same image."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    checks: list[PartCheck] = Field(default_factory=list)
 
 
 class InferredItem(BaseModel):

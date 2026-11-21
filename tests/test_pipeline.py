@@ -180,6 +180,15 @@ def test_pass2_proposals_never_become_observed_or_quantified():
     assert [v.view.lower() for v in bom.requested_views].count("underside") == 1
 
 
+def test_underside_synonyms_from_the_model_are_not_requested_twice():
+    audit = {"inferred_components": [], "connections": [], "issues": [],
+             "requested_views": [{"view": "bottom", "reason": "motors"}, {"view": "side_left", "reason": "axles"}]}
+    client = ScriptedClient(pass1=[view("top", part("wheel", "rubber wheel", 4))], pass2=[audit])
+    views = [v.view for v in analyze(make_images("top.png"), client).bom.requested_views]
+    assert "bottom" not in views and views[0] == "underside"
+    assert "side left" in views
+
+
 # ---- configuration / mock mode (spec test 6) ------------------------------
 
 
@@ -215,6 +224,14 @@ def test_vision_variables_override_the_mistral_defaults():
     assert settings.api_key == "b"
     assert settings.base_url == "https://llm.example.test/v1"
     assert settings.vision_model == settings.reasoning_model == "some-vision-model"
+
+
+def test_existing_mistral_model_variable_is_honoured():
+    assert load_settings({}, dotenv=False).vision_model == "mistral-large-latest"
+    assert load_settings({"MISTRAL_MODEL": "mistral-large-4"}, dotenv=False).vision_model == "mistral-large-4"
+    both = load_settings({"MISTRAL_MODEL": "a", "VISION_MODEL": "b"}, dotenv=False)
+    assert both.vision_model == "b"
+    assert load_settings({"VISION_VERIFY": "0"}, dotenv=False).verify is False
 
 
 def test_secret_never_reaches_outputs(tmp_path):

@@ -9,7 +9,9 @@ import pytest
 from PIL import Image
 
 from robot_bom.ingest import ImageInput, ingest
-from robot_bom.models import Component, Evidence, EvidenceType, ImageObservation, InferenceAudit
+from robot_bom.models import (
+    Component, Evidence, EvidenceType, ImageObservation, InferenceAudit, VisibilityAudit,
+)
 
 
 def png_bytes(colour=(40, 160, 90), size=(64, 48)) -> bytes:
@@ -28,15 +30,19 @@ class ScriptedClient:
 
     name = "scripted"
 
-    def __init__(self, pass1: list, pass2: list | None = None) -> None:
+    def __init__(self, pass1: list, pass2: list | None = None, verify: list | None = None) -> None:
         self.pass1 = list(pass1)
         self.pass2 = list(pass2 if pass2 is not None else [EMPTY_AUDIT])
+        self.verify = list(verify if verify is not None else [{"checks": []}])
         self.calls: list[dict] = []
+
+    def calls_for(self, schema) -> list[dict]:
+        return [call for call in self.calls if call["schema"] is schema]
 
     def analyze(self, images, system_prompt, response_schema, user_prompt=""):
         self.calls.append({"schema": response_schema, "user_prompt": user_prompt, "images": images})
-        queue = self.pass1 if response_schema is ImageObservation else self.pass2
-        assert response_schema in (ImageObservation, InferenceAudit)
+        queue = {ImageObservation: self.pass1, InferenceAudit: self.pass2,
+                 VisibilityAudit: self.verify}[response_schema]
         if not queue:
             raise AssertionError(f"no scripted reply left for {response_schema.__name__}")
         reply = queue.pop(0) if len(queue) > 1 else queue[0]

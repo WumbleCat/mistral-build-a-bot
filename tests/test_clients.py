@@ -42,7 +42,7 @@ def test_request_shape_for_mistral_chat_completions():
     assert seen["url"] == "https://api.mistral.ai/v1/chat/completions"
     assert seen["auth"] == f"Bearer {SECRET}"
     body = seen["body"]
-    assert body["model"] == "vision-model" and body["temperature"] == 0
+    assert body["model"] == "vision-model" and body["temperature"] == 0 and body["top_p"] == 1
     assert body["response_format"] == {"type": "json_object"}
     assert body["messages"][0] == {"role": "system", "content": "SYSTEM"}
     content = body["messages"][1]["content"]

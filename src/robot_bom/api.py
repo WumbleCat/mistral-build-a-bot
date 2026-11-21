@@ -67,6 +67,7 @@ def analyze_route(
             project_name=project_name.strip() or "robot",
             catalog=build_catalog_client(settings),
             max_retries=settings.max_retries,
+            verify=settings.verify,
             mode="mock" if use_mock else "live",
             vision_model="mock" if use_mock else settings.vision_model,
         )
