@@ -20,3 +20,6 @@ build/
 
 # generated pipeline output (a committed sample lives in examples/)
 output/
+
+# node
+node_modules/
