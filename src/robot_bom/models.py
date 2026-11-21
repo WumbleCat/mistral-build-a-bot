@@ -86,6 +86,9 @@ class Component(BaseModel):
     specs: dict[str, str] = Field(default_factory=dict)
     status: Status = "needs_review"
     notes: list[str] = Field(default_factory=list)
+    # Fields filled in by the model's best guess (e.g. "required_quantity", "specs.voltage_v").
+    # Such values are assumptions: not seen in a photo and not confirmed by a human.
+    assumed_fields: list[str] = Field(default_factory=list)
 
     @field_validator("manufacturer", "model", "sku", mode="before")
     @classmethod
