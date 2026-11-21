@@ -373,6 +373,36 @@ _MOCK_AUDIT = {
 }
 
 
+_MOCK_DESIGN = {
+    "summary": "MOCK DATA: a small 2WD relay-switched rover (canned reply, not derived from your robot).",
+    "design_choices": [
+        {"issue_id": "drivetrain.unknown", "choice": "2 DC gear motors on the rear wheels; front wheels roll freely",
+         "reason": "MOCK DATA: canned choice."},
+        {"issue_id": "controller.unknown", "choice": "Arduino Uno R3 as the controller", "reason": "MOCK DATA: canned choice."},
+    ],
+    "components": [
+        {"name": "rubber wheel", "category": "wheel", "quantity": 4, "specs": {"diameter_mm": "65"}, "basis": "observed"},
+        {"name": "DC gear motor", "category": "motor", "quantity": 2, "specs": {"voltage_v": "6"}, "basis": "inferred"},
+        {"name": "TB6612FNG dual motor driver", "category": "motor_driver", "quantity": 1,
+         "specs": {"max_current_a": "1.2"}, "basis": "inferred"},
+        {"name": "Arduino Uno R3", "category": "microcontroller", "quantity": 1, "specs": {"logic_level_v": "5"},
+         "basis": "inferred"},
+    ],
+}
+
+_MOCK_SOURCING = {
+    "power_budget": "MOCK DATA: 6 V supply, 5 V logic, about 1 A total (canned estimate).",
+    "searches": [
+        {"component": "rubber wheel", "search_query": "65mm rubber robot wheel TT motor",
+         "recommended_sites": ["amazon"], "note": "MOCK DATA: canned suggestion."},
+        {"component": "DC gear motor", "search_query": "TT gear motor 6V 1:48",
+         "recommended_sites": ["amazon", "sparkfun"], "note": "MOCK DATA: canned suggestion."},
+        {"component": "TB6612FNG dual motor driver", "search_query": "TB6612FNG motor driver breakout",
+         "recommended_sites": ["sparkfun", "digikey"], "note": "MOCK DATA: canned suggestion."},
+    ],
+}
+
+
 class MockVisionClient:
     """Deterministic offline stand-in. Its output is canned and labelled as mock data."""
 
@@ -393,6 +423,11 @@ class MockVisionClient:
             return json.dumps(_MOCK_AUDIT)
         if response_schema is VisibilityAudit:
             return json.dumps({"checks": []})  # canned parts are all "visible"
+        # The design step's schemas live in design.py, which imports this module.
+        if response_schema.__name__ == "InferredDesign":
+            return json.dumps(_MOCK_DESIGN)
+        if response_schema.__name__ == "SourcingPlan":
+            return json.dumps(_MOCK_SOURCING)
         raise ValueError(f"MockVisionClient has no canned response for {response_schema.__name__}")
 
 
