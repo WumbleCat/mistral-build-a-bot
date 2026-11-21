@@ -8,6 +8,7 @@
  *   POST /api/image           -> optional Mistral image-generation agent / image model
  *   POST /api/chat            -> context-aware assembly assistant (Mistral chat completions)
  *   POST /api/upstream/bom    -> proxy to the hein-parts FastAPI service (avoids CORS, keeps URL server-side)
+ *   GET  /api/upstream/search -> proxy to the same service's live-offer search (shopping list)
  */
 import { createHash } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -327,6 +328,28 @@ async function handleUpstreamBom(req: IncomingMessage, res: ServerResponse) {
   }
 }
 
+/** Proxy to the parts service's live-offer search (best effort; the shopping list works without it). */
+async function handleUpstreamSearch(req: IncomingMessage, res: ServerResponse) {
+  const base = (process.env.HEIN_PARTS_URL || 'http://localhost:8000').replace(/\/$/, '');
+  const q = new URL(req.url || '', 'http://localhost').searchParams.get('q')?.trim() ?? '';
+  if (!q || q.length > 200) {
+    sendJson(res, 400, { error: 'Query "q" is required (max 200 characters).' });
+    return;
+  }
+  try {
+    const upstream = await fetch(`${base}/api/search?q=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(4000) });
+    const text = await upstream.text();
+    if (!upstream.ok) {
+      sendJson(res, upstream.status, { error: `Parts service returned ${upstream.status}.`, detail: text.slice(0, 500) });
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(text);
+  } catch (err) {
+    sendJson(res, 502, { error: `Could not reach the parts service at ${base}.`, detail: (err as Error).message });
+  }
+}
+
 /** Route handler for /api/* — returns true if the request was handled. */
 export async function handleApi(req: IncomingMessage, res: ServerResponse, pathname: string): Promise<boolean> {
   if (pathname === '/api/health' && req.method === 'GET') {
@@ -358,6 +381,10 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, pathn
   }
   if (pathname === '/api/upstream/bom' && req.method === 'POST') {
     await handleUpstreamBom(req, res);
+    return true;
+  }
+  if (pathname === '/api/upstream/search' && req.method === 'GET') {
+    await handleUpstreamSearch(req, res);
     return true;
   }
   if (pathname.startsWith('/api/')) {

@@ -11,6 +11,8 @@ export interface HeaderProps {
   onModeChange: (mode: ViewMode) => void;
   onImportClick: () => void;
   onHome?: () => void;
+  /** Developer-only UI (Import JSON) is shown only with ?dev=1. */
+  dev?: boolean;
 }
 
 const tab = (active: boolean) =>
@@ -19,7 +21,7 @@ const tab = (active: boolean) =>
     active ? 'bg-line-soft text-strong' : 'text-muted hover:bg-sunken hover:text-strong',
   ].join(' ');
 
-export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, onImportClick, onHome }: HeaderProps) {
+export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, onImportClick, onHome, dev }: HeaderProps) {
   const progress = totalSteps > 0 ? stepNumber / totalSteps : 0;
   return (
     <TopBar onLogoClick={onHome} progress={progress}>
@@ -37,16 +39,18 @@ export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, 
         </button>
         <button type="button" className={tab(mode === 'guided')} onClick={() => onModeChange('guided')} aria-pressed={mode === 'guided'}>
           <Headphones className="size-4" />
-          <span className="hidden sm:inline">Guided walkthrough</span>
+          <span className="hidden sm:inline">Guided tour</span>
         </button>
       </nav>
 
-      <div className="ml-1 border-l border-line-soft pl-3">
-        <button type="button" className="btn-ghost px-3 py-2" onClick={onImportClick}>
-          <FileUp className="size-4" />
-          <span className="hidden sm:inline">Import JSON</span>
-        </button>
-      </div>
+      {dev && (
+        <div className="ml-1 border-l border-line-soft pl-3">
+          <button type="button" className="btn-ghost px-3 py-2" onClick={onImportClick}>
+            <FileUp className="size-4" />
+            <span className="hidden sm:inline">Import JSON</span>
+          </button>
+        </div>
+      )}
     </TopBar>
   );
 }

@@ -28,11 +28,13 @@ export interface SidebarProps {
   onToggleChecklist?: (partId: string) => void;
   /** Tools needed across all steps (for the checklist card). */
   allTools?: string[];
+  /** Developer-only UI (the Data card and sample loaders) is shown only with ?dev=1. */
+  dev?: boolean;
 }
 
 type PartState = 'active' | 'installed' | 'pending';
 
-export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadUpstream, stepAudio, playingIndex, playingPaused, onToggleStepAudio, narrationStats, checklist, onToggleChecklist, allTools }: SidebarProps) {
+export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadUpstream, stepAudio, playingIndex, playingPaused, onToggleStepAudio, narrationStats, checklist, onToggleChecklist, allTools, dev }: SidebarProps) {
   const currentStep = data.steps[currentIndex];
   const installedSet = new Set(currentStep?.installed_components ?? []);
   const activeSet = new Set(currentStep?.component_ids ?? []);
@@ -194,6 +196,17 @@ export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadU
         </ol>
       </Card>
 
+      {!dev && importNotes.length > 0 && (
+        <Card title="Notes">
+          <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-muted">
+            {importNotes.map((n, i) => (
+              <li key={i}>{n}</li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {dev && (
       <Card title="Data">
         <p className="text-sm text-body">
           Loaded: <strong className="text-strong">{data.robot_name}</strong> — {data.parts.length} parts, {data.steps.length} steps.
@@ -227,6 +240,7 @@ export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadU
           </ul>
         )}
       </Card>
+      )}
     </aside>
   );
 }

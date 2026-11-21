@@ -8,14 +8,14 @@ import { useNarrationEngine } from './hooks/useNarrationEngine';
 import { Header, type ViewMode } from './components/Header';
 import { StageCard } from './components/StageCard';
 import { Sidebar } from './components/Sidebar';
-import { WalkthroughOverlay } from './components/WalkthroughOverlay';
+import { ShoppingList } from './components/ShoppingList';
 import { ImportDialog } from './components/ImportDialog';
 import { AssistantPanel } from './components/AssistantPanel';
 
 import { LandingScreen } from './components/LandingScreen';
 
 import { Footer } from './components/Shell';
-import { Boxes, CircleDollarSign, ListChecks, ListOrdered } from 'lucide-react';
+import { Boxes, CircleDollarSign, ListChecks, ListOrdered, PartyPopper } from 'lucide-react';
 
 function initialStep(): number {
   const s = new URLSearchParams(window.location.search).get('step');
@@ -24,6 +24,8 @@ function initialStep(): number {
 }
 
 export default function App() {
+  // Developer-only UI (JSON import, Data card, sample loaders) is shown only with ?dev=1.
+  const dev = new URLSearchParams(window.location.search).has('dev');
   // Deep links (?mode=guided, ?step=N, ?view=exploded) skip the landing screen.
   const [screen, setScreen] = useState<'landing' | 'studio'>(() =>
     new URLSearchParams(window.location.search).has('mode') || new URLSearchParams(window.location.search).has('step') ? 'studio' : 'landing',
@@ -40,6 +42,7 @@ export default function App() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantMention, setAssistantMention] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<Set<string>>(new Set());
+  const [complete, setComplete] = useState(false);
   const [images, setImages] = useState<Record<string, ImageResult>>({});
   const [imageLoading, setImageLoading] = useState(false);
   const [imageAvailable, setImageAvailable] = useState(false);
@@ -198,7 +201,6 @@ export default function App() {
     setTick((t) => t + 1);
     setGuided((g) => ({ ...g, playing: true }));
   };
-  const guidedExit = () => handleModeChange('workbook');
 
   // ---- workbook controls ----
   const workbookPrev = () => {
@@ -209,6 +211,51 @@ export default function App() {
     stop();
     setIndex((i) => Math.min(data.steps.length - 1, i + 1));
   };
+
+  // ---- finish ----
+  const finishBuild = () => {
+    handleModeChange('workbook');
+    setComplete(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const replayBuild = () => {
+    setComplete(false);
+    setIndex(0);
+  };
+
+  // ---- keyboard: arrows / space step through the build, R and E drive the 3D view ----
+  const keysRef = useRef({ prev: workbookPrev, next: workbookNext });
+  keysRef.current = mode === 'guided' ? { prev: guidedPrev, next: guidedNext } : { prev: workbookPrev, next: workbookNext };
+  const keysOn = screen === 'studio' && !importOpen && !assistantOpen;
+  useEffect(() => {
+    if (!keysOn) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(t.tagName) || t.isContentEditable)) return;
+      switch (e.key) {
+        case 'ArrowRight':
+        case ' ':
+          e.preventDefault();
+          keysRef.current.next();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          keysRef.current.prev();
+          break;
+        case 'r':
+        case 'R':
+          window.dispatchEvent(new CustomEvent('bfv:key', { detail: { name: 'resetCam' } }));
+          break;
+        case 'e':
+        case 'E':
+          window.dispatchEvent(new CustomEvent('bfv:key', { detail: { name: 'explode' } }));
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [keysOn]);
 
   // ---- audio handlers (workbook) ----
   const playAudio = () => {
@@ -251,6 +298,7 @@ export default function App() {
     setImages({});
     setImportNotes(notes);
     setChecklist(new Set());
+    setComplete(false);
     setAssistantOpen(false);
     setAssistantMention(null);
     clearNarrationCaches();
@@ -309,6 +357,7 @@ export default function App() {
             applyData(d, notes);
             setScreen('studio');
           }}
+          dev={dev}
         />
         {importOpen && <ImportDialog onLoad={handleImport} onClose={() => setImportOpen(false)} />}
       </>
@@ -335,6 +384,7 @@ export default function App() {
         onModeChange={handleModeChange}
         onImportClick={() => setImportOpen(true)}
         onHome={goHome}
+        dev={dev}
       />
       <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         <header className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
@@ -364,6 +414,26 @@ export default function App() {
           </div>
         </header>
 
+        {complete && (
+          <section className="card flex flex-wrap items-center gap-4 border-mint-400/40 bg-mint-400/5 p-5" role="status">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-mint-400/10 text-mint-400">
+              <PartyPopper className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base font-semibold">Build complete</h2>
+              <p className="mt-0.5 text-sm text-body">
+                All {data.steps.length} steps done for {data.robot_name}. Check the wiring and battery polarity before you power it on.
+              </p>
+            </div>
+            <button type="button" className="btn-ghost px-3 py-2" onClick={replayBuild}>
+              Go through it again
+            </button>
+            <button type="button" className="btn-ghost px-3 py-2" onClick={() => setComplete(false)}>
+              Keep exploring
+            </button>
+          </section>
+        )}
+
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <StageCard
             data={data}
@@ -387,8 +457,25 @@ export default function App() {
             onPlayAudio={playAudio}
             onPauseAudio={pause}
             onResumeAudio={resume}
-            onPrev={workbookPrev}
-            onNext={workbookNext}
+            onPrev={mode === 'guided' ? guidedPrev : workbookPrev}
+            onNext={mode === 'guided' ? guidedNext : workbookNext}
+            onFinish={finishBuild}
+            extraHighlight={assistantMention}
+            guided={
+              mode === 'guided'
+                ? {
+                    playing: guided.playing,
+                    paused: isCurrentAudio && isPaused,
+                    auto: guided.auto,
+                    assistantOpen,
+                    onTogglePlay: guidedTogglePlay,
+                    onRestart: guidedRestart,
+                    onToggleAuto: () => setGuided((g) => ({ ...g, auto: !g.auto })),
+                    onToggleAssistant: () => setAssistantOpen((v) => !v),
+                    onStop: () => handleModeChange('workbook'),
+                  }
+                : undefined
+            }
           />
           <Sidebar
             data={data}
@@ -404,39 +491,13 @@ export default function App() {
             onToggleChecklist={toggleChecklist}
             allTools={allTools}
             onLoadUpstream={() => void loadUpstreamSample()}
+            dev={dev}
           />
         </div>
+
+        <ShoppingList data={data} owned={checklist} onToggleOwned={toggleChecklist} />
       </main>
       <Footer />
-
-      {mode === 'guided' && (
-        <WalkthroughOverlay
-          data={data}
-          index={index}
-          partsById={partsById}
-          audio={audio}
-          playing={guided.playing}
-          paused={isCurrentAudio && isPaused}
-          auto={guided.auto}
-          image={images[step.id]}
-          imageLoading={imageLoading}
-          imageAvailable={imageAvailable}
-          onGenerateImage={() => void generateImageFor(step)}
-          explodedAvailable={exploded.available}
-          explodedUrl={exploded.url}
-          explodedOn={explodedOn && exploded.available}
-          onToggleExploded={() => setExplodedOn((v) => !v)}
-          assistantOpen={assistantOpen}
-          onToggleAssistant={() => setAssistantOpen((v) => !v)}
-          assistantMention={assistantMention}
-          onTogglePlay={guidedTogglePlay}
-          onPrev={guidedPrev}
-          onNext={guidedNext}
-          onRestart={guidedRestart}
-          onToggleAuto={() => setGuided((g) => ({ ...g, auto: !g.auto }))}
-          onExit={guidedExit}
-        />
-      )}
 
       {mode === 'guided' && step && (
         <AssistantPanel

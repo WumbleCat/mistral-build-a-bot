@@ -206,6 +206,9 @@ export async function handleGenerate(
         p.source_ids = c.source_ids ?? p.source_ids;
         p.sku = c.sku ?? p.sku ?? null;
         p.product_url = c.product_url ?? p.product_url ?? null;
+        // Shop and price found by the pipeline's product lookup (shopping list).
+        if (typeof c.shop === 'string' && c.shop) p.shop = c.shop;
+        if (typeof c.unit_price === 'number' && Number.isFinite(c.unit_price) && c.unit_price >= 0) p.unit_price = c.unit_price;
         p.review_required = c.review_required === true || p.review_required;
         p.notes = c.notes ?? p.notes;
         if (c.quantity === null || c.quantity === undefined) p.quantityUnknown = true;

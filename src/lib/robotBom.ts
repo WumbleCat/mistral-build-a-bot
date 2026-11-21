@@ -183,6 +183,10 @@ export function bomToComponents(bom: RobotBom): ComponentAnalysis[] {
         source_ids: [c.id],
         sku: c.sku ?? link?.sku ?? null,
         product_url: link?.product_url ?? null,
+        // Where the product page was found, for the shopping list. The list shows pounds,
+        // so a price in another currency is left out rather than mislabelled.
+        shop: link?.vendor ?? null,
+        unit_price: link?.price != null && link.currency?.toUpperCase() === 'GBP' ? link.price : null,
         review_required:
           c.status !== 'confirmed' && (c.evidence_type !== 'observed' || Boolean(c.assumed_fields?.length) || openIssues.has(c.id)),
         notes: notes.join(' '),
