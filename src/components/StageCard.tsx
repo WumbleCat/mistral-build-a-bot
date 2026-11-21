@@ -1,8 +1,11 @@
+import { lazy, Suspense, useState } from 'react';
 import type { AssemblyData, AssemblyStep, Part } from '../types';
 import type { ImageResult } from '../lib/imageGen';
 import type { StepAudioState } from '../hooks/useNarrationEngine';
 import { Illustration } from './Illustration';
 import { AudioControls } from './AudioControls';
+
+const Robot3DView = lazy(() => import('./three/Robot3DView').then((m) => ({ default: m.Robot3DView })));
 
 export interface StageCardProps {
   data: AssemblyData;
@@ -32,6 +35,7 @@ export interface StageCardProps {
 
 export function StageCard(props: StageCardProps) {
   const { data, step, partsById } = props;
+  const [view, setView] = useState<'3d' | 'drawing'>('3d');
   const required = step.component_ids.map((id) => partsById.get(id)).filter((p): p is Part => Boolean(p));
   const installedBefore = step.installed_components.filter((id) => !step.component_ids.includes(id));
 
@@ -45,18 +49,65 @@ export function StageCard(props: StageCardProps) {
           <h1 className="stage-title">{step.title}</h1>
         </div>
 
-        <Illustration
-          data={data}
-          step={step}
-          image={props.image}
-          imageLoading={props.imageLoading}
-          imageAvailable={props.imageAvailable}
-          onGenerateImage={props.onGenerateImage}
-          explodedAvailable={props.explodedAvailable}
-          explodedUrl={props.explodedUrl}
-          explodedOn={props.explodedOn}
-          onToggleExploded={props.onToggleExploded}
-        />
+        <div className="mode-toggle stage-view-toggle" role="tablist" aria-label="Stage view">
+          <button
+            type="button"
+            role="tab"
+            className={view === '3d' ? 'active' : ''}
+            aria-selected={view === '3d'}
+            onClick={() => setView('3d')}
+          >
+            3D
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={view === 'drawing' ? 'active' : ''}
+            aria-selected={view === 'drawing'}
+            onClick={() => setView('drawing')}
+          >
+            Drawing
+          </button>
+        </div>
+
+        {view === '3d' ? (
+          <Suspense fallback={
+            <Illustration
+              data={data}
+              step={step}
+              image={props.image}
+              imageLoading={props.imageLoading}
+              imageAvailable={props.imageAvailable}
+              onGenerateImage={props.onGenerateImage}
+              explodedAvailable={props.explodedAvailable}
+              explodedUrl={props.explodedUrl}
+              explodedOn={props.explodedOn}
+              onToggleExploded={props.onToggleExploded}
+            />
+          }>
+            <Robot3DView
+              parts={data.parts}
+              steps={data.steps}
+              currentStepIndex={step.number - 1}
+              installedIds={step.installed_components}
+              activeIds={step.component_ids}
+              onFallback={() => setView('drawing')}
+            />
+          </Suspense>
+        ) : (
+          <Illustration
+            data={data}
+            step={step}
+            image={props.image}
+            imageLoading={props.imageLoading}
+            imageAvailable={props.imageAvailable}
+            onGenerateImage={props.onGenerateImage}
+            explodedAvailable={props.explodedAvailable}
+            explodedUrl={props.explodedUrl}
+            explodedOn={props.explodedOn}
+            onToggleExploded={props.onToggleExploded}
+          />
+        )}
 
         <p className="stage-instruction">{step.instruction}</p>
 
