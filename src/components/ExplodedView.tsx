@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { IllustrativeBadge, Spinner } from './Shell';
 
 /**
  * Renders an exploded-view SVG produced by the `teardown` skill
@@ -63,15 +64,15 @@ export function ExplodedView({ svgUrl, installedIds, activeIds }: ExplodedViewPr
   }, [loaded, installedIds, activeIds]);
 
   return (
-    <div className="bfv-exploded">
+    <div className="bfv-exploded relative min-h-52 bg-surface">
       {!loaded && !error && (
-        <div className="illustration-loading">
-          <span className="spinner" aria-hidden /> Loading exploded view…
+        <div className="absolute inset-0 z-10 grid place-items-center">
+          <Spinner label="Loading exploded view…" />
         </div>
       )}
-      {error && <p className="illustration-error">{error}</p>}
+      {error && <p className="p-4 text-xs text-flame-600">{error}</p>}
       <div ref={hostRef} className="bfv-exploded-host" />
-      <span className="illustrative-badge">Exploded view — illustrative concept, dimensions not verified</span>
+      <IllustrativeBadge>Exploded view — illustrative concept, dimensions not verified</IllustrativeBadge>
     </div>
   );
 }
