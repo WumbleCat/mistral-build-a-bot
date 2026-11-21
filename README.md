@@ -178,38 +178,46 @@ Smaller models answer faster but miss more parts. One model reply may take up to
 
 ### AI best guess: infer every design choice, list the parts, find where to order
 
-The reviewed BOM only contains what was seen or what you confirmed, so it usually ends
-with open issues ("motor count unknown", "no controller identified"). If you want a
-complete answer anyway, the app also asks the model to guess. This runs automatically
-after every analysis (web page and `robot-bom analyze`; `--no-infer` skips it), and
-**Run again with my edits** or `robot-bom infer` repeats it on your edited review. It
-runs two text-only queries, in order:
+The reviewed BOM only contains what was seen or what you confirmed, so it usually starts
+with open critical issues ("motor count unknown", "power source not identified"). The app
+therefore also asks the model for its best guess. This runs automatically after every
+analysis (web page and `robot-bom analyze`; `--no-infer` skips it), and **Run again with
+my edits** or `robot-bom infer` repeats it on your edited review. In order:
 
 1. **Design inference** – for every open issue the model picks the most likely design
-   choice, then returns one simple component list with quantities and assumed specs →
-   `inferred_components.json`.
-2. **Parts research** – the model follows the parts-research rules in
-   `src/robot_bom/design.py` (`SOURCING_RULES`: understand the product and power budget,
-   prefer breakout modules and dev boards, driver sizing and lithium safety rules) to pick
-   a search term and the best shops for each component → `order_links.json`.
+   choice and infers the critical parts nobody could see (drive motors, motor driver,
+   power source, controller), with quantities and specs → `inferred_components.json`.
+2. **The guess is written into the parts list** – placeholder lines take the guessed name,
+   quantity and specs; observed lines only gain specs they were missing. Each such line
+   lists what was guessed in `assumed_fields` and shows an **AI guess** tag. The
+   deterministic checks are re-run on these values, so the "unknown" criticals close and
+   real mismatches (for example a driver too small for the assumed motor) show up instead.
+3. **Parts research** – the model follows the rules in `src/robot_bom/design.py`
+   (`SOURCING_RULES`: power budget, breakout modules and dev boards, driver sizing,
+   lithium safety) to pick a search term and the best shops per part.
+4. **Shop lookup** – each part is searched on the approved shops (LCSC, DigiKey, RS,
+   SparkFun, Mouser, Amazon.com) with Mistral's web search tool, and every product page
+   found is fetched to read its stock status → `order_links.json`.
 
 ```bash
 uv run robot-bom infer ./output/review.json --out ./output/inferred
 ```
 
-`order_links.json` has, per component, a link to the search results on LCSC, DigiKey UK,
-RS Components UK, SparkFun, Mouser UK and Amazon.com, plus which of them the model
-recommends for that part.
-
 What this is and is not:
 
-- It is the model's assumption, labelled as such in both files and in the page. It is
-  kept apart from the BOM: it never changes a component, closes an issue or makes the BOM
-  ready to purchase.
-- The links are **search** links built by the application from the model's search term.
-  The model has no web access, so it is never asked for product pages, prices, stock or
-  part numbers; any URL it wrote would be invented and is discarded.
-- Check every inferred part against the real robot (voltage, current, mounting) before
+- A guessed line is an assumption. It stays `needs review`, the BOM is never
+  ready to purchase until you confirm the lines, and a warning lists every assumed value.
+  A line you already confirmed or rejected is never overwritten.
+- `products` in `order_links.json` are only URLs the web search returned, on the approved
+  shops; a URL the model writes itself is discarded. A page whose own data says "out of
+  stock" is dropped. `stock` is `in_stock` only when the product page said so when
+  fetched; DigiKey, RS, Mouser and Amazon block automated page checks, so their products
+  are listed with `stock: unknown`. Prices are not read.
+- `links` are search links for every shop, kept as a fallback.
+- The shop lookup makes one billed Mistral web-search conversation per part. Set
+  `ROBOT_BOM_WEB_SEARCH=0` to skip it and keep only the search links. It needs the
+  Mistral API; other providers and mock mode skip it.
+- Check every guessed part against the real robot (voltage, current, mounting) before
   ordering.
 
 ### Detection mode: VLM/LLM only, or with Grounding DINO + SAM 2
