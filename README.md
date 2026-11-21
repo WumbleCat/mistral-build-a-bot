@@ -180,8 +180,10 @@ Smaller models answer faster but miss more parts. One model reply may take up to
 
 The reviewed BOM only contains what was seen or what you confirmed, so it usually ends
 with open issues ("motor count unknown", "no controller identified"). If you want a
-complete answer anyway, the **Infer all design choices** button (or `robot-bom infer`)
-asks the model to guess. It runs two text-only queries, in order:
+complete answer anyway, the app also asks the model to guess. This runs automatically
+after every analysis (web page and `robot-bom analyze`; `--no-infer` skips it), and
+**Run again with my edits** or `robot-bom infer` repeats it on your edited review. It
+runs two text-only queries, in order:
 
 1. **Design inference** – for every open issue the model picks the most likely design
    choice, then returns one simple component list with quantities and assumed specs →

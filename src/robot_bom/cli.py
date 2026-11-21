@@ -76,6 +76,24 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
     print("\nWrote:")
     for path in written.values():
         print(f"  {path}")
+    if args.infer:
+        print("\nInferring the open design choices and shop search links "
+              "(two more model queries; --no-infer skips this)...")
+        text_client = reasoning_client or client
+        try:
+            inferred = infer_and_source(
+                text_client, result.bom, model=getattr(text_client, "_model", model),
+                max_retries=settings.max_retries,
+            )
+        except (VisionResponseError, VisionAPIError) as exc:
+            print(f"warning: the AI best guess could not be produced ({exc}). The outputs above are "
+                  f"unaffected; retry with: robot-bom infer {written['review.json']}", file=sys.stderr)
+        else:
+            design = inferred["inferred_components"]
+            print(f"AI best guess (assumptions, not verified): {len(design['design_choices'])} design choices, "
+                  f"{len(design['components'])} components")
+            for name, document in inferred.items():
+                print(f"  {write_json(Path(args.out) / 'inferred' / f'{name}.json', document)}")
     print(f"\nNext: edit {written['review.json']} then run\n  robot-bom finalize {written['review.json']} --out {Path(args.out) / 'final'}")
     return 0
 
@@ -208,6 +226,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--grounding", action=argparse.BooleanOptionalAction, default=None,
         help="also locate parts with local Grounding DINO + SAM 2; --no-grounding = VLM/LLM only "
              "(default: VLM/LLM only unless ROBOT_BOM_GROUNDING=1)",
+    )
+    p.add_argument(
+        "--infer", action=argparse.BooleanOptionalAction, default=True,
+        help="after the analysis, let the model settle every open issue and build shop search links "
+             "into <out>/inferred (default: on; --no-infer skips the two extra queries)",
     )
     p.set_defaults(func=_cmd_analyze)
 

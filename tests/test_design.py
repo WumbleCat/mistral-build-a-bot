@@ -165,12 +165,31 @@ def test_api_infer_rejects_bad_input_and_needs_a_key_for_live_data(http):
     assert no_key.status_code == 503 and "No vision API key is configured" in no_key.json()["detail"]
 
 
+def test_cli_analyze_infers_automatically_and_survives_a_failed_inference(http, tmp_path, capsys, monkeypatch):
+    photo = tmp_path / "top.png"
+    photo.write_bytes(png_bytes())
+    out = tmp_path / "auto"
+    assert cli.main(["analyze", str(photo), "--mock", "--out", str(out)]) == 0
+    assert "AI best guess (assumptions, not verified): 2 design choices, 4 components" in capsys.readouterr().out
+    assert (out / "inferred" / "order_links.json").is_file() and (out / "inferred" / "inferred_components.json").is_file()
+
+    def broken(*args, **kwargs):
+        raise VisionResponseError("design inference", 3, ["no components"])
+
+    monkeypatch.setattr(cli, "infer_and_source", broken)
+    failed = tmp_path / "failed"
+    assert cli.main(["analyze", str(photo), "--mock", "--out", str(failed)]) == 0  # the BOM is still delivered
+    captured = capsys.readouterr()
+    assert "could not be produced" in captured.err and "robot-bom infer" in captured.err
+    assert (failed / "review.json").is_file() and not (failed / "inferred").exists()
+
+
 def test_cli_infer_writes_both_files(http, tmp_path, capsys):
     photo = tmp_path / "top.png"
     photo.write_bytes(png_bytes())
     out = tmp_path / "out"
-    assert cli.main(["analyze", str(photo), "--mock", "--out", str(out)]) == 0
-    capsys.readouterr()
+    assert cli.main(["analyze", str(photo), "--mock", "--out", str(out), "--no-infer"]) == 0
+    assert "AI best guess" not in capsys.readouterr().out and not (out / "inferred").exists()
 
     assert cli.main(["infer", str(out / "review.json"), "--out", str(out / "inferred")]) == 0
 
