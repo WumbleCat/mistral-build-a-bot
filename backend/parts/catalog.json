@@ -16,7 +16,11 @@
     "wheel",
     "chassis",
     "wiring",
-    "fasteners"
+    "fasteners",
+    "relay",
+    "switch",
+    "misc",
+    "other"
   ],
   "items": [
     {
@@ -29,7 +33,11 @@
         "arduino",
         "uno board",
         "arduino board",
-        "blue arduino"
+        "blue arduino",
+        "mcu",
+        "receiver",
+        "main board",
+        "main controller"
       ],
       "specs": {
         "logic_voltage": 5,
@@ -38,7 +46,7 @@
       },
       "price": 24.88,
       "currency": "GBP",
-      "price_note": "£20.73 exc. VAT / £24.88 inc. VAT",
+      "price_note": "\u00a320.73 exc. VAT / \u00a324.88 inc. VAT",
       "shop": "RS Components UK",
       "sku": "715-4081",
       "url": "https://uk.rs-online.com/web/p/arduino/7154081",
@@ -285,7 +293,9 @@
         "micro servo",
         "9g servo",
         "blue servo",
-        "small servo"
+        "small servo",
+        "steering servo",
+        "steering linkage"
       ],
       "specs": {
         "voltage_min": 4.8,
@@ -873,7 +883,7 @@
     {
       "id": "switch_spst",
       "name": "SPST Slide Switch",
-      "category": "wiring",
+      "category": "switch",
       "aliases": [
         "slide switch",
         "power switch",
@@ -916,7 +926,10 @@
         "standoffs",
         "screw kit",
         "m3 standoff kit",
-        "spacers"
+        "spacers",
+        "axles",
+        "wheel hubs",
+        "mechanical hardware"
       ],
       "specs": {
         "thread": "M3"
@@ -941,7 +954,7 @@
       },
       "price": 23.7,
       "currency": "GBP",
-      "price_note": "£19.75 exc. VAT / £23.70 inc. VAT",
+      "price_note": "\u00a319.75 exc. VAT / \u00a323.70 inc. VAT",
       "shop": "RS Components UK",
       "sku": "769-7409",
       "url": "https://uk.rs-online.com/web/p/arduino/7697409",
@@ -1006,7 +1019,9 @@
         "yellow gear motor",
         "yellow motor",
         "gearmotor",
-        "dc gear motor"
+        "dc gear motor",
+        "drive motor",
+        "drive motors"
       ],
       "specs": {
         "voltage_nominal": 4.5,
@@ -1031,7 +1046,10 @@
         "wheels",
         "rubber wheels",
         "65mm wheel",
-        "tyres"
+        "tyres",
+        "off-road wheel",
+        "rubber tire",
+        "chevron tread wheel"
       ],
       "specs": {
         "diameter_mm": 65,
@@ -1129,7 +1147,12 @@
       "aliases": [
         "battery pack",
         "aa battery holder",
-        "4xaa"
+        "4xaa",
+        "power enclosure",
+        "battery enclosure",
+        "battery box with leads",
+        "black battery case",
+        "battery/power enclosure"
       ],
       "specs": {
         "cells": 4,
@@ -1202,7 +1225,9 @@
       "aliases": [
         "jumper wires",
         "dupont wires",
-        "male to male wires"
+        "male to male wires",
+        "jumper wire harness",
+        "wire harness"
       ],
       "specs": {
         "length_in": 6,
@@ -1311,6 +1336,30 @@
       "url": "https://uk.rs-online.com/web/p/educational-robots/1340413",
       "alternatives": [],
       "verified": true
+    },
+    {
+      "id": "relay_module_1ch",
+      "name": "Single-Channel Relay Module 5V",
+      "category": "relay",
+      "aliases": [
+        "relay module",
+        "single channel relay",
+        "blue relay board",
+        "relay board"
+      ],
+      "specs": {
+        "voltage": 5,
+        "channels": 1,
+        "switches": "on/off only"
+      },
+      "price": 1.5,
+      "currency": "GBP",
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [
+        "driver_tb6612fng"
+      ],
+      "verified": false
     }
   ]
 }

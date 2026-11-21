@@ -86,8 +86,15 @@ class TestEndpoints(unittest.TestCase):
         self.assertEqual(d["recipe_id"], "obstacle_avoider_car")
         self.assertIn("bom_total_gbp", d)
 
-    def test_api_match_rejects_bad_category(self):
-        bad = {"parts": [{"name": "x", "category": "magic", "qty": 1}]}
+    def test_api_match_free_text_category_normalised_to_other(self):
+        # Person 2 format allows any category string; unknown ones normalise to 'other'
+        body = {"parts": [{"name": "mystery block", "category": "magic", "quantity": 1}]}
+        r = self.client.post("/api/match", json=body)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["unmatched"][0]["category"], "other")
+
+    def test_api_match_rejects_bad_quantity_type(self):
+        bad = {"parts": [{"name": "x", "category": "motor", "quantity": "two"}]}
         r = self.client.post("/api/match", json=bad)
         self.assertEqual(r.status_code, 422)
 

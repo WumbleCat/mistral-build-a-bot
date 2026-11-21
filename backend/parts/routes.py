@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
-from shared.schemas import MatchRequest
+from shared.schemas import MatchBody, MatchPayload, VisionPart, normalize_match_payload
 
 from . import agents, match
 
@@ -46,13 +46,16 @@ def get_recipe(recipe_id: str) -> dict:
 
 
 @router.post("/match")
-def post_match(req: MatchRequest, live_offers: bool = Query(False, alias="live")) -> dict:
-    """Deterministic BOM (fast, no LLM). Body: VisionResult (+owned).
+def post_match(payload: MatchPayload, live_offers: bool = Query(False, alias="live")) -> dict:
+    """Deterministic BOM (fast, no LLM).
 
-    With ?live=true each BOM row also gets `live_offers` (LCSC/Mouser live search,
-    cached 1h, rate-limited, never fails — catalogue stays the fallback).
+    Body: EITHER a plain list of VisionPart (Person 2 format) OR
+    {"parts": [...], "robot_guess": ..., "owned": [...]}. Legacy
+    {"components": [...]} is also accepted. With ?live=true each BOM row also
+    gets `live_offers` (LCSC/Mouser live search, cached 1h, rate-limited,
+    never fails — catalogue stays the fallback).
     """
-    result = match.match_components(req.model_dump())
+    result = match.match_components(normalize_match_payload(payload))
     if live_offers:
         from . import live as live_mod
         for row in result["bom"]:
@@ -61,14 +64,14 @@ def post_match(req: MatchRequest, live_offers: bool = Query(False, alias="live")
 
 
 @router.post("/match/smart")
-async def post_match_smart(req: MatchRequest,
+async def post_match_smart(payload: MatchPayload,
                            async_mode: bool = Query(False, alias="async")) -> dict:
     """Multi-agent BOM + warnings + substitutions. Falls back to /api/match on any failure.
 
-    With ?async=true returns the fast deterministic BOM immediately plus a job_id;
-    poll GET /api/jobs/{job_id} for the agent-enriched result.
+    Accepts the same body shapes as /api/match. With ?async=true returns the fast
+    deterministic BOM immediately plus a job_id; poll GET /api/jobs/{job_id}.
     """
-    payload = req.model_dump()
+    payload = normalize_match_payload(payload)
     if async_mode:
         job_id = agents.start_smart_job(payload)
         fast = match.match_components(payload)

@@ -126,6 +126,63 @@
         }
       ],
       "power_notes": "Kit includes a battery pack; the 5V 2A adapter is optional for longer sessions."
+    },
+    {
+      "id": "rover_4wd",
+      "name": "4WD rover",
+      "difficulty": "intermediate",
+      "description": "4-wheel-drive rover: 4WD chassis, 4 TT-style gearmotors (2 pairs), 2 wheel pairs, Arduino Uno, two TB6612FNG drivers (4 channels), two 4xAA packs (one for logic via barrel jack, one for motors), power switch, breadboard and jumpers.",
+      "parts": [
+        {
+          "id": "chassis_4wd",
+          "qty": 1
+        },
+        {
+          "id": "motor_tt_pair",
+          "qty": 2
+        },
+        {
+          "id": "wheel_65mm_pair",
+          "qty": 2
+        },
+        {
+          "id": "arduino_uno",
+          "qty": 1
+        },
+        {
+          "id": "driver_tb6612fng",
+          "qty": 2
+        },
+        {
+          "id": "battery_4xaa_barrel",
+          "qty": 1
+        },
+        {
+          "id": "battery_4xaa_leads",
+          "qty": 1
+        },
+        {
+          "id": "switch_spst",
+          "qty": 1
+        },
+        {
+          "id": "breadboard_400",
+          "qty": 1
+        },
+        {
+          "id": "jumper_mm_20",
+          "qty": 1
+        },
+        {
+          "id": "jumper_ff_20",
+          "qty": 1
+        },
+        {
+          "id": "screws_m3_kit",
+          "qty": 1
+        }
+      ],
+      "power_notes": "One 4xAA pack powers the Arduino via barrel jack; the second feeds the motor drivers (VM). Share ground. Two TB6612FNG boards give 4 channels for 4 motors."
     }
   ]
 }

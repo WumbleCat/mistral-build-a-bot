@@ -228,6 +228,9 @@ def create_bom_auditor() -> Agent:
                 "driver channel count >= number of motors; controller logic voltage vs 3.3V sensors/peripherals "
                 "(3.3V-only sensors like line_sensor must not be wired to a 5V logic pin); "
                 "presence of breadboard, jumper wires and a power source for a buildable kit. "
+                "HARD RULE: if the BOM contains any relay-category part, warn: "
+                "Relays can only switch motors on/off (no speed control or reverse). "
+                "A motor driver like TB6612FNG is recommended."
                 "HARD RULE: if the BOM contains driver_l298n_breakout (or legacy l298n) AND a 6V AA pack "
                 "(battery_4xaa_barrel / battery_4xaa_leads / batt_holder_4aa), you MUST emit exactly this warning: "
                 "\"L298N drops ~2V, so on a 6V AA pack the TT motors get only ~4V and may stall — use driver_tb6612fng (TB6612FNG) instead\". "
@@ -504,6 +507,15 @@ async def smart_match_async(payload: dict) -> dict:
     result["price_quotes"] = []
     result["agent_trace"] = ["deterministic-baseline"]
 
+    # deterministic rule-based warnings (always on, even in mock mode)
+    bom_cats = {r.get("category") for r in result["bom"]}
+    bom_ids = {r.get("part_id") for r in result["bom"]}
+    if "relay" in bom_cats:
+        result["warnings"].append("Relays can only switch motors on/off (no speed control or reverse). A motor driver like TB6612FNG (driver_tb6612fng) is recommended.")
+    if bom_ids & {"driver_l298n_breakout", "l298n"} and bom_ids & {"battery_4xaa_barrel", "battery_4xaa_leads", "batt_holder_4aa"}:
+        result["warnings"].append("L298N drops ~2V, so on a 6V AA pack the TT motors get only ~4V and may stall — use driver_tb6612fng (TB6612FNG) instead")
+
+
     if os.getenv("BFV_MOCK", "0") == "1" or not os.getenv("MISTRAL_API_KEY"):
         result["agent_trace"].append("smart-skipped (BFV_MOCK or no API key) — deterministic only")
         _CACHE[key] = result
@@ -581,7 +593,7 @@ async def smart_match_async(payload: dict) -> dict:
     # assemble auditor warnings
     if isinstance(audit_res, AuditResult):
         contributed = True
-        result["warnings"] = audit_res.warnings
+        result["warnings"] = result["warnings"] + list(audit_res.warnings)
         result["agent_trace"].append(f"bom-auditor: {len(audit_res.warnings)} warnings")
     elif audit_res is not None:
         result["agent_trace"].append(f"bom-auditor failed ({type(audit_res).__name__}) — skipped")

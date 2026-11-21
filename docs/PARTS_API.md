@@ -6,23 +6,44 @@ Interactive Swagger UI: **`http://172.29.1.72:8000/docs`**
 Run it: `cd backend && .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000`
 Env: `.env` with `MISTRAL_API_KEY` (agents) and optional `MOUSER_API_KEY` (live Mouser prices). `BFV_MOCK=1` disables all agent calls.
 
-## Input format — `VisionResult` (shared, `backend/shared/schemas.py`)
+## Input format — Person 2 vision output (shared, `backend/shared/schemas.py`)
 
-The vision agent (Person 2) returns this; `/api/match` and `/api/match/smart` accept it as the POST body:
+`/api/match` and `/api/match/smart` accept EITHER a **plain JSON list of parts** OR
+`{"parts": [...], "robot_guess": ..., "owned": [...]}`:
 
 ```json
-{
-  "parts": [
-    { "name": "yellow motor", "category": "motor", "qty": 2, "confidence": 0.9 }
-  ],
-  "robot_guess": "obstacle-avoiding car",
-  "owned": ["arduino_uno"]
-}
+[
+  {
+    "name": "off-road rubber wheel/tire (black, chevron tread)",
+    "category": "wheel",
+    "quantity": 4,
+    "evidence": "visible",
+    "source_ids": ["W001", "W002", "W003", "W004"],
+    "sku": null,
+    "product_url": null,
+    "review_required": false,
+    "notes": "Four distinct wheels at the four corners."
+  },
+  {
+    "name": "drive motor(s)",
+    "category": "motor",
+    "quantity": null,
+    "evidence": "inferred",
+    "source_ids": ["mechanical.possible_missing_parts"],
+    "sku": null, "product_url": null, "review_required": true,
+    "notes": "Four wheels imply drive, but no motor cans are visible."
+  }
+]
 ```
 
-- `category` is one of: `controller, motor_driver, motor, servo, sensor, power, wheel, chassis, wiring, fasteners`
-- `qty >= 1`, `confidence` 0–1, `robot_guess` optional, `owned` = catalogue IDs the user already has (excluded from the total)
-- Legacy `{"components": [{"name","category","qty"}]}` is still accepted. Invalid category/qty → HTTP 422.
+- `category` is **free text** — normalised to catalogue categories (`frame/chassis`→`chassis`, `battery/power enclosure`→`power`, `relay_module`→`relay`, `steering`→`servo`, `mechanical hardware`→`fasteners`, `tape`→`misc`, …; unknown → `other`). Catalogue categories: the original 10 + `relay, switch, misc, other`.
+- `quantity: null` + `evidence: "inferred"` → the recipe's qty (or 1). `quantity >= 1` otherwise; a wrong type → HTTP 422.
+- `evidence`: `visible` → BOM row `status: "identified"`; `inferred` → `status: "suggested"`. `review_required: true` → `needs_check: true` (+ `notes` passed through). `source_ids` are kept on the row so the frontend can highlight them on the photo.
+- Unit→pack conversion: `units_needed` vs `packs_to_buy` on every row (4 wheels with `pack_size: 2` → 2 packs; `qty` = packs).
+- 4+ wheels detected → prefers the `rover_4wd` recipe; response includes `recipe_confidence` and `closest_recipe`.
+- Parts with no catalogue match (e.g. duct tape, unknown gray block) land in `unmatched` with their notes — never a crash.
+- Legacy shapes still accepted: `{"parts": [{"name","category","qty","confidence"}]}` (strict 10-category Literal) and `{"components": [{"name","category","qty"}]}`.
+- A full real example: `mock/vision_person2_sample.json` (used by `tests/test_vision_person2.py`).
 
 ## Which endpoint when
 
