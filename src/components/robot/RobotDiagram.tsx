@@ -13,14 +13,14 @@ import {
 
 export type PartState = 'ghost' | 'installed' | 'active';
 
-const INK = '#17181a';
-const ACCENT = '#ff5a1f';
+const INK = '#1b1916';
+const ACCENT = '#ef6c0b';
 const COLORS = {
   installedFill: '#dfe2e7',
   installedStroke: '#828a94',
   detail: '#5c636c',
   tyre: '#43484f',
-  activeFill: '#ffd9c2',
+  activeFill: '#ffe1c2',
   activeStroke: ACCENT,
   ghostFill: '#f4f5f7',
   ghostStroke: '#cfd4da',
@@ -326,7 +326,7 @@ export function RobotDiagram({ parts, installedIds, activeIds, stepNumber, total
       </g>
 
       {!overlayOnly && (
-        <text x={24} y={VIEW_BOX.height - 12} fontSize={11.5} fill="#9aa0a6" fontFamily="inherit">
+        <text x={24} y={VIEW_BOX.height - 12} fontSize={11.5} fill="#6f6b62" fontFamily="inherit">
           Schematic illustration — not an engineering drawing. Instructions shown verbatim from upstream data.
         </text>
       )}

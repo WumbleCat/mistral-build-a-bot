@@ -1,4 +1,6 @@
+import { Pause, Play, RefreshCw, RotateCcw, Volume2 } from 'lucide-react';
 import type { AssemblyStep } from '../types';
+import { Spinner } from './Shell';
 import type { StepAudioState } from '../hooks/useNarrationEngine';
 
 export interface AudioControlsProps {
@@ -34,47 +36,50 @@ export function AudioControls({ step, audio, isCurrent, playing, paused, onPlay,
   const ended = isCurrent && !playing && !paused && ready;
 
   return (
-    <div className="audio-controls">
-      <div className="audio-text">
-        <span className="audio-label">Narration</span>
-        <blockquote>“{step.narration}”</blockquote>
+    <div className="space-y-3 rounded-xl border border-line bg-sunken/50 p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-surface text-flame-400">
+          <Volume2 className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="label">Narration</p>
+          <blockquote className="mt-1 text-sm text-body italic">“{step.narration}”</blockquote>
+        </div>
       </div>
-      <div className="audio-buttons">
-        {loading && (
-          <span className="audio-loading">
-            <span className="spinner" aria-hidden /> Generating narration…
-          </span>
-        )}
+      <div className="flex flex-wrap items-center gap-2">
+        {loading && <Spinner label="Generating narration…" />}
         {!loading && ready && !isCurrent && (
-          <button type="button" className="btn btn-primary" onClick={onPlay}>
-            ▶ Play
+          <button type="button" className="btn-primary" onClick={onPlay}>
+            <Play className="size-4" /> Play
           </button>
         )}
         {!loading && isCurrent && playing && !paused && (
-          <button type="button" className="btn btn-primary" onClick={onPause}>
-            ⏸ Pause
+          <button type="button" className="btn-primary" onClick={onPause}>
+            <Pause className="size-4" /> Pause
           </button>
         )}
         {!loading && isCurrent && paused && (
-          <button type="button" className="btn btn-primary" onClick={onResume}>
-            ▶ Resume
+          <button type="button" className="btn-primary" onClick={onResume}>
+            <Play className="size-4" /> Resume
           </button>
         )}
         {!loading && ended && (
-          <button type="button" className="btn btn-primary" onClick={onPlay}>
-            ↻ Replay
+          <button type="button" className="btn-primary" onClick={onPlay}>
+            <RotateCcw className="size-4" /> Replay
           </button>
         )}
         {!loading && (ready || status === 'error') && (
-          <button type="button" className="btn btn-ghost btn-small" onClick={onRegenerate} title="Regenerate the narration audio for this step">
-            ↻ Regenerate
+          <button type="button" className="btn-ghost px-3 py-2 text-xs" onClick={onRegenerate} title="Regenerate the narration audio for this step">
+            <RefreshCw className="size-3.5" /> Regenerate
           </button>
         )}
-      </div>
-      <div className={`audio-status ${status === 'error' ? 'audio-status-error' : ''}`}>
-        {status === 'error'
-          ? `${audio?.error ?? 'Narration could not be generated.'} The written instructions above still apply.`
-          : sourceLabel(audio)}
+        {!loading && (
+          <span className={`ml-auto text-xs ${status === 'error' ? 'text-flame-600' : 'text-muted'}`}>
+            {status === 'error'
+              ? `${audio?.error ?? 'Narration could not be generated.'} The written instructions above still apply.`
+              : sourceLabel(audio)}
+          </span>
+        )}
       </div>
     </div>
   );

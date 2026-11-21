@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Layers, RefreshCw, Sparkles } from 'lucide-react';
+import { IllustrativeBadge, Spinner } from './Shell';
 import type { AssemblyData, AssemblyStep } from '../types';
 import type { ImageResult } from '../lib/imageGen';
 import { RobotDiagram } from './robot/RobotDiagram';
@@ -40,71 +42,77 @@ export function Illustration({ data, step, image, imageLoading, imageAvailable, 
     ? [...step.component_ids, extraHighlight]
     : step.component_ids;
 
+  const small = 'btn-ghost px-3 py-1.5 text-xs';
+
   return (
-    <div className="illustration-frame">
+    <div className="relative rounded-2xl border border-line bg-canvas p-2.5">
       {imageLoading && (
-        <div className="illustration-loading">
-          <span className="spinner" aria-hidden /> Generating illustration…
+        <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-canvas/80 backdrop-blur-[2px]">
+          <Spinner label="Generating illustration…" />
         </div>
       )}
-      {showExploded && canExplode ? (
-        <ExplodedView svgUrl={explodedUrl as string} installedIds={step.installed_components} activeIds={activeIds} />
-      ) : showImage ? (
-        <div className="illustration-with-overlay">
-          <img src={imgSrc} alt={`AI illustration for step ${step.number}: ${step.title}`} draggable={false} />
-          <div className="illustration-overlay">
-            <RobotDiagram
-              parts={data.parts}
-              installedIds={step.installed_components}
-              activeIds={activeIds}
-              stepNumber={step.number}
-              totalSteps={data.steps.length}
-              overlayOnly
-            />
+      <div className="overflow-hidden rounded-xl bg-surface">
+        {showExploded && canExplode ? (
+          <ExplodedView svgUrl={explodedUrl as string} installedIds={step.installed_components} activeIds={activeIds} />
+        ) : showImage ? (
+          <div className="relative">
+            <img className="block h-auto w-full" src={imgSrc} alt={`AI illustration for step ${step.number}: ${step.title}`} draggable={false} />
+            <div className="illustration-overlay pointer-events-none absolute inset-0">
+              <RobotDiagram
+                parts={data.parts}
+                installedIds={step.installed_components}
+                activeIds={activeIds}
+                stepNumber={step.number}
+                totalSteps={data.steps.length}
+                overlayOnly
+              />
+            </div>
           </div>
-        </div>
-      ) : (
-        <RobotDiagram
-          parts={data.parts}
-          installedIds={step.installed_components}
-          activeIds={activeIds}
-          stepNumber={step.number}
-          totalSteps={data.steps.length}
-        />
-      )}
-      {image?.error && <p className="illustration-error">{image.error} Showing SVG diagram.</p>}
-      <div className="illustration-toolbar">
+        ) : (
+          <RobotDiagram
+            parts={data.parts}
+            installedIds={step.installed_components}
+            activeIds={activeIds}
+            stepNumber={step.number}
+            totalSteps={data.steps.length}
+          />
+        )}
+      </div>
+      {image?.error && <p className="mx-1 mt-2 text-xs text-flame-600">{image.error} Showing SVG diagram.</p>}
+      <div className="mt-2.5 flex flex-wrap items-center gap-2 px-0.5">
         {canExplode && (
           <button
             type="button"
-            className={`btn btn-small ${showExploded ? 'btn-primary' : 'btn-ghost'}`}
+            className={showExploded ? 'btn-primary px-3 py-1.5 text-xs' : small}
             onClick={onToggleExploded}
             aria-pressed={showExploded}
             title={showExploded ? 'Turn off exploded view' : 'Turn on exploded view'}
           >
-            {showExploded ? '💥 Exploded view: ON' : '💥 Exploded view: OFF'}
+            <Layers className="size-3.5" />
+            Exploded view: {showExploded ? 'on' : 'off'}
           </button>
         )}
         {!showExploded && imageAvailable && onGenerateImage && (
-          <button type="button" className="btn btn-ghost btn-small" onClick={onGenerateImage} disabled={imageLoading}>
-            {imgSrc ? '↻ Regenerate illustration' : '✨ Generate AI illustration'}
+          <button type="button" className={small} onClick={onGenerateImage} disabled={imageLoading}>
+            {imgSrc ? <RefreshCw className="size-3.5" /> : <Sparkles className="size-3.5" />}
+            {imgSrc ? 'Regenerate illustration' : 'Generate AI illustration'}
           </button>
         )}
         {!showExploded && showImage && (
-          <button type="button" className="btn btn-ghost btn-small" onClick={() => setForceDiagram(true)}>
+          <button type="button" className={small} onClick={() => setForceDiagram(true)}>
             Show SVG diagram
           </button>
         )}
         {!showExploded && !showImage && imgSrc && (
-          <button type="button" className="btn btn-ghost btn-small" onClick={() => setForceDiagram(false)}>
+          <button type="button" className={small} onClick={() => setForceDiagram(false)}>
             Show AI illustration
           </button>
         )}
-        <span className="illustration-mode">
+        <span className="ml-auto text-[11px] text-muted">
           {showExploded ? 'Teardown exploded view (BOM labels, current step highlighted)' : showImage ? 'AI illustration + SVG callouts' : 'SVG schematic diagram'}
         </span>
       </div>
-      {data.illustrative && !showImage && !showExploded && <span className="illustrative-badge">Illustrative — not verified construction guidance</span>}
+      {data.illustrative && !showImage && !showExploded && <IllustrativeBadge>Illustrative — not verified construction guidance</IllustrativeBadge>}
     </div>
   );
 }
