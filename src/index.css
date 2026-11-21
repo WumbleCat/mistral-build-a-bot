@@ -1,0 +1,140 @@
+/* Self-hosted so the demo does not depend on a font CDN being reachable. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+  --ring: var(--color-flame-400);
+
+  --color-ink-950: #08090c;
+  --color-ink-900: #0d0f14;
+  --color-ink-850: #12151c;
+  --color-ink-800: #181c25;
+  --color-ink-700: #242a36;
+  --color-ink-600: #39414f;
+  --color-ink-400: #7c8697;
+  --color-ink-300: #a6afbe;
+  --color-ink-100: #e7ebf2;
+
+  --color-flame-300: #ffb866;
+  --color-flame-400: #ff9d3d;
+  --color-flame-500: #f97316;
+  --color-flame-600: #e4600a;
+
+  --color-mint-400: #45d9a4;
+  --color-sky-ish: #58a6ff;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-ink-950 text-ink-100 font-sans antialiased;
+    background-image:
+      radial-gradient(60rem 40rem at 15% -10%, rgba(249, 115, 22, 0.14), transparent 60%),
+      radial-gradient(50rem 35rem at 95% 0%, rgba(88, 166, 255, 0.1), transparent 55%);
+    background-attachment: fixed;
+    font-feature-settings: 'cv05' 1, 'ss03' 1;
+  }
+  * {
+    scrollbar-color: var(--color-ink-700) transparent;
+    scrollbar-width: thin;
+  }
+
+  /* Headings read better when the browser evens out the line lengths. */
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--color-flame-500);
+    color: var(--color-ink-950);
+  }
+
+  /* One visible focus style everywhere, instead of the browser default hairline. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Respect the system setting rather than animating regardless. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-ink-700/70 bg-ink-900/70 backdrop-blur-sm;
+  }
+  /* Opt-in hover for cards that are themselves links. */
+  .card-interactive {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:border-ink-600
+           hover:shadow-xl hover:shadow-black/30;
+  }
+
+  /* Tailwind v4 cannot @apply a class defined in the same layer, so the shared
+     button rules live in one selector list instead of a `.btn` base class. */
+  .btn,
+  .btn-primary,
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
+           transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-flame-500 text-ink-950 shadow-lg shadow-flame-600/25
+           hover:bg-flame-400 hover:shadow-flame-500/30 active:translate-y-px active:shadow-md;
+  }
+  .btn-ghost {
+    @apply border border-ink-700 bg-ink-850/60 text-ink-100
+           hover:border-ink-600 hover:bg-ink-800 active:translate-y-px;
+  }
+
+  /* Translucent orange reads as muddy brown; grey out instead. */
+  .btn-primary:disabled {
+    @apply bg-ink-800 text-ink-400 opacity-100 shadow-none;
+  }
+
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-400;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-ink-700 bg-ink-850 px-2.5 py-1
+           text-xs font-medium text-ink-300;
+  }
+  .input {
+    @apply w-full rounded-xl border border-ink-700 bg-ink-900 px-3.5 py-2.5 text-sm text-ink-100
+           transition placeholder:text-ink-400 hover:border-ink-600
+           focus:border-flame-500 focus:ring-2 focus:ring-flame-500/20 focus:outline-none;
+  }
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+.skeleton {
+  @apply relative overflow-hidden bg-ink-800;
+}
+.skeleton::after {
+  content: '';
+  @apply absolute inset-0 -translate-x-full;
+  background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: shimmer 1.6s infinite;
+}
