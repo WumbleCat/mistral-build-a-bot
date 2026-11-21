@@ -170,3 +170,38 @@ get_part("driver_tb6612fng")          # -> Part or None
 parts_by_category("relay")            # -> [Part, ...]
 find_part("yellow motor")             # -> [(score, Part), ...] fuzzy, best first
 ```
+
+## price_lookup — one function, no server
+
+`backend/parts/price_lookup.py` is a plain import (no FastAPI) for calling from Python directly. Input = Person 2's component JSON list; output = one item per component, same order, original fields kept, plus priced shop matches:
+
+```python
+import sys; sys.path.insert(0, "backend")
+from parts.price_lookup import lookup_components
+
+import json
+components = json.load(open("mock/vision_person2_sample.json"))
+result = lookup_components(components)
+# result[i] keeps every original field (name, category, quantity, evidence,
+# source_ids, sku, product_url, review_required, notes) and adds:
+#   category_normalised  str            free-text category -> catalogue category
+#   matched_part_id      str | None     catalogue part id, None if no match
+#   matches              list[dict]     {shop, product, part_number, price_gbp, stock,
+#                                        url, source: "catalogue"|"live",
+#                                        match_quality: "exact"|"similar"}
+#                                        catalogue exact first, then live exact
+#                                        (cheapest first), then similar; max 6
+#   best_match           dict | None    the verified catalogue product when matched,
+#                                        else cheapest live exact match
+#   line_total_gbp       float          quantity (null -> 1) x price, with catalogue
+#                                        pack_size -> packs (4 wheels -> 2 pairs)
+# Components with no match get matches: [] and best_match: None — never crashes.
+```
+
+Command line (from the repo root):
+
+```bash
+backend/.venv/bin/python -m backend.parts.price_lookup mock/vision_person2_sample.json mock/price_lookup_example_output.json
+```
+
+Example output is committed at `mock/price_lookup_example_output.json` (generated from `mock/vision_person2_sample.json`, real Mouser + LCSC live offers included). Live search uses the cached `live.py` Mouser/LCSC clients (1 h cache, 30 Mouser calls/min, needs `MOUSER_API_KEY` in `.env` for Mouser; LCSC is free). If a live API fails, that shop just contributes no offers.

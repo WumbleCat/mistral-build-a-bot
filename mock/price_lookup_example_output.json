@@ -1,0 +1,1272 @@
+[
+  {
+    "name": "off-road rubber wheel/tire (black, chevron tread)",
+    "category": "wheel",
+    "quantity": 4,
+    "evidence": "visible",
+    "source_ids": [
+      "W001",
+      "W002",
+      "W003",
+      "W004",
+      "D001",
+      "D002",
+      "D003"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": false,
+    "notes": "Four distinct wheels at the four corners; no further details visible.",
+    "category_normalised": "wheel",
+    "matched_part_id": "wheel_65mm_pair",
+    "matches": [
+      {
+        "shop": "SparkFun",
+        "product": "Wheel - 65mm (Rubber Tire, Pair)",
+        "part_number": "ROB-13259",
+        "price_gbp": 3.38,
+        "stock": null,
+        "url": "https://www.sparkfun.com/wheel-65mm-rubber-tire-pair.html",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Adhesive Tapes Safety-Walk Slip-Resistant General Purpose Tapes & Treads 610, Black, 12 in x 6 ft, Sample Roll",
+        "part_number": "517-7010301949",
+        "price_gbp": 0.06,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/3M-Electronic-Specialty/7010301949?qs=HBWAp0VN4RhYKjbRrpblPg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Test Accessories - Other 12\" CIRC. RUBBER COVERED PLASTIC WHEEL",
+        "part_number": "186-007571",
+        "price_gbp": 31.52,
+        "stock": 9,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Trumeter/007571?qs=Imq1NPwxi75TfK5o1HBGLA%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "PPE Safety Equipment / Lockout Tagout Stamark All Weather Tape A385AW, Black, 4 in x 70 yd",
+        "part_number": "517-7010390618",
+        "price_gbp": 627.62,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/3M-Electronic-Specialty/7010390618?qs=YwPsRIUVAOdcPOwJ5GuY4A%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "PPE Safety Equipment / Lockout Tagout 3M Stamark Tape Only Legend SMS-L380IES-ON, 8 ft, 2 per pkg",
+        "part_number": "517-7010390119",
+        "price_gbp": 1092.68,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/3M-Electronic-Specialty/7010390119?qs=YwPsRIUVAOcwKoQuOANrYw%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "SparkFun",
+      "product": "Wheel - 65mm (Rubber Tire, Pair)",
+      "part_number": "ROB-13259",
+      "price_gbp": 3.38,
+      "stock": null,
+      "url": "https://www.sparkfun.com/wheel-65mm-rubber-tire-pair.html",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 6.76
+  },
+  {
+    "name": "green tubular frame / roll-cage chassis",
+    "category": "frame/chassis",
+    "quantity": 1,
+    "evidence": "visible",
+    "source_ids": [
+      "C001",
+      "D008"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": false,
+    "notes": "Rigid neon-green open tubular frame holding electronics.",
+    "category_normalised": "chassis",
+    "matched_part_id": "chassis_shadow",
+    "matches": [
+      {
+        "shop": "SparkFun",
+        "product": "Shadow Chassis (2WD, snap-together, includes nub caster)",
+        "part_number": "ROB-13301",
+        "price_gbp": 11.21,
+        "stock": null,
+        "url": "https://www.sparkfun.com/products/13301",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Power Supplies - Chassis Mount AC-DC, 40W, 3\"X1.5\", GREEN POWER",
+        "part_number": "209-ECF40US12",
+        "price_gbp": 22.58,
+        "stock": 47,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/XP-Power/ECF40US12?qs=w%2Fv1CP2dgqrtE2dOmn9V8w%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Power Supplies - Chassis Mount AC-DC, 40W, 3\"X1.5\", GREEN POWER",
+        "part_number": "209-ECF40US36",
+        "price_gbp": 22.58,
+        "stock": 4,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/XP-Power/ECF40US36?qs=w%2Fv1CP2dgqpkhHuTewLNLA%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Power Supplies - Chassis Mount AC/DC, 60W, 3\"X2\", GREEN POWER",
+        "part_number": "209-ECS60US15",
+        "price_gbp": 32.38,
+        "stock": 42,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/XP-Power/ECS60US15?qs=w%2Fv1CP2dgqotdvwSNAPzsw%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Power Supplies - Chassis Mount AC/DC, 60W, 3\"X2\", GREEN POWER",
+        "part_number": "209-ECS60US24",
+        "price_gbp": 32.38,
+        "stock": 2,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/XP-Power/ECS60US24?qs=w%2Fv1CP2dgqrz4FtCa2Ev7w%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Power Supplies - Chassis Mount AC/DC, 60W, 3\"X2\", GREEN POWER",
+        "part_number": "209-ECS60US05",
+        "price_gbp": 32.38,
+        "stock": 1,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/XP-Power/ECS60US05?qs=w%2Fv1CP2dgqqG%252BJhKspT3Dg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "SparkFun",
+      "product": "Shadow Chassis (2WD, snap-together, includes nub caster)",
+      "part_number": "ROB-13301",
+      "price_gbp": 11.21,
+      "stock": null,
+      "url": "https://www.sparkfun.com/products/13301",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 11.21
+  },
+  {
+    "name": "black rectangular battery/power enclosure",
+    "category": "battery/power enclosure",
+    "quantity": 1,
+    "evidence": "visible",
+    "source_ids": [
+      "P001",
+      "D004",
+      "D005"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "Sealed black case across the top with thick red wiring.",
+    "category_normalised": "power",
+    "matched_part_id": "battery_4xaa_leads",
+    "matches": [
+      {
+        "shop": "SparkFun",
+        "product": "Battery Holder - 4xAA Square (tinned leads)",
+        "part_number": "PRT-00552",
+        "price_gbp": 1.69,
+        "stock": null,
+        "url": "https://www.sparkfun.com/battery-holder-4xaa-square.html",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Adafruit Accessories 8xAA Battery Holder",
+        "part_number": "485-449",
+        "price_gbp": 1.65,
+        "stock": 1,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Adafruit/449?qs=GURawfaeGuCnMVoZ9oMjFg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Adafruit Accessories 8xAA Battery Holder w/Plug & Switch",
+        "part_number": "485-875",
+        "price_gbp": 3.31,
+        "stock": 161,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Adafruit/875?qs=GURawfaeGuAxiW5gLfeh2A%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Enclosures for Single Board Computing FR ABS w/Batt. Door 1.33x3.3x6.7\" Black",
+        "part_number": "546-1599EBKBAT",
+        "price_gbp": 8.03,
+        "stock": 223,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Hammond-Manufacturing/1599EBKBAT?qs=ZbvfEmtlVQtKNIUg2HReYg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Battery Enclosures 3.9 x 2.2 x .94 AAA BLACK",
+        "part_number": "635-H-45AAA-B",
+        "price_gbp": 8.55,
+        "stock": 60,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/SERPAC/H45AAABK?qs=ulEaXIWI0c%2FFVN0sg27xdg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Battery Enclosures BATTERY MOUNTING CASE  M",
+        "part_number": "651-1134645",
+        "price_gbp": 184.8,
+        "stock": 41,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Phoenix-Contact/1134645?qs=DPoM0jnrROXQs64BeFAV2A%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "SparkFun",
+      "product": "Battery Holder - 4xAA Square (tinned leads)",
+      "part_number": "PRT-00552",
+      "price_gbp": 1.69,
+      "stock": null,
+      "url": "https://www.sparkfun.com/battery-holder-4xaa-square.html",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 1.69
+  },
+  {
+    "name": "solderless breadboard",
+    "category": "breadboard",
+    "quantity": 1,
+    "evidence": "visible",
+    "source_ids": [
+      "B001"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": false,
+    "notes": "White breadboard in the center with red/yellow wiring.",
+    "category_normalised": "wiring",
+    "matched_part_id": "breadboard_400",
+    "matches": [
+      {
+        "shop": "SparkFun",
+        "product": "Breadboard - Self-Adhesive (White, 400 points)",
+        "part_number": "PRT-12002",
+        "price_gbp": 4.69,
+        "stock": null,
+        "url": "https://www.sparkfun.com/products/12002",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "PCBs & Breadboards BreadBrd-170PT YLW 1.75x1.40in",
+        "part_number": "854-BB170-Y",
+        "price_gbp": 2.25,
+        "stock": 2,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/BusBoard-Prototype-Systems/BB170-Y?qs=NGErKr1RxMAFG4KXbtndQQ%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "PCBs & Breadboards 830 pts solder-in breadboard (Exact Solderless Match) HASL",
+        "part_number": "910-SBB830-HASL",
+        "price_gbp": 7.66,
+        "stock": 52,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Chip-Quik/SBB830-HASL?qs=eG9znyypUbvVnPAXag5Ilw%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "PCBs & Breadboards Omni-board Protoboard. FR4 material 4.0\" x 4.0\" 0.062\" thick . Includes 5x34 solderless breadboard. I",
+        "part_number": "589-OB1-LF",
+        "price_gbp": 10.33,
+        "stock": 2,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Twin-Industries/OB1-LF?qs=HXFqYaX1Q2zzVkjWjmLWrg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "PCBs & Breadboards 6-14P DIP 610TP 2BP",
+        "part_number": "517-922306",
+        "price_gbp": 48.15,
+        "stock": 26,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/3M-Electronic-Specialty/922306?qs=fltJrqpyVmUKsVgoEFm6xQ%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "PCBs & Breadboards 27-14P DIP 2712TP",
+        "part_number": "517-922327",
+        "price_gbp": 138.52,
+        "stock": 11,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/3M-Electronic-Specialty/922327?qs=fltJrqpyVmVGASbWbgZ1Yg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "SparkFun",
+      "product": "Breadboard - Self-Adhesive (White, 400 points)",
+      "part_number": "PRT-12002",
+      "price_gbp": 4.69,
+      "stock": null,
+      "url": "https://www.sparkfun.com/products/12002",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 4.69
+  },
+  {
+    "name": "blue PCB module (likely single-channel relay)",
+    "category": "relay_module",
+    "quantity": 2,
+    "evidence": "visible",
+    "source_ids": [
+      "M001",
+      "M002",
+      "D009",
+      "D010",
+      "D011"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "Two blue boards; upper has a lit red LED.",
+    "category_normalised": "relay",
+    "matched_part_id": "relay_module_1ch",
+    "matches": [
+      {
+        "shop": "LCSC",
+        "product": "Single-Channel Relay Module 5V",
+        "part_number": "relay_module_1ch",
+        "price_gbp": 1.5,
+        "stock": null,
+        "url": "TODO",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": false
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Relay Sockets & Fixings Socket for LY",
+        "part_number": "653-PTP-1FORLY",
+        "price_gbp": 0.83,
+        "stock": 97,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Omron-Automation-and-Safety/PTP-1-FOR-LY?qs=WOBxwZpV8jVBl5ysjyCYFQ%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Plug-in Relays GP RELAY",
+        "part_number": "653-LY4-DC6",
+        "price_gbp": 12.58,
+        "stock": 11,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Omron-Automation-and-Safety/LY4-DC6?qs=tAo%2F1xIq%252BgujuX569BjIxQ%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Plug-in Relays SNGL CONTACT RELAY STD BRACKET MOUNTING",
+        "part_number": "653-LY4-AC12",
+        "price_gbp": 16.36,
+        "stock": 4,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Omron-Automation-and-Safety/LY4-AC12?qs=tAo%2F1xIq%252BgtLkMOCwfbC%252BA%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Plug-in Relays GP RELAY",
+        "part_number": "653-LY4-AC6",
+        "price_gbp": 8.55,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Omron-Automation-and-Safety/LY4-AC6?qs=tAo%2F1xIq%252Bgsc%252BA3Rvia4Sg%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Relay Sockets & Fixings",
+        "part_number": "653-PTP-12FORLY",
+        "price_gbp": 6.73,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Omron-Automation-and-Safety/PTP-12FORLY?qs=icabnvfcbsEGki5Xrb1GUw%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      }
+    ],
+    "best_match": {
+      "shop": "LCSC",
+      "product": "Single-Channel Relay Module 5V",
+      "part_number": "relay_module_1ch",
+      "price_gbp": 1.5,
+      "stock": null,
+      "url": "TODO",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": false
+    },
+    "line_total_gbp": 3.0
+  },
+  {
+    "name": "gray rectangular block (function unknown)",
+    "category": "other",
+    "quantity": 1,
+    "evidence": "visible",
+    "source_ids": [
+      "O001"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "Metal-looking block directly beneath the breadboard.",
+    "category_normalised": "other",
+    "matched_part_id": null,
+    "matches": [
+      {
+        "shop": "Mouser UK",
+        "product": "Cable Glands, Strain Reliefs & Cord Grips LTCG 3/8 NPT GRAY 4-2.3MM N/N",
+        "part_number": "836-M3229GM",
+        "price_gbp": 0.61,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Heyco/M3229GM?qs=GbopIgK3%2Fwtv4czQcyKzXg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Cable Glands, Strain Reliefs & Cord Grips LTCG 3/8 NPT GRAY 2-1.7MM N/N",
+        "part_number": "836-M3229GH",
+        "price_gbp": 0.61,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Heyco/M3229GH?qs=GbopIgK3%2FwuGjXJ2cGMVgA%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Cable Glands, Strain Reliefs & Cord Grips LTCG 3/8 NPT GRAY 6-1.4MM N/N",
+        "part_number": "836-M3229GAZ",
+        "price_gbp": 0.65,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Heyco/M3229GAZ?qs=GbopIgK3%2FwvjdsNS4G5rLA%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Cable Glands, Strain Reliefs & Cord Grips LTCG 3/4 NPT GRAY 3-4.6MM N/N",
+        "part_number": "836-M3235GBD",
+        "price_gbp": 1.36,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Heyco/M3235GBD?qs=5cwIErt2AwT4alLLy%252Be6vg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Conduit Fittings & Accessories HFC 3/4 GRAY-NO NUT",
+        "part_number": "836-8346",
+        "price_gbp": 1.84,
+        "stock": 600,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Heyco/8346?qs=awoxdyd%252BfsBG%2FBAhtAoR%252BA%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "Mouser UK",
+      "product": "Cable Glands, Strain Reliefs & Cord Grips LTCG 3/8 NPT GRAY 4-2.3MM N/N",
+      "part_number": "836-M3229GM",
+      "price_gbp": 0.61,
+      "stock": null,
+      "url": "https://www.mouser.co.uk/en/ProductDetail/Heyco/M3229GM?qs=GbopIgK3%2Fwtv4czQcyKzXg%3D%3D",
+      "source": "live",
+      "match_quality": "exact"
+    },
+    "line_total_gbp": 0.61
+  },
+  {
+    "name": "multicolored jumper wire harness",
+    "category": "wiring",
+    "quantity": 1,
+    "evidence": "visible",
+    "source_ids": [
+      "WIR001"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": false,
+    "notes": "Grouped harness routed across breadboard and modules.",
+    "category_normalised": "wiring",
+    "matched_part_id": "jumper_mm_20",
+    "matches": [
+      {
+        "shop": "SparkFun",
+        "product": "Jumper Wires - Connected 6\" (M/M, 20 pack)",
+        "part_number": "PRT-12795",
+        "price_gbp": 2.21,
+        "stock": null,
+        "url": "https://www.sparkfun.com/jumper-wires-connected-6-m-m-20-pack.html",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "SparkFun Accessories This is a simple three wire cable. Great for jumping from board to board or just about anything els",
+        "part_number": "474-PRT-09915",
+        "price_gbp": 1.09,
+        "stock": 36,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/SparkFun/PRT-09915?qs=WyAARYrbSnY2hwR4tocnvg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Jumper Wires MALE-FEMALE, CABLES, 40, PIECES, set, kit",
+        "part_number": "392-100865",
+        "price_gbp": 2.1,
+        "stock": 851,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Soldered/555035?qs=bDnubaabCY%252BYK9Lg7WeZsg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "SparkFun Accessories This is a SparkFun exclusive! These are 12\" long jumper wires terminated as male to female. Use the",
+        "part_number": "474-PRT-09385",
+        "price_gbp": 2.78,
+        "stock": 5,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/SparkFun/PRT-09385?qs=WyAARYrbSnYVbw2vjTPo9w%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Seeed Studio Accessories 1 pin dual-female jumper wire 100mm 50pcs pack",
+        "part_number": "713-110990032",
+        "price_gbp": 2.8,
+        "stock": 27,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Seeed-Studio/110990032?qs=SElPoaY2y5Lk69xCCPUeQA%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "SparkFun Accessories This is a time saving kit of jumper wires - cut  stripped  and pre-bent for your prototyping pleasu",
+        "part_number": "474-PRT-00124",
+        "price_gbp": 5.49,
+        "stock": 123,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/SparkFun/PRT-00124?qs=WyAARYrbSnY84JPzCgPe8g%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "SparkFun",
+      "product": "Jumper Wires - Connected 6\" (M/M, 20 pack)",
+      "part_number": "PRT-12795",
+      "price_gbp": 2.21,
+      "stock": null,
+      "url": "https://www.sparkfun.com/jumper-wires-connected-6-m-m-20-pack.html",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 2.21
+  },
+  {
+    "name": "silver duct tape",
+    "category": "tape",
+    "quantity": 1,
+    "evidence": "visible",
+    "source_ids": [
+      "T001"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": false,
+    "notes": "Wrapped on the right/front frame section.",
+    "category_normalised": "misc",
+    "matched_part_id": null,
+    "matches": [
+      {
+        "shop": "LCSC",
+        "product": "P2835P1UVS3G12 405nm",
+        "part_number": "C22466158",
+        "price_gbp": 0.01,
+        "stock": 6239,
+        "url": "https://www.lcsc.com/product-detail/C22466158.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "P2835P1UVF7G12 395NM 0\u2103~+40\u2103 120mW 120\u00b0 130mA 2kV 395nm 4V SMD2835-2P Ultraviolet LEDs (UVLED) ROHS",
+        "part_number": "C2915616",
+        "price_gbp": 0.02,
+        "stock": 14623,
+        "url": "https://www.lcsc.com/product-detail/C2915616.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "P0603P1B46G12 -40\u2103~+85\u2103 120\u00b0 2.8V~3.2V 20mA 300mcd 466nm~472nm Blue Discrete Diode Top-mount 0603 LED Indication - Discr",
+        "part_number": "C5123547",
+        "price_gbp": 0.02,
+        "stock": 4417,
+        "url": "https://www.lcsc.com/product-detail/C5123547.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "G6K-2F-Y DC12 -40\u2103~+85\u2103 1.315k\u03a9 1.3ms 1.4ms 100mW 12V 300mA@125VAC\u30011A@30VDC 60V@DC\u3001125V@AC Silver+gold-plated alloy Two ",
+        "part_number": "C397194",
+        "price_gbp": 0.71,
+        "stock": 39625,
+        "url": "https://www.lcsc.com/product-detail/C397194.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "G6K-2F-Y-5V -40\u2103~+70\u2103 100mW 100m\u03a9 1A 237\u03a9 300mA@125VAC\u30011A@30VDC 3ms 3ms 5V 60V@DC\u3001125V@AC Silver+gold alloy Two groups o",
+        "part_number": "C2982926",
+        "price_gbp": 0.85,
+        "stock": 18353,
+        "url": "https://www.lcsc.com/product-detail/C2982926.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Adhesive Tapes Kapton Tape 30mm",
+        "part_number": "392-100378",
+        "price_gbp": 3.58,
+        "stock": 164,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Soldered/555023?qs=bDnubaabCY%252BHa9xbsF97MQ%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "LCSC",
+      "product": "P2835P1UVS3G12 405nm",
+      "part_number": "C22466158",
+      "price_gbp": 0.01,
+      "stock": 6239,
+      "url": "https://www.lcsc.com/product-detail/C22466158.html",
+      "source": "live",
+      "match_quality": "exact"
+    },
+    "line_total_gbp": 0.01
+  },
+  {
+    "name": "drive motor(s)",
+    "category": "motor",
+    "quantity": null,
+    "evidence": "inferred",
+    "source_ids": [
+      "mechanical.possible_missing_parts"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "Four wheels imply drive, but no motor cans or gearboxes are clearly visible.",
+    "category_normalised": "motor",
+    "matched_part_id": "motor_tt_pair",
+    "matches": [
+      {
+        "shop": "SparkFun",
+        "product": "Hobby Gearmotor - 140 RPM (Pair, DAGU TT-style)",
+        "part_number": "ROB-13302",
+        "price_gbp": 5.62,
+        "stock": null,
+        "url": "https://www.sparkfun.com/hobby-gearmotor-140-rpm-pair.html",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "LCSC",
+        "product": "TMB12A05",
+        "part_number": "C96093",
+        "price_gbp": 0.14,
+        "stock": 143230,
+        "url": "https://www.lcsc.com/product-detail/C96093.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "TMB12A03 -20\u2103~+70\u2103 1.5V~4V 12mm 2.3kHz 30mA 3V 85dB 9.8mm Active Buzzer (Built-in Driving Circuit) Electromagnetic \u63d2\u4ef6,D=",
+        "part_number": "C96222",
+        "price_gbp": 0.15,
+        "stock": 121598,
+        "url": "https://www.lcsc.com/product-detail/C96222.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "DRV8837DSGR -40\u2103~+85\u2103 1.8V~7V 1.9A 120nA 280m\u03a9 Yes WSON-8-EP(2x2) Brushed DC Motor Drivers ROHS",
+        "part_number": "C39159",
+        "price_gbp": 0.16,
+        "stock": 124010,
+        "url": "https://www.lcsc.com/product-detail/C39159.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "MLT-8530 -20\u2103~+70\u2103 2.5V~4.5V 2.7kHz 3.3mm 3.6V 8.5mm 8.5mm 80dB 95mA Electromagnetic Passive (Externally Driven) SMD SMD",
+        "part_number": "C94599",
+        "price_gbp": 0.16,
+        "stock": 110461,
+        "url": "https://www.lcsc.com/product-detail/C94599.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "HNB09A03 -20\u2103~+70\u2103 1.5V~4.5V 30mA 3kHz 5.5mm 85dB 9mm Active Buzzer (Built-in Driving Circuit) Electromagnetic \u63d2\u4ef6,D=9mm ",
+        "part_number": "C96102",
+        "price_gbp": 0.18,
+        "stock": 121855,
+        "url": "https://www.lcsc.com/product-detail/C96102.html",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "SparkFun",
+      "product": "Hobby Gearmotor - 140 RPM (Pair, DAGU TT-style)",
+      "part_number": "ROB-13302",
+      "price_gbp": 5.62,
+      "stock": null,
+      "url": "https://www.sparkfun.com/hobby-gearmotor-140-rpm-pair.html",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 5.62
+  },
+  {
+    "name": "steering servo / steering linkage",
+    "category": "steering",
+    "quantity": null,
+    "evidence": "inferred",
+    "source_ids": [
+      "mechanical.possible_missing_parts"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "No servo horn, tie rods, or steering knuckles are clearly visible.",
+    "category_normalised": "servo",
+    "matched_part_id": "servo_sg90",
+    "matches": [
+      {
+        "shop": "RS Components UK",
+        "product": "Mini 180 Degree Resin Gear Servo SG90 (Kitronik 2565)",
+        "part_number": "215-3180",
+        "price_gbp": 3.9,
+        "stock": null,
+        "url": "https://uk.rs-online.com/web/p/stem-motion-components/2153180",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Servo Motors Driving steering system 2AG5",
+        "part_number": "982-XLV446-92201-001",
+        "price_gbp": 4389.96,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Siemens/XLV446-92201-001?qs=bpu3f%2FCR1jw55l6HFNcEnA%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Servo Motors Driving steering system 2AG5",
+        "part_number": "982-XLV446-92201-002",
+        "price_gbp": 4389.96,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Siemens/XLV446-92201-002?qs=bpu3f%2FCR1jzAuMQL%252B8GiQA%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "RS Components UK",
+      "product": "Mini 180 Degree Resin Gear Servo SG90 (Kitronik 2565)",
+      "part_number": "215-3180",
+      "price_gbp": 3.9,
+      "stock": null,
+      "url": "https://uk.rs-online.com/web/p/stem-motion-components/2153180",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 3.9
+  },
+  {
+    "name": "motor driver / ESC",
+    "category": "motor_driver",
+    "quantity": null,
+    "evidence": "inferred",
+    "source_ids": [
+      "mechanical.possible_missing_parts"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "Blue modules may be relays, but no motor leads are clearly identifiable.",
+    "category_normalised": "motor_driver",
+    "matched_part_id": "driver_tb6612fng",
+    "matches": [
+      {
+        "shop": "SparkFun",
+        "product": "SparkFun Motor Driver - Dual TB6612FNG (with Headers)",
+        "part_number": "ROB-14450",
+        "price_gbp": 10.88,
+        "stock": null,
+        "url": "https://www.sparkfun.com/sparkfun-motor-driver-dual-tb6612fng-with-headers.html",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Power Management IC Development Tools 2x7A DC Motor Driver",
+        "part_number": "426-DRI0041",
+        "price_gbp": 11.76,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/DFRobot/DRI0041?qs=5aG0NVq1C4wMNHbz0tY1EA%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "DRV8837DSGR -40\u2103~+85\u2103 1.8V~7V 1.9A 120nA 280m\u03a9 Yes WSON-8-EP(2x2) Brushed DC Motor Drivers ROHS",
+        "part_number": "C39159",
+        "price_gbp": 0.16,
+        "stock": 124010,
+        "url": "https://www.lcsc.com/product-detail/C39159.html",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "LCSC",
+        "product": "TC118S -20\u2103~+85\u2103 1 1.5A 1.6\u03a9 10uA 2.4V~7.2V 2.5A Yes SOP-8 Brushed DC Motor Drivers ROHS",
+        "part_number": "C88308",
+        "price_gbp": 0.05,
+        "stock": 55506,
+        "url": "https://www.lcsc.com/product-detail/C88308.html",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "LCSC",
+        "product": "TMB12A05",
+        "part_number": "C49246931",
+        "price_gbp": 0.12,
+        "stock": 51833,
+        "url": "https://www.lcsc.com/product-detail/C49246931.html",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "LCSC",
+        "product": "DRV8300DRGER -40\u2103~+125\u2103 1.5A 10ns 3 5V~20V 5ns 750mA 800uA Low Side\u3001High Side MOSFET Under Voltage Protection\u3001Interleave",
+        "part_number": "C3655801",
+        "price_gbp": 0.45,
+        "stock": 45132,
+        "url": "https://www.lcsc.com/product-detail/C3655801.html",
+        "source": "live",
+        "match_quality": "similar"
+      }
+    ],
+    "best_match": {
+      "shop": "SparkFun",
+      "product": "SparkFun Motor Driver - Dual TB6612FNG (with Headers)",
+      "part_number": "ROB-14450",
+      "price_gbp": 10.88,
+      "stock": null,
+      "url": "https://www.sparkfun.com/sparkfun-motor-driver-dual-tb6612fng-with-headers.html",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 10.88
+  },
+  {
+    "name": "axles / wheel hubs",
+    "category": "mechanical hardware",
+    "quantity": null,
+    "evidence": "inferred",
+    "source_ids": [
+      "mechanical.possible_missing_parts"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "Wheel mounting hardware is obscured by tires and chassis.",
+    "category_normalised": "fasteners",
+    "matched_part_id": "screws_m3_kit",
+    "matches": [
+      {
+        "shop": "RS Components UK",
+        "product": "M3 Screws + Nuts + Standoffs kit",
+        "part_number": "screws_m3_kit",
+        "price_gbp": 2.5,
+        "stock": null,
+        "url": "TODO",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": false
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Educational Robotic Kits Black Multi-Hub Wheel for TT / Lego or N20 Motor - 65mm Diameter",
+        "part_number": "485-4205",
+        "price_gbp": 1.09,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Adafruit/4205?qs=PzGy0jfpSMu2zfaLKkrDLQ%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "RS Components UK",
+      "product": "M3 Screws + Nuts + Standoffs kit",
+      "part_number": "screws_m3_kit",
+      "price_gbp": 2.5,
+      "stock": null,
+      "url": "TODO",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": false
+    },
+    "line_total_gbp": 2.5
+  },
+  {
+    "name": "battery cells inside enclosure",
+    "category": "battery cells",
+    "quantity": null,
+    "evidence": "inferred",
+    "source_ids": [
+      "P001",
+      "mechanical.possible_missing_parts"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "Black enclosure is sealed; cell count and chemistry are unknown.",
+    "category_normalised": "power",
+    "matched_part_id": "battery_4xaa_leads",
+    "matches": [
+      {
+        "shop": "SparkFun",
+        "product": "Battery Holder - 4xAA Square (tinned leads)",
+        "part_number": "PRT-00552",
+        "price_gbp": 1.69,
+        "stock": null,
+        "url": "https://www.sparkfun.com/battery-holder-4xaa-square.html",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Adafruit Accessories 3xAAA Battery Holder w/ On/Off Switch",
+        "part_number": "485-727",
+        "price_gbp": 1.09,
+        "stock": 36,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Adafruit/727?qs=GURawfaeGuCvU0VJ22UgNg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Adafruit Accessories Waterproof 2xAA Battery Holder",
+        "part_number": "485-770",
+        "price_gbp": 2.21,
+        "stock": 50,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Adafruit/770?qs=GURawfaeGuD3t1qiVofyQg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Adafruit Accessories Waterproof 3xAA Battery Holder",
+        "part_number": "485-771",
+        "price_gbp": 2.21,
+        "stock": 15,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Adafruit/771?qs=GURawfaeGuB%252Bl0ThF7wb8w%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Adafruit Accessories 8xAA Battery Holder w/Plug & Switch",
+        "part_number": "485-875",
+        "price_gbp": 3.31,
+        "stock": 161,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Adafruit/875?qs=GURawfaeGuAxiW5gLfeh2A%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Battery Enclosures PP3/6R61 Size PCB/Base Mounting Battery Holder - 1 Cell",
+        "part_number": "122-BX0033",
+        "price_gbp": 3.76,
+        "stock": 699,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Bulgin/BX0033?qs=mZhjc5a7U8zJAJTATpoz8g%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "SparkFun",
+      "product": "Battery Holder - 4xAA Square (tinned leads)",
+      "part_number": "PRT-00552",
+      "price_gbp": 1.69,
+      "stock": null,
+      "url": "https://www.sparkfun.com/battery-holder-4xaa-square.html",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 1.69
+  },
+  {
+    "name": "main controller / receiver (MCU)",
+    "category": "controller",
+    "quantity": null,
+    "evidence": "inferred",
+    "source_ids": [
+      "mechanical.possible_missing_parts"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "Breadboard carries components and LEDs but no identifiable controller is visible.",
+    "category_normalised": "controller",
+    "matched_part_id": "arduino_uno",
+    "matches": [
+      {
+        "shop": "RS Components UK",
+        "product": "Arduino UNO Rev3 (A000066)",
+        "part_number": "715-4081",
+        "price_gbp": 24.88,
+        "stock": null,
+        "url": "https://uk.rs-online.com/web/p/arduino/7154081",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": true
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "I/O Controllers WIRELESS MAIN CONTROLLER NO FOR GATES",
+        "part_number": "225-WSM6GAOOD24",
+        "price_gbp": 89.49,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Carlo-Gavazzi/WSM6GAOOD24?qs=xZ%2FP%252Ba9zWqZhI2R7r1ffbg%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Controller Accessories CONN,A PH,F FR MAIN,PRL3A CU",
+        "part_number": "504-SOP5081A65H02",
+        "price_gbp": 55.55,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Eaton-Electrical/SOP5081A65H02?qs=2FehpBK1j97bpora7Uasog%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Controller Accessories CONN,C PH,F FR MAIN,PRL3A H06",
+        "part_number": "504-SOP5081A65H06",
+        "price_gbp": 55.55,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Eaton-Electrical/SOP5081A65H06?qs=2FehpBK1j979wQBjDzs5Tg%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Controller Accessories CONN,A PH,F FR MAIN,PRL3A AL",
+        "part_number": "504-SOP5081A65H01",
+        "price_gbp": 26.92,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Eaton-Electrical/SOP5081A65H01?qs=2FehpBK1j94SpmJCNTenUA%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Controller Accessories CONN,C PH,F FR MAIN,PRL3A H08",
+        "part_number": "504-SOP5081A65H08",
+        "price_gbp": 57.81,
+        "stock": null,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Eaton-Electrical/SOP5081A65H08?qs=2FehpBK1j97ju15%252B4CpYyQ%3D%3D",
+        "source": "live",
+        "match_quality": "similar"
+      }
+    ],
+    "best_match": {
+      "shop": "RS Components UK",
+      "product": "Arduino UNO Rev3 (A000066)",
+      "part_number": "715-4081",
+      "price_gbp": 24.88,
+      "stock": null,
+      "url": "https://uk.rs-online.com/web/p/arduino/7154081",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": true
+    },
+    "line_total_gbp": 24.88
+  },
+  {
+    "name": "power switch",
+    "category": "switch",
+    "quantity": null,
+    "evidence": "inferred",
+    "source_ids": [
+      "mechanical.possible_missing_parts"
+    ],
+    "sku": null,
+    "product_url": null,
+    "review_required": true,
+    "notes": "No obvious switch is visible in the wiring.",
+    "category_normalised": "switch",
+    "matched_part_id": "switch_spst",
+    "matches": [
+      {
+        "shop": "RS Components UK",
+        "product": "SPST Slide Switch",
+        "part_number": "switch_spst",
+        "price_gbp": 0.8,
+        "stock": null,
+        "url": "TODO",
+        "source": "catalogue",
+        "match_quality": "exact",
+        "verified": false
+      },
+      {
+        "shop": "LCSC",
+        "product": "MT3540-F23 -40\u2103~+85\u2103@(TA) 1 1.23V~28V 1.2MHz 1.5A 2.5V~5.5V 40uA Adjustable Boost Boost Built-in No SOT-23-5 DC-DC Conve",
+        "part_number": "C181783",
+        "price_gbp": 0.03,
+        "stock": 390686,
+        "url": "https://www.lcsc.com/product-detail/C181783.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "TPS562201DDCR -40\u2103~+125\u2103@(TJ) 1 2A 380uA 4.5V~17V 580kHz 768mV~7V Adjustable Buck Built-in Overcurrent Protection\u3001Light ",
+        "part_number": "C90061",
+        "price_gbp": 0.04,
+        "stock": 468076,
+        "url": "https://www.lcsc.com/product-detail/C90061.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "TLV62569DBVR -40\u2103~+125\u2103@(TJ) 1 1.5MHz 2.5V~5.5V 2A 600mV~5.5V Adjustable Buck Buck Built-in Yes SOT-23-5 DC-DC Converter",
+        "part_number": "C141836",
+        "price_gbp": 0.05,
+        "stock": 502143,
+        "url": "https://www.lcsc.com/product-detail/C141836.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "LCSC",
+        "product": "XL1509-5.0E1 -40\u2103~+85\u2103 1 150kHz 2A 2mA 4.5V~40V 5V Buck Buck Built-in Fixed No SOIC-8 DC-DC Converters ROHS",
+        "part_number": "C61063",
+        "price_gbp": 0.18,
+        "stock": 480751,
+        "url": "https://www.lcsc.com/product-detail/C61063.html",
+        "source": "live",
+        "match_quality": "exact"
+      },
+      {
+        "shop": "Mouser UK",
+        "product": "Power Switch ICs - Power Distribution USB Power Switch W-DFN2020-6 T&R 3K",
+        "part_number": "621-AP22653AFDZ-7B",
+        "price_gbp": 0.21,
+        "stock": 2083,
+        "url": "https://www.mouser.co.uk/en/ProductDetail/Diodes-Incorporated/AP22653AFDZ-7B?qs=LnCj936TGbWyZh07bqM%252Bqg%3D%3D",
+        "source": "live",
+        "match_quality": "exact"
+      }
+    ],
+    "best_match": {
+      "shop": "RS Components UK",
+      "product": "SPST Slide Switch",
+      "part_number": "switch_spst",
+      "price_gbp": 0.8,
+      "stock": null,
+      "url": "TODO",
+      "source": "catalogue",
+      "match_quality": "exact",
+      "verified": false
+    },
+    "line_total_gbp": 0.8
+  }
+]
