@@ -7,7 +7,7 @@ export default function DeviceImage({ path, alt, className = '' }) {
   if (!url) {
     return (
       <div className={`skeleton grid place-items-center ${className}`}>
-        <ImageIcon className="size-6 text-ink-600" />
+        <ImageIcon className="size-6 text-line-strong" />
       </div>
     )
   }

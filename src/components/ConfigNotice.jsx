@@ -9,12 +9,12 @@ export default function ConfigNotice() {
         <div className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold">Connect Supabase to continue</h2>
-            <p className="mt-1 text-sm text-ink-300">
+            <p className="mt-1 text-sm text-body">
               The frontend runs, but it has no backend to talk to yet.
             </p>
           </div>
 
-          <ol className="space-y-2.5 text-sm text-ink-300">
+          <ol className="space-y-2.5 text-sm text-body">
             <li>
               <span className="label mr-2">1</span>
               Create a project at{' '}
@@ -39,7 +39,7 @@ export default function ConfigNotice() {
             </li>
           </ol>
 
-          <p className="text-xs text-ink-400">
+          <p className="text-xs text-muted">
             Full walkthrough in <code className="font-mono">README.md</code>.
           </p>
         </div>

@@ -48,7 +48,7 @@ function Dot({ state }) {
       </span>
     )
   }
-  return <span className="grid size-6 place-items-center rounded-full border border-ink-700" />
+  return <span className="grid size-6 place-items-center rounded-full border border-line" />
 }
 
 export default function StatusTimeline({ project }) {
@@ -62,7 +62,7 @@ export default function StatusTimeline({ project }) {
           <span
             className={[
               'text-sm',
-              states[i] === 'idle' ? 'text-ink-400' : 'text-ink-100',
+              states[i] === 'idle' ? 'text-muted' : 'text-strong',
               states[i] === 'active' ? 'font-medium' : '',
             ].join(' ')}
           >

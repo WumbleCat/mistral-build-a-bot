@@ -46,7 +46,7 @@ export default function SignIn() {
     <div className="mx-auto max-w-md space-y-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold tracking-tight">Sign in</h1>
-        <p className="mt-1.5 text-sm text-ink-400">
+        <p className="mt-1.5 text-sm text-muted">
           Your builds, bills of materials and generated videos stay on your account.
         </p>
       </div>
@@ -58,8 +58,8 @@ export default function SignIn() {
               <Mail className="size-5" />
             </span>
             <h2 className="font-semibold">Check your inbox</h2>
-            <p className="text-sm text-ink-400">
-              We sent a sign-in link to <span className="text-ink-100">{email}</span>. Open it on this
+            <p className="text-sm text-muted">
+              We sent a sign-in link to <span className="text-strong">{email}</span>. Open it on this
               device.
             </p>
             <button type="button" className="btn-ghost w-full" onClick={() => setSent(false)}>
@@ -91,10 +91,10 @@ export default function SignIn() {
               </button>
             </form>
 
-            <div className="flex items-center gap-3 text-[11px] uppercase tracking-wider text-ink-400">
-              <span className="h-px flex-1 bg-ink-800" />
+            <div className="flex items-center gap-3 text-[11px] uppercase tracking-wider text-muted">
+              <span className="h-px flex-1 bg-line-soft" />
               or
-              <span className="h-px flex-1 bg-ink-800" />
+              <span className="h-px flex-1 bg-line-soft" />
             </div>
 
             <button
@@ -116,7 +116,7 @@ export default function SignIn() {
         )}
       </div>
 
-      <p className="text-center text-sm text-ink-400">
+      <p className="text-center text-sm text-muted">
         <Link to="/" className="inline-flex items-center gap-1 text-flame-400 hover:text-flame-300">
           Skip and upload a photo
           <ArrowRight className="size-3.5" />

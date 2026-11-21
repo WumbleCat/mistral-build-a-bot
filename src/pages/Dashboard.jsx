@@ -9,7 +9,7 @@ import Spinner from '../components/Spinner'
 import Empty from '../components/Empty'
 
 const STATUS_STYLE = {
-  queued: 'border-ink-700 bg-ink-850 text-ink-300',
+  queued: 'border-line bg-sunken text-body',
   analyzing: 'border-flame-500/30 bg-flame-500/10 text-flame-300',
   ready: 'border-mint-400/30 bg-mint-400/10 text-mint-400',
   failed: 'border-flame-600/40 bg-flame-600/15 text-flame-200',
@@ -112,7 +112,7 @@ export default function Dashboard() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">My builds</h1>
-          <p className="mt-0.5 text-sm text-ink-400">
+          <p className="mt-0.5 text-sm text-muted">
             {projects.length} {projects.length === 1 ? 'device' : 'devices'} analysed
           </p>
         </div>
@@ -132,21 +132,21 @@ export default function Dashboard() {
               <DeviceImage
                 path={project.image_path}
                 alt={project.device_name ?? project.title}
-                className="aspect-[16/10] w-full bg-ink-950 object-cover transition duration-300 group-hover:scale-[1.03]"
+                className="aspect-[16/10] w-full bg-canvas object-cover transition duration-300 group-hover:scale-[1.03]"
               />
 
               <div className="flex flex-1 flex-col gap-2.5 p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="min-w-0 flex-1 truncate font-semibold text-ink-100">
+                  <h2 className="min-w-0 flex-1 truncate font-semibold text-strong">
                     {project.device_name ?? project.title}
                   </h2>
                   <StatusBadge status={project.status} />
                 </div>
 
-                <dl className="mt-auto flex items-center gap-4 text-xs text-ink-400">
+                <dl className="mt-auto flex items-center gap-4 text-xs text-muted">
                   <div>
                     <dt className="label">Parts</dt>
-                    <dd className="mt-0.5 font-mono text-sm text-ink-100">
+                    <dd className="mt-0.5 font-mono text-sm text-strong">
                       {project.component_count || '—'}
                     </dd>
                   </div>
@@ -158,7 +158,7 @@ export default function Dashboard() {
                   </div>
                 </dl>
 
-                <div className="flex items-center justify-between border-t border-ink-800 pt-2.5 text-xs text-ink-400">
+                <div className="flex items-center justify-between border-t border-line-soft pt-2.5 text-xs text-muted">
                   <span>{relativeTime(project.created_at)}</span>
                   <span className="flex items-center gap-1">
                     <button
@@ -166,7 +166,7 @@ export default function Dashboard() {
                       onClick={(e) => handleDelete(e, project.id)}
                       disabled={removing === project.id}
                       aria-label="Delete build"
-                      className="rounded-md p-1 transition hover:bg-ink-800 hover:text-flame-300"
+                      className="rounded-md p-1 transition hover:bg-line-soft hover:text-flame-300"
                     >
                       {removing === project.id ? (
                         <LoaderCircle className="size-3.5 animate-spin" />

@@ -13,7 +13,7 @@ const CATEGORY_TINT = {
 }
 
 function CategoryChip({ category }) {
-  const tint = CATEGORY_TINT[category] ?? 'text-ink-300 border-ink-700 bg-ink-850'
+  const tint = CATEGORY_TINT[category] ?? 'text-body border-line bg-sunken'
   return (
     <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tint}`}>
       {category || 'part'}
@@ -36,7 +36,7 @@ function LinkRow({ component }) {
             'inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition',
             link.kind === 'product'
               ? 'border-flame-500/40 bg-flame-500/10 text-flame-300 hover:bg-flame-500/20'
-              : 'border-ink-700 bg-ink-850 text-ink-300 hover:border-ink-600 hover:text-ink-100',
+              : 'border-line bg-sunken text-body hover:border-line-strong hover:text-strong',
           ].join(' ')}
         >
           {link.label}
@@ -72,7 +72,7 @@ export default function BomTable({ project }) {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Bill of materials</h2>
-          <p className="mt-0.5 text-sm text-ink-400">
+          <p className="mt-0.5 text-sm text-muted">
             {totals.parts} parts across {visible.length} line items
             {totals.unpriced > 0 && ` · ${totals.unpriced} without an estimate`}
           </p>
@@ -80,7 +80,7 @@ export default function BomTable({ project }) {
 
         <div className="flex items-center gap-2">
           {hasOptional && (
-            <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-400">
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-muted">
               <input
                 type="checkbox"
                 checked={showOptional}
@@ -110,7 +110,7 @@ export default function BomTable({ project }) {
         {/* Desktop: table. Mobile: stacked cards. */}
         <table className="hidden w-full text-left text-sm md:table">
           <thead>
-            <tr className="border-b border-ink-800 text-[11px] uppercase tracking-wider text-ink-400">
+            <tr className="border-b border-line-soft text-[11px] uppercase tracking-wider text-muted">
               <th className="px-4 py-3 font-semibold">Part</th>
               <th className="px-3 py-3 text-center font-semibold">Qty</th>
               <th className="px-3 py-3 text-right font-semibold">Unit</th>
@@ -120,32 +120,32 @@ export default function BomTable({ project }) {
           </thead>
           <tbody>
             {visible.map((c) => (
-              <tr key={c.id} className="border-b border-ink-800/60 last:border-0 align-top">
+              <tr key={c.id} className="border-b border-line-soft/60 last:border-0 align-top">
                 <td className="px-4 py-3.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-ink-100">{c.name}</span>
+                    <span className="font-medium text-strong">{c.name}</span>
                     <CategoryChip category={c.category} />
-                    {c.is_optional && <span className="text-[10px] uppercase text-ink-400">optional</span>}
+                    {c.is_optional && <span className="text-[10px] uppercase text-muted">optional</span>}
                   </div>
-                  {c.description && <p className="mt-1 max-w-xl text-xs text-ink-400">{c.description}</p>}
+                  {c.description && <p className="mt-1 max-w-xl text-xs text-muted">{c.description}</p>}
                   {c.specs && Object.keys(c.specs).length > 0 && (
-                    <p className="mt-1 font-mono text-[11px] text-ink-400">
+                    <p className="mt-1 font-mono text-[11px] text-muted">
                       {Object.entries(c.specs)
                         .map(([k, v]) => `${k}: ${v}`)
                         .join(' · ')}
                     </p>
                   )}
                   {c.substitutes?.length > 0 && (
-                    <p className="mt-1 text-[11px] text-ink-400">
+                    <p className="mt-1 text-[11px] text-muted">
                       Alt: {c.substitutes.join(', ')}
                     </p>
                   )}
                 </td>
-                <td className="px-3 py-3.5 text-center font-mono text-ink-300">×{c.quantity}</td>
-                <td className="px-3 py-3.5 text-right font-mono text-ink-300">
+                <td className="px-3 py-3.5 text-center font-mono text-body">×{c.quantity}</td>
+                <td className="px-3 py-3.5 text-right font-mono text-body">
                   {money(c.unit_price_cents, c.currency)}
                 </td>
-                <td className="px-3 py-3.5 text-right font-mono font-semibold text-ink-100">
+                <td className="px-3 py-3.5 text-right font-mono font-semibold text-strong">
                   {c.unit_price_cents != null
                     ? money(c.unit_price_cents * c.quantity, c.currency)
                     : '—'}
@@ -157,8 +157,8 @@ export default function BomTable({ project }) {
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-ink-700 bg-ink-850/60">
-              <td className="px-4 py-3 text-xs uppercase tracking-wider text-ink-400" colSpan={3}>
+            <tr className="border-t border-line bg-sunken/60">
+              <td className="px-4 py-3 text-xs uppercase tracking-wider text-muted" colSpan={3}>
                 Estimated parts cost
               </td>
               <td className="px-3 py-3 text-right font-mono text-base font-bold text-flame-400">
@@ -169,29 +169,29 @@ export default function BomTable({ project }) {
           </tfoot>
         </table>
 
-        <ul className="divide-y divide-ink-800/60 md:hidden">
+        <ul className="divide-y divide-line-soft/60 md:hidden">
           {visible.map((c) => (
             <li key={c.id} className="space-y-2.5 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-medium text-ink-100">{c.name}</p>
+                  <p className="font-medium text-strong">{c.name}</p>
                   <div className="mt-1 flex items-center gap-2">
                     <CategoryChip category={c.category} />
-                    <span className="font-mono text-xs text-ink-400">×{c.quantity}</span>
+                    <span className="font-mono text-xs text-muted">×{c.quantity}</span>
                   </div>
                 </div>
-                <span className="shrink-0 font-mono text-sm font-semibold text-ink-100">
+                <span className="shrink-0 font-mono text-sm font-semibold text-strong">
                   {c.unit_price_cents != null
                     ? money(c.unit_price_cents * c.quantity, c.currency)
                     : '—'}
                 </span>
               </div>
-              {c.description && <p className="text-xs text-ink-400">{c.description}</p>}
+              {c.description && <p className="text-xs text-muted">{c.description}</p>}
               <LinkRow component={c} />
             </li>
           ))}
-          <li className="flex items-center justify-between bg-ink-850/60 px-4 py-3">
-            <span className="text-xs uppercase tracking-wider text-ink-400">Estimated total</span>
+          <li className="flex items-center justify-between bg-sunken/60 px-4 py-3">
+            <span className="text-xs uppercase tracking-wider text-muted">Estimated total</span>
             <span className="font-mono text-base font-bold text-flame-400">
               {money(totals.cents, project.currency)}
             </span>
@@ -199,7 +199,7 @@ export default function BomTable({ project }) {
         </ul>
       </div>
 
-      <p className="flex items-start gap-2 text-xs text-ink-400">
+      <p className="flex items-start gap-2 text-xs text-muted">
         <ShoppingCart className="mt-0.5 size-3.5 shrink-0" />
         Prices are the model's estimate of single-unit hobbyist retail. Links open a search on a
         retailer that stocks the category, so you can compare before ordering.

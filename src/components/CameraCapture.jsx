@@ -125,7 +125,7 @@ export default function CameraCapture({ onCapture, onClose }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-ink-700 bg-ink-950">
+    <div className="overflow-hidden rounded-2xl border border-line bg-canvas">
       <div className="relative aspect-[4/3] w-full bg-black">
         <video
           ref={videoRef}
@@ -136,8 +136,8 @@ export default function CameraCapture({ onCapture, onClose }) {
         />
 
         {status === 'starting' && (
-          <div className="absolute inset-0 grid place-items-center bg-ink-950/80">
-            <div className="flex items-center gap-2.5 text-sm text-ink-300">
+          <div className="absolute inset-0 grid place-items-center bg-scrim/80">
+            <div className="flex items-center gap-2.5 text-sm text-body">
               <LoaderCircle className="size-4 animate-spin text-flame-400" />
               Starting the camera…
             </div>
@@ -145,10 +145,10 @@ export default function CameraCapture({ onCapture, onClose }) {
         )}
 
         {status === 'failed' && (
-          <div className="absolute inset-0 grid place-items-center bg-ink-950/90 p-6">
+          <div className="absolute inset-0 grid place-items-center bg-scrim/90 p-6">
             <div className="max-w-sm text-center">
               <CameraOff className="mx-auto mb-3 size-6 text-flame-400" />
-              <p className="text-sm text-ink-200">{error}</p>
+              <p className="text-sm text-body">{error}</p>
               <button
                 type="button"
                 onClick={() => setFacing((f) => f)}
@@ -168,7 +168,7 @@ export default function CameraCapture({ onCapture, onClose }) {
             onClose()
           }}
           aria-label="Close camera"
-          className="absolute right-3 top-3 grid size-9 place-items-center rounded-xl bg-ink-950/75 text-ink-100 backdrop-blur transition hover:bg-ink-950"
+          className="absolute right-3 top-3 grid size-9 place-items-center rounded-xl bg-scrim/75 text-white backdrop-blur transition hover:bg-scrim"
         >
           <X className="size-4" />
         </button>
@@ -178,15 +178,15 @@ export default function CameraCapture({ onCapture, onClose }) {
             type="button"
             onClick={() => setFacing((f) => (f === 'user' ? 'environment' : 'user'))}
             aria-label="Switch camera"
-            className="absolute left-3 top-3 grid size-9 place-items-center rounded-xl bg-ink-950/75 text-ink-100 backdrop-blur transition hover:bg-ink-950"
+            className="absolute left-3 top-3 grid size-9 place-items-center rounded-xl bg-scrim/75 text-white backdrop-blur transition hover:bg-scrim"
           >
             <SwitchCamera className="size-4" />
           </button>
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-ink-800 px-4 py-3">
-        <p className="text-xs text-ink-400">
+      <div className="flex items-center justify-between gap-3 border-t border-line-soft px-4 py-3">
+        <p className="text-xs text-muted">
           Fill the frame with the device. Good light, plain background.
         </p>
         <button

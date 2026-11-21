@@ -36,11 +36,11 @@ const TABS = [
 function Stat({ icon: Icon, label, value, accent }) {
   return (
     <div className="card p-4">
-      <div className="flex items-center gap-2 text-ink-400">
+      <div className="flex items-center gap-2 text-muted">
         <Icon className="size-3.5" />
         <span className="label">{label}</span>
       </div>
-      <p className={`mt-1.5 font-mono text-xl font-bold ${accent ?? 'text-ink-100'}`}>{value}</p>
+      <p className={`mt-1.5 font-mono text-xl font-bold ${accent ?? 'text-strong'}`}>{value}</p>
     </div>
   )
 }
@@ -124,7 +124,7 @@ export default function Project() {
         <DeviceImage
           path={project.image_path}
           alt={project.device_name ?? project.title}
-          className="aspect-[4/3] w-full rounded-2xl border border-ink-700 bg-ink-950 object-cover"
+          className="aspect-[4/3] w-full rounded-2xl border border-line bg-canvas object-cover"
         />
 
         <div className="space-y-4">
@@ -134,7 +134,7 @@ export default function Project() {
               {project.device_name ?? project.title}
             </h1>
             {project.device_summary && (
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-300">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-body">
                 {project.device_summary}
               </p>
             )}
@@ -183,7 +183,7 @@ export default function Project() {
         <section className="card space-y-4 p-6">
           <div>
             <h2 className="font-semibold">Working on it</h2>
-            <p className="mt-0.5 text-sm text-ink-400">
+            <p className="mt-0.5 text-sm text-muted">
               Mistral is reading the photo and producing the build plan. This usually takes 20–60
               seconds.
             </p>
@@ -200,7 +200,7 @@ export default function Project() {
             <div className="space-y-3">
               <div>
                 <h2 className="font-semibold">Analysis failed</h2>
-                <p className="mt-1 text-sm text-ink-300">{project.error}</p>
+                <p className="mt-1 text-sm text-body">{project.error}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" className="btn-primary" onClick={handleRetry} disabled={retrying}>
@@ -220,7 +220,7 @@ export default function Project() {
       {/* ------------------------------------------------------------- tabs */}
       {ready && (
         <>
-          <nav className="flex gap-1 overflow-x-auto border-b border-ink-800 pb-px">
+          <nav className="flex gap-1 overflow-x-auto border-b border-line-soft pb-px">
             {TABS.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -229,8 +229,8 @@ export default function Project() {
                 className={[
                   '-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3.5 py-2.5 text-sm font-medium transition',
                   tab === key
-                    ? 'border-flame-500 text-ink-100'
-                    : 'border-transparent text-ink-400 hover:text-ink-100',
+                    ? 'border-flame-500 text-strong'
+                    : 'border-transparent text-muted hover:text-strong',
                 ].join(' ')}
               >
                 <Icon className="size-4" />
@@ -246,7 +246,7 @@ export default function Project() {
                   <h2 className="font-semibold">What the photo shows</h2>
                   <ul className="mt-3 space-y-2">
                     {project.analysis.visible_features.map((feature) => (
-                      <li key={feature} className="flex gap-2.5 text-sm text-ink-300">
+                      <li key={feature} className="flex gap-2.5 text-sm text-body">
                         <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-flame-400" />
                         {feature}
                       </li>
@@ -258,13 +258,13 @@ export default function Project() {
               {project.analysis?.assumptions?.length > 0 && (
                 <section className="card p-5">
                   <h2 className="font-semibold">Inferred, not seen</h2>
-                  <p className="mt-0.5 text-xs text-ink-400">
+                  <p className="mt-0.5 text-xs text-muted">
                     Worth checking before you order these parts.
                   </p>
                   <ul className="mt-3 space-y-2">
                     {project.analysis.assumptions.map((item) => (
-                      <li key={item} className="flex gap-2.5 text-sm text-ink-300">
-                        <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-ink-600" />
+                      <li key={item} className="flex gap-2.5 text-sm text-body">
+                        <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-line-strong" />
                         {item}
                       </li>
                     ))}
@@ -303,7 +303,7 @@ export default function Project() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="font-semibold">Ready to build?</h2>
-                    <p className="mt-0.5 text-sm text-ink-400">
+                    <p className="mt-0.5 text-sm text-muted">
                       Order the parts, then follow the steps with a clip for each one.
                     </p>
                   </div>
@@ -340,7 +340,7 @@ export default function Project() {
             <section className="space-y-4">
               <header>
                 <h2 className="text-lg font-semibold">Full build walkthrough</h2>
-                <p className="mt-0.5 text-sm text-ink-400">
+                <p className="mt-0.5 text-sm text-muted">
                   One continuous clip taking the device from loose parts to finished build.
                 </p>
               </header>
@@ -357,7 +357,7 @@ export default function Project() {
 
               <div className="card p-5">
                 <h3 className="font-semibold">Per-step clips</h3>
-                <p className="mt-0.5 text-sm text-ink-400">
+                <p className="mt-0.5 text-sm text-muted">
                   {(project.videos ?? []).filter((v) => v.step_id && v.status === 'ready').length} of{' '}
                   {project.assembly_steps?.length ?? 0} steps have a clip. Generate them from the
                   assembly tab.

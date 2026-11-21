@@ -100,6 +100,8 @@ export default function ExplodedView({
   explode: explodeProp,
   onExplodeChange,
   theme: themeProp,
+  /** Called with [{componentId, x, y}] in client coords whenever the view redraws. */
+  onProject,
 }) {
   const mountRef = useRef(null)
   const sceneRef = useRef(null)
@@ -121,9 +123,11 @@ export default function ExplodedView({
   const filterRef = useRef(null)
   const selectedRef = useRef(null)
   const calloutsRef = useRef(true)
+  const projectRef = useRef(null)
   filterRef.current = stepFilter
   selectedRef.current = selected
   calloutsRef.current = showCallouts
+  projectRef.current = onProject
 
   const layout = useMemo(() => buildLayout(project), [project])
 
@@ -329,16 +333,32 @@ export default function ExplodedView({
     const projected = new THREE.Vector3()
 
     function placeLabels() {
-      if (!calloutsRef.current) return
       const w = mount.clientWidth
       const h = mount.clientHeight
       if (!w || !h) return
 
+      const rect = renderer.domElement.getBoundingClientRect()
+      const projections = []
       const visible = []
+
       for (const { mesh, part } of meshes) {
         if (!part.isFirstInstance) continue
 
         const hidden = filterRef.current && part.stepNumber !== filterRef.current
+
+        // Where this part lands on screen, for whoever is drawing leader lines.
+        mesh.getWorldPosition(projected)
+        projected.project(camera)
+        if (!hidden && projected.z <= 1) {
+          projections.push({
+            componentId: part.componentId,
+            x: rect.left + ((projected.x + 1) / 2) * w,
+            y: rect.top + ((-projected.y + 1) / 2) * h,
+          })
+        }
+
+        if (!calloutsRef.current) continue
+
         if (hidden) {
           const el = labelRefs.current.get(part.key)
           if (el) el.style.opacity = '0'
@@ -349,8 +369,6 @@ export default function ExplodedView({
           continue
         }
 
-        mesh.getWorldPosition(projected)
-        projected.project(camera)
         visible.push({
           part,
           sx: ((projected.x + 1) / 2) * w,
@@ -358,6 +376,9 @@ export default function ExplodedView({
           behind: projected.z > 1,
         })
       }
+
+      projectRef.current?.(projections)
+      if (!calloutsRef.current) return
 
       // Two gutters. Each is sorted by the part's own height on screen, then pushed
       // apart just enough that no two labels overlap.
@@ -527,8 +548,8 @@ export default function ExplodedView({
   if (!layout.parts.length) {
     return (
       <div className="card grid place-items-center py-16 text-center">
-        <Box className="mb-3 size-6 text-ink-600" />
-        <p className="text-sm text-ink-400">No parts to lay out yet.</p>
+        <Box className="mb-3 size-6 text-line-strong" />
+        <p className="text-sm text-muted">No parts to lay out yet.</p>
       </div>
     )
   }
@@ -587,7 +608,7 @@ export default function ExplodedView({
                 'absolute max-w-[15rem] truncate rounded-md border px-1.5 py-0.5 text-[11px] font-medium transition-colors',
                 theme === 'light'
                   ? 'border-[#2b2f36]/15 bg-white/90 text-[#2b2f36] hover:border-[#2b2f36]/50'
-                  : 'border-ink-600 bg-ink-900/90 text-ink-100 hover:border-flame-500',
+                  : 'border-line-strong bg-surface/90 text-strong hover:border-flame-500',
                 selected === part.componentId ? 'ring-1 ring-flame-500' : '',
               ].join(' ')}
             >
@@ -606,7 +627,7 @@ export default function ExplodedView({
             type="button"
             onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
             title="Toggle background"
-            className="grid size-8 place-items-center rounded-lg border border-ink-700 bg-ink-950/70 text-ink-100 backdrop-blur transition hover:bg-ink-900"
+            className="grid size-8 place-items-center rounded-lg border border-line bg-surface/85 text-strong backdrop-blur transition hover:bg-surface"
           >
             {theme === 'light' ? <Moon className="size-3.5" /> : <Sun className="size-3.5" />}
           </button>
@@ -614,7 +635,7 @@ export default function ExplodedView({
             type="button"
             onClick={resetView}
             title="Reset view"
-            className="grid size-8 place-items-center rounded-lg border border-ink-700 bg-ink-950/70 text-ink-100 backdrop-blur transition hover:bg-ink-900"
+            className="grid size-8 place-items-center rounded-lg border border-line bg-surface/85 text-strong backdrop-blur transition hover:bg-surface"
           >
             <Maximize2 className="size-3.5" />
           </button>
@@ -623,7 +644,7 @@ export default function ExplodedView({
 
       {/* A circular embed clips a wide caption, and the dial's own labels explain it. */}
       {!bare && (
-        <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-ink-400">
+        <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-muted">
           Drag to orbit · scroll to zoom · click a part
         </p>
       )}
@@ -635,7 +656,7 @@ export default function ExplodedView({
 
   return (
     <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-2xl border border-ink-700">{stage}</div>
+      <div className="relative overflow-hidden rounded-2xl border border-line">{stage}</div>
 
       <div className="card flex flex-wrap items-center gap-4 p-3.5">
         <label className="flex min-w-[15rem] flex-1 items-center gap-3">
@@ -648,9 +669,9 @@ export default function ExplodedView({
             step="0.01"
             value={explode}
             onChange={(e) => setExplode(Number(e.target.value))}
-            className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-ink-700 accent-flame-500"
+            className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-line accent-flame-500"
           />
-          <span className="w-9 shrink-0 text-right font-mono text-xs text-ink-400">
+          <span className="w-9 shrink-0 text-right font-mono text-xs text-muted">
             {Math.round(explode * 100)}%
           </span>
         </label>
@@ -659,7 +680,7 @@ export default function ExplodedView({
           <select
             value={stepFilter ?? ''}
             onChange={(e) => setStepFilter(e.target.value ? Number(e.target.value) : null)}
-            className="rounded-lg border border-ink-700 bg-ink-900 px-2.5 py-1.5 text-xs text-ink-100"
+            className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs text-strong"
           >
             <option value="">All steps</option>
             {stepNumbers.map((n) => (
@@ -684,8 +705,8 @@ export default function ExplodedView({
       {selectedComponent && (
         <div className="card flex flex-wrap items-center justify-between gap-3 p-4">
           <div className="min-w-0">
-            <p className="font-semibold text-ink-100">{selectedComponent.name}</p>
-            <p className="mt-0.5 text-xs text-ink-400">
+            <p className="font-semibold text-strong">{selectedComponent.name}</p>
+            <p className="mt-0.5 text-xs text-muted">
               {selectedComponent.category} · ×{selectedComponent.quantity} ·{' '}
               {money(selectedComponent.unit_price_cents, selectedComponent.currency)} each
             </p>
@@ -700,7 +721,7 @@ export default function ExplodedView({
         </div>
       )}
 
-      <p className="text-xs text-ink-400">
+      <p className="text-xs text-muted">
         The layout is built from the bill of materials: each part becomes a primitive sized from its
         specs, and layers are ordered by the assembly step that installs them. It is a schematic of
         how the device goes together, not a dimensioned CAD model.

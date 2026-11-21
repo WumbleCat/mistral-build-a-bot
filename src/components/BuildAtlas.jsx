@@ -1,5 +1,5 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
-import { Download, ExternalLink, Layers, LayoutGrid, Orbit, Table2 } from 'lucide-react'
+import { Fragment, lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react'
+import { Download, ExternalLink, Layers, Table2, Workflow } from 'lucide-react'
 import { buildLayout } from '../lib/geometry'
 import { money } from '../lib/format'
 import { purchaseLinksFor } from '../lib/retailers'
@@ -10,88 +10,218 @@ import useMediaQuery from '../hooks/useMediaQuery'
 
 const ExplodedView = lazy(() => import('./ExplodedView'))
 
-/* --------------------------------------------------------------- geometry */
-
-// Percentages of the square stage. The centre disc holds the 3D view; parts ring it,
-// and price + retailers sit on an outer ring aligned to the same spoke.
-const CENTRE_R = 25
-const PART_R = 35
-const BUY_R = 47.5
-
-// Neighbouring nodes alternate between two radii. Fifteen boxes on one circle will
-// always collide; staggering them doubles the usable arc without a bigger dial.
-const STAGGER = 4.5
-
-/** Max nodes before the ring gets too dense to read; the rest fold into the table. */
-const MAX_NODES = 20
-
 const CATEGORY_DOT = {
-  actuator: 'bg-flame-400',
-  wheel: 'bg-flame-300',
+  actuator: 'bg-flame-500',
+  wheel: 'bg-flame-400',
   controller: 'bg-sky-ish',
   'motor-driver': 'bg-sky-ish',
   electronics: 'bg-sky-ish',
+  pcb: 'bg-mint-400',
   sensor: 'bg-mint-400',
-  power: 'bg-amber-400',
-  chassis: 'bg-ink-300',
-  structure: 'bg-ink-300',
-  fastener: 'bg-ink-400',
-  hardware: 'bg-ink-400',
-  bearing: 'bg-ink-400',
-  wiring: 'bg-orange-300',
+  display: 'bg-mint-400',
+  power: 'bg-amber-500',
+  battery: 'bg-amber-500',
+  connector: 'bg-amber-600',
+  switch: 'bg-line-strong',
+  chassis: 'bg-line-strong',
+  enclosure: 'bg-line-strong',
+  structure: 'bg-line-strong',
 }
 
-const polar = (angle, radius) => ({
-  x: 50 + Math.cos(angle) * radius,
-  y: 50 + Math.sin(angle) * radius,
-})
+/* --------------------------------------------------------------- the cards */
+
+function PartCard({ node, side, active, dimmed, onSelect, cardRef }) {
+  const left = side === 'left'
+  return (
+    <button
+      ref={cardRef}
+      type="button"
+      data-ring="part"
+      title={node.component.name}
+      onClick={() => onSelect(active ? null : node.component.id)}
+      className={[
+        'group relative flex h-full w-full flex-col justify-center gap-1 rounded-xl border px-3 py-2.5 transition',
+        left ? 'items-end text-right' : 'items-start text-left',
+        active
+          ? 'border-flame-500 bg-flame-500/10 shadow-sm'
+          : 'border-line bg-surface hover:border-line-strong hover:shadow-sm',
+        dimmed ? 'opacity-40' : '',
+      ].join(' ')}
+    >
+      <span className={`flex items-center gap-1.5 ${left ? 'flex-row-reverse' : ''}`}>
+        <span
+          className={`size-1.5 shrink-0 rounded-full ${CATEGORY_DOT[node.component.category] ?? 'bg-line-strong'}`}
+        />
+        {node.step && (
+          <span className="font-mono text-[10px] text-muted">
+            {String(node.step).padStart(2, '0')}
+          </span>
+        )}
+      </span>
+
+      <span className="line-clamp-2 text-[12px] font-semibold leading-snug text-strong">
+        {node.component.name}
+      </span>
+
+      <span className="text-[10px] uppercase tracking-wide text-muted">
+        {node.component.category}
+        {node.component.quantity > 1 && ` · ×${node.component.quantity}`}
+      </span>
+
+      {/* A tick pointing in at the device. */}
+      <span
+        aria-hidden="true"
+        className={[
+          'absolute top-1/2 h-px w-3 -translate-y-1/2 transition',
+          left ? '-right-3' : '-left-3',
+          active ? 'bg-flame-500' : 'bg-line',
+        ].join(' ')}
+      />
+    </button>
+  )
+}
+
+function BuyCard({ node, side, active, dimmed }) {
+  const left = side === 'left'
+  const links = purchaseLinksFor(node.component).slice(0, 3)
+  const lineTotal =
+    node.component.unit_price_cents != null
+      ? node.component.unit_price_cents * node.component.quantity
+      : null
+
+  return (
+    <div
+      data-ring="buy"
+      className={[
+        'flex h-full flex-col justify-center gap-1.5 rounded-xl border px-3 py-2.5 transition',
+        left ? 'items-end' : 'items-start',
+        active ? 'border-flame-500/50 bg-surface shadow-sm' : 'border-line-soft bg-sunken/70',
+        dimmed ? 'opacity-40' : '',
+      ].join(' ')}
+    >
+      {lineTotal != null ? (
+        <span className="font-mono text-[13px] font-bold text-flame-600">
+          {money(lineTotal, node.component.currency)}
+        </span>
+      ) : (
+        <span className="text-[10px] uppercase tracking-wide text-muted">No estimate</span>
+      )}
+
+      <span className={`flex flex-wrap gap-1 ${left ? 'justify-end' : ''}`}>
+        {links.map((link) => (
+          <a
+            key={link.retailer + link.url}
+            href={link.url}
+            target="_blank"
+            rel="noreferrer nofollow"
+            title={link.kind === 'product' ? 'Product page' : `Search ${link.label}`}
+            className={[
+              'inline-flex items-center gap-0.5 rounded border px-1 py-px text-[9px] font-medium transition',
+              link.kind === 'product'
+                ? 'border-flame-500/40 bg-flame-500/10 text-flame-600 hover:bg-flame-500/20'
+                : 'border-line bg-surface text-muted hover:border-line-strong hover:text-strong',
+            ].join(' ')}
+          >
+            {link.label}
+            <ExternalLink className="size-2" />
+          </a>
+        ))}
+      </span>
+    </div>
+  )
+}
 
 /* ------------------------------------------------------------------ atlas */
 
 export default function BuildAtlas({ project }) {
   const [selected, setSelected] = useState(null)
   const [explode, setExplode] = useState(0.5)
-  const [mode, setMode] = useState('radial')
+  const [mode, setMode] = useState('atlas')
 
-  // The dial needs real width. Below that the page falls back to viewer + table.
-  // This has to be a JS query, not a CSS `hidden`, or both viewers would mount and
-  // each would allocate its own WebGL context.
-  const wide = useMediaQuery('(min-width: 1024px)')
+  // The five-column plate needs real width; below this it becomes viewer + table.
+  const wide = useMediaQuery('(min-width: 1180px)')
 
   const layout = useMemo(() => buildLayout(project), [project])
 
-  // Order the ring by build sequence so the dial reads clockwise in assembly order.
-  const nodes = useMemo(() => {
+  /** Components in build order, split down the two sides of the page. */
+  const { left, right } = useMemo(() => {
     const stepById = new Map(
       layout.parts.filter((p) => p.isFirstInstance).map((p) => [p.componentId, p.stepNumber]),
     )
-    const ordered = [...(project.components ?? [])].sort((a, b) => {
-      const sa = stepById.get(a.id) ?? 999
-      const sb = stepById.get(b.id) ?? 999
-      return sa - sb || a.sort_order - b.sort_order
-    })
+    const ordered = [...(project.components ?? [])]
+      .sort((a, b) => {
+        const sa = stepById.get(a.id) ?? 999
+        const sb = stepById.get(b.id) ?? 999
+        return sa - sb || a.sort_order - b.sort_order
+      })
+      .map((component) => ({ component, step: stepById.get(component.id) ?? null }))
 
-    const shown = ordered.slice(0, MAX_NODES)
-    const total = shown.length
-
-    return shown.map((component, i) => {
-      const angle = (i / total) * Math.PI * 2 - Math.PI / 2
-      const offset = i % 2 ? STAGGER : 0
-      const partR = PART_R + offset
-      const buyR = BUY_R + offset
-      return {
-        component,
-        step: stepById.get(component.id) ?? null,
-        angle,
-        part: polar(angle, partR),
-        buy: polar(angle, buyR),
-        spokeFrom: polar(angle, CENTRE_R + 1),
-        spokeTo: polar(angle, buyR - 2),
-      }
-    })
+    const half = Math.ceil(ordered.length / 2)
+    return { left: ordered.slice(0, half), right: ordered.slice(half) }
   }, [project.components, layout])
 
-  const hidden = (project.components?.length ?? 0) - nodes.length
+  const rows = Math.max(left.length, right.length, 1)
+
+  const gridRef = useRef(null)
+  const cardRefs = useRef(new Map())
+  const lineRefs = useRef(new Map())
+
+  // handleProject runs from the render loop, so it reads the current selection from a
+  // ref rather than closing over it -- otherwise every selection would rebuild it.
+  const selectedRef = useRef(null)
+  selectedRef.current = selected
+
+  /**
+   * Draw a leader from each part card to that part in the 3D view.
+   *
+   * Called straight from the render loop, so it writes SVG attributes rather than
+   * going through state -- re-rendering the page every frame is what made an earlier
+   * version of this view stutter.
+   */
+  const handleProject = useCallback(
+    (projections) => {
+      const grid = gridRef.current
+      if (!grid) return
+      const box = grid.getBoundingClientRect()
+      const seen = new Set()
+
+      for (const { componentId, x, y } of projections) {
+        const line = lineRefs.current.get(componentId)
+        const card = cardRefs.current.get(componentId)
+        if (!line || !card) continue
+        seen.add(componentId)
+
+        const c = card.getBoundingClientRect()
+        const onLeft = c.left + c.width / 2 < box.left + box.width / 2
+        const sx = (onLeft ? c.right : c.left) - box.left
+        const sy = c.top + c.height / 2 - box.top
+        const ex = x - box.left
+        const ey = y - box.top
+
+        // Short horizontal lead-out of the card, then a curve into the part.
+        const stub = onLeft ? sx + 12 : sx - 12
+        const bend = (ex - stub) * 0.55
+        line.setAttribute(
+          'd',
+          `M ${sx} ${sy} H ${stub} C ${stub + bend} ${sy}, ${ex - bend} ${ey}, ${ex} ${ey}`,
+        )
+
+        const active = selectedRef.current === componentId
+        const dim = selectedRef.current && !active
+        line.style.opacity = dim ? '0.06' : active ? '0.85' : '0.22'
+        line.style.stroke = active ? 'var(--color-flame-500)' : 'var(--color-line-strong)'
+        line.style.strokeWidth = active ? '1.6' : '1'
+      }
+
+      // Anything the camera cannot see right now gets no line.
+      for (const [id, line] of lineRefs.current) {
+        if (!seen.has(id)) line.style.opacity = '0'
+      }
+    },
+    [],
+  )
+
+
   const selectedComponent = useMemo(
     () => (project.components ?? []).find((c) => c.id === selected) ?? null,
     [project.components, selected],
@@ -108,24 +238,46 @@ export default function BuildAtlas({ project }) {
     }
   }, [project.components])
 
+  const viewer = (
+    <Suspense
+      fallback={
+        <div className="grid size-full min-h-[20rem] place-items-center">
+          <Spinner label="Loading the 3D view" />
+        </div>
+      }
+    >
+      <ExplodedView
+        project={project}
+        bare={wide}
+        showCallouts={false}
+        showControls
+        selected={selected}
+        onSelect={setSelected}
+        explode={explode}
+        onExplodeChange={setExplode}
+        onProject={wide ? handleProject : undefined}
+        heightClass="h-[26rem]"
+      />
+    </Suspense>
+  )
+
   return (
     <section className="space-y-5">
-      {/* ------------------------------------------------------------ header */}
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Parts &amp; build</h2>
-          <p className="mt-0.5 text-sm text-ink-400">
+          <p className="mt-0.5 text-sm text-muted">
             {totals.parts} parts across {totals.lines} line items ·{' '}
-            <span className="font-mono text-flame-400">{money(totals.cents, project.currency)}</span>{' '}
+            <span className="font-mono text-flame-600">{money(totals.cents, project.currency)}</span>{' '}
             estimated
             {totals.unpriced > 0 && ` · ${totals.unpriced} without an estimate`}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex rounded-xl border border-ink-700 p-0.5">
+          <div className="flex rounded-xl border border-line bg-surface p-0.5">
             {[
-              { key: 'radial', label: 'Atlas', icon: Orbit },
+              { key: 'atlas', label: 'Atlas', icon: Workflow },
               { key: 'table', label: 'Table', icon: Table2 },
             ].map(({ key, label, icon: Icon }) => (
               <button
@@ -134,7 +286,7 @@ export default function BuildAtlas({ project }) {
                 onClick={() => setMode(key)}
                 className={[
                   'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition',
-                  mode === key ? 'bg-ink-800 text-ink-100' : 'text-ink-400 hover:text-ink-100',
+                  mode === key ? 'bg-sunken text-strong' : 'text-muted hover:text-strong',
                 ].join(' ')}
               >
                 <Icon className="size-3.5" />
@@ -163,166 +315,96 @@ export default function BuildAtlas({ project }) {
         <BomTable project={project} />
       ) : wide ? (
         <>
-          {/* -------------------------------------------------------- the dial */}
-          <div className="relative mx-auto aspect-square w-full max-w-[min(1000px,86vh)]">
-            {/* Rings and spokes */}
-            <svg
-              viewBox="0 0 100 100"
-              className="pointer-events-none absolute inset-0 size-full"
-              aria-hidden="true"
-            >
-              <circle cx="50" cy="50" r={PART_R} fill="none" stroke="currentColor"
-                      className="text-ink-700" strokeWidth="0.08" strokeDasharray="0.6 0.9" />
-              <circle cx="50" cy="50" r={BUY_R} fill="none" stroke="currentColor"
-                      className="text-ink-800" strokeWidth="0.08" strokeDasharray="0.6 0.9" />
-              {nodes.map((n) => {
-                const active = selected === n.component.id
-                return (
-                  <line
-                    key={n.component.id}
-                    x1={n.spokeFrom.x}
-                    y1={n.spokeFrom.y}
-                    x2={n.spokeTo.x}
-                    y2={n.spokeTo.y}
-                    stroke={active ? '#f97316' : 'currentColor'}
-                    className={active ? '' : 'text-ink-700'}
-                    strokeWidth={active ? 0.22 : 0.1}
-                    opacity={selected && !active ? 0.25 : 1}
-                  />
-                )
-              })}
-            </svg>
-
-            {/* Centre: the device */}
-            <div
-              className="absolute overflow-hidden rounded-full border border-ink-700 bg-ink-900 shadow-2xl shadow-black/40"
-              style={{
-                left: `${50 - CENTRE_R}%`,
-                top: `${50 - CENTRE_R}%`,
-                width: `${CENTRE_R * 2}%`,
-                height: `${CENTRE_R * 2}%`,
-              }}
-            >
-              <Suspense
-                fallback={
-                  <div className="grid size-full place-items-center">
-                    <Spinner label="Loading 3D" />
-                  </div>
-                }
-              >
-                <ExplodedView
-                  project={project}
-                  bare
-                  showCallouts={false}
-                  showControls={false}
-                  selected={selected}
-                  onSelect={setSelected}
-                  explode={explode}
-                  onExplodeChange={setExplode}
-                />
-              </Suspense>
-            </div>
-
-            {/* Ring 1: the components */}
-            {nodes.map((n) => {
-              const active = selected === n.component.id
+          {/* price · part · DEVICE · part · price */}
+          <div
+            ref={gridRef}
+            className="relative grid items-stretch gap-x-3 gap-y-2.5"
+            style={{
+              gridTemplateColumns: '0.8fr 1fr minmax(27rem, 1.75fr) 1fr 0.8fr',
+              gridTemplateRows: `repeat(${rows}, minmax(4.5rem, auto))`,
+            }}
+          >
+            {left.map((node, i) => {
+              const active = selected === node.component.id
+              const dimmed = Boolean(selected) && !active
               return (
-                <button
-                  key={n.component.id}
-                  type="button"
-                  onClick={() => setSelected(active ? null : n.component.id)}
-                  style={{
-                    left: `${n.part.x}%`,
-                    top: `${n.part.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    opacity: selected && !active ? 0.4 : 1,
-                  }}
-                  className={[
-                    'absolute flex w-[7rem] items-start gap-1 rounded-lg border px-1.5 py-1 text-left text-[9px] leading-snug transition',
-                    active
-                      ? 'border-flame-500 bg-flame-500/15 text-ink-100'
-                      : 'border-ink-700 bg-ink-900/90 text-ink-200 hover:border-ink-500',
-                  ].join(' ')}
-                  title={n.component.name}
-                  data-ring="part"
-                >
-                  <span
-                    className={`mt-1 size-1.5 shrink-0 rounded-full ${CATEGORY_DOT[n.component.category] ?? 'bg-ink-400'}`}
-                  />
-                  <span className="line-clamp-2 min-w-0 flex-1 font-medium">{n.component.name}</span>
-                  {n.component.quantity > 1 && (
-                    <span className="shrink-0 font-mono text-[10px] text-ink-400">
-                      ×{n.component.quantity}
-                    </span>
-                  )}
-                </button>
+                <Fragment key={node.component.id}>
+                  <div style={{ gridColumn: 1, gridRow: i + 1 }}>
+                    <BuyCard node={node} side="left" active={active} dimmed={dimmed} />
+                  </div>
+                  <div style={{ gridColumn: 2, gridRow: i + 1 }}>
+                    <PartCard
+                      node={node}
+                      side="left"
+                      active={active}
+                      dimmed={dimmed}
+                      onSelect={setSelected}
+                      cardRef={(el) => {
+                        if (el) cardRefs.current.set(node.component.id, el)
+                        else cardRefs.current.delete(node.component.id)
+                      }}
+                    />
+                  </div>
+                </Fragment>
               )
             })}
 
-            {/* Ring 2: cost and where to buy */}
-            {nodes.map((n) => {
-              const active = selected === n.component.id
-              const links = purchaseLinksFor(n.component).slice(0, active ? 4 : 2)
-              const lineTotal =
-                n.component.unit_price_cents != null
-                  ? n.component.unit_price_cents * n.component.quantity
-                  : null
+            <div
+              style={{ gridColumn: 3, gridRow: `1 / span ${rows}` }}
+              className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm"
+            >
+              <div className="sticky top-24 h-[34rem]">{viewer}</div>
+            </div>
 
-              return (
-                <div
-                  key={n.component.id}
-                  data-ring="buy"
-                  style={{
-                    left: `${n.buy.x}%`,
-                    top: `${n.buy.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    opacity: selected && !active ? 0.3 : 1,
+            {/* Leaders sit above the cards so they can reach into the 3D view. */}
+            <svg
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-10 size-full overflow-visible"
+              style={{ gridColumn: '1 / -1', gridRow: `1 / span ${rows}` }}
+            >
+              {[...left, ...right].map((node) => (
+                <path
+                  key={node.component.id}
+                  data-leader={node.component.id}
+                  ref={(el) => {
+                    if (el) lineRefs.current.set(node.component.id, el)
+                    else lineRefs.current.delete(node.component.id)
                   }}
-                  className={[
-                    'absolute flex w-[6.25rem] flex-col gap-0.5 rounded-lg border px-1.5 py-1 transition',
-                    active
-                      ? 'border-flame-500/60 bg-ink-850 shadow-lg shadow-black/40'
-                      : 'border-ink-800 bg-ink-900/70',
-                  ].join(' ')}
-                >
-                  {lineTotal != null ? (
-                    <span className="font-mono text-[11px] font-bold text-flame-400">
-                      {money(lineTotal, n.component.currency)}
-                    </span>
-                  ) : (
-                    <span className="text-[9px] uppercase tracking-wide text-ink-400">
-                      No estimate
-                    </span>
-                  )}
-                  <span className="flex flex-wrap gap-1">
-                    {links.map((link) => (
-                      <a
-                        key={link.retailer + link.url}
-                        href={link.url}
-                        target="_blank"
-                        rel="noreferrer nofollow"
-                        title={link.kind === 'product' ? 'Product page' : `Search ${link.label}`}
-                        className={[
-                          'inline-flex items-center gap-0.5 rounded border px-1 py-px text-[9px] font-medium transition',
-                          link.kind === 'product'
-                            ? 'border-flame-500/40 bg-flame-500/10 text-flame-300 hover:bg-flame-500/20'
-                            : 'border-ink-700 text-ink-400 hover:border-ink-500 hover:text-ink-100',
-                        ].join(' ')}
-                      >
-                        {link.label}
-                        <ExternalLink className="size-2" />
-                      </a>
-                    ))}
-                  </span>
-                </div>
+                  fill="none"
+                  style={{ opacity: 0 }}
+                />
+              ))}
+            </svg>
+
+            {right.map((node, i) => {
+              const active = selected === node.component.id
+              const dimmed = Boolean(selected) && !active
+              return (
+                <Fragment key={node.component.id}>
+                  <div style={{ gridColumn: 4, gridRow: i + 1 }}>
+                    <PartCard
+                      node={node}
+                      side="right"
+                      active={active}
+                      dimmed={dimmed}
+                      onSelect={setSelected}
+                      cardRef={(el) => {
+                        if (el) cardRefs.current.set(node.component.id, el)
+                        else cardRefs.current.delete(node.component.id)
+                      }}
+                    />
+                  </div>
+                  <div style={{ gridColumn: 5, gridRow: i + 1 }}>
+                    <BuyCard node={node} side="right" active={active} dimmed={dimmed} />
+                  </div>
+                </Fragment>
               )
             })}
           </div>
 
-          {/* Below the dial: explode control + the selected part's detail */}
           <div className="flex flex-wrap items-center gap-4">
             <label className="card flex min-w-[18rem] flex-1 items-center gap-3 p-3.5">
-              <Layers className="size-4 shrink-0 text-flame-400" />
+              <Layers className="size-4 shrink-0 text-flame-500" />
               <span className="label shrink-0">Explode</span>
               <input
                 type="range"
@@ -331,31 +413,27 @@ export default function BuildAtlas({ project }) {
                 step="0.01"
                 value={explode}
                 onChange={(e) => setExplode(Number(e.target.value))}
-                className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-ink-700 accent-flame-500"
+                className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-line accent-flame-500"
               />
-              <span className="w-9 shrink-0 text-right font-mono text-xs text-ink-400">
+              <span className="w-9 shrink-0 text-right font-mono text-xs text-muted">
                 {Math.round(explode * 100)}%
               </span>
             </label>
 
-            {hidden > 0 && (
-              <button type="button" className="btn-ghost text-xs" onClick={() => setMode('table')}>
-                <LayoutGrid className="size-3.5" />
-                {hidden} more {hidden === 1 ? 'part' : 'parts'} in the table
-              </button>
-            )}
+            <p className="text-xs text-muted">
+              Parts read in build order — down the left, then down the right. Price and suppliers
+              sit outside each part.
+            </p>
           </div>
 
           {selectedComponent && (
             <div className="card flex flex-wrap items-start justify-between gap-4 p-4">
               <div className="min-w-0 flex-1">
-                <p className="font-semibold text-ink-100">{selectedComponent.name}</p>
+                <p className="font-semibold text-strong">{selectedComponent.name}</p>
                 {selectedComponent.description && (
-                  <p className="mt-1 max-w-2xl text-sm text-ink-300">
-                    {selectedComponent.description}
-                  </p>
+                  <p className="mt-1 max-w-2xl text-sm text-body">{selectedComponent.description}</p>
                 )}
-                <p className="mt-1.5 text-xs text-ink-400">
+                <p className="mt-1.5 text-xs text-muted">
                   {selectedComponent.category} · ×{selectedComponent.quantity} ·{' '}
                   {money(selectedComponent.unit_price_cents, selectedComponent.currency)} each
                   {selectedComponent.substitutes?.length > 0 &&
@@ -371,26 +449,10 @@ export default function BuildAtlas({ project }) {
               </button>
             </div>
           )}
-
         </>
       ) : (
         <div className="space-y-5">
-          <Suspense
-            fallback={
-              <div className="card grid place-items-center py-20">
-                <Spinner label="Loading the 3D viewer" />
-              </div>
-            }
-          >
-            <ExplodedView
-              project={project}
-              selected={selected}
-              onSelect={setSelected}
-              explode={explode}
-              onExplodeChange={setExplode}
-              heightClass="h-[24rem]"
-            />
-          </Suspense>
+          {viewer}
           <BomTable project={project} />
         </div>
       )}

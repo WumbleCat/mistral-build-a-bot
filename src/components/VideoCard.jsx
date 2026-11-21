@@ -51,7 +51,7 @@ export default function VideoCard({ projectId, stepId = null, kind = 'step', vid
   /* -------------------------------------------------------- ready, with file */
   if (status === 'ready' && video.video_url) {
     return (
-      <div className="overflow-hidden rounded-xl border border-ink-700 bg-ink-950">
+      <div className="overflow-hidden rounded-xl border border-line bg-canvas">
         <video
           src={video.video_url}
           poster={video.thumbnail_url ?? undefined}
@@ -61,12 +61,12 @@ export default function VideoCard({ projectId, stepId = null, kind = 'step', vid
           className="aspect-video w-full bg-black"
         />
         <div className="flex items-center justify-between gap-3 px-3 py-2">
-          <span className="truncate text-[11px] text-ink-400">{label}</span>
+          <span className="truncate text-[11px] text-muted">{label}</span>
           <button
             type="button"
             onClick={generate}
             disabled={busy}
-            className="shrink-0 text-[11px] text-ink-400 transition hover:text-flame-300"
+            className="shrink-0 text-[11px] text-muted transition hover:text-flame-300"
           >
             <RefreshCw className="inline size-3" /> Regenerate
           </button>
@@ -78,15 +78,15 @@ export default function VideoCard({ projectId, stepId = null, kind = 'step', vid
   /* ------------------------------------------- ready, storyboard (mock mode) */
   if (status === 'ready' && !video.video_url) {
     return (
-      <div className="rounded-xl border border-ink-700 bg-gradient-to-br from-ink-850 to-ink-900 p-4">
+      <div className="rounded-xl border border-line bg-gradient-to-br from-sunken to-surface p-4">
         <div className="mb-2.5 flex items-center gap-2">
           <span className="grid size-7 place-items-center rounded-lg bg-flame-500/15 text-flame-400">
             <Film className="size-3.5" />
           </span>
           <span className="label">Storyboard · shot description</span>
         </div>
-        <p className="text-sm leading-relaxed text-ink-300">{video.prompt}</p>
-        <p className="mt-3 border-t border-ink-800 pt-2.5 text-[11px] text-ink-400">
+        <p className="text-sm leading-relaxed text-body">{video.prompt}</p>
+        <p className="mt-3 border-t border-line-soft pt-2.5 text-[11px] text-muted">
           Set <code className="font-mono text-flame-300">VIDEO_PROVIDER</code> to a video model and
           this becomes a rendered clip.
         </p>
@@ -102,7 +102,7 @@ export default function VideoCard({ projectId, stepId = null, kind = 'step', vid
           <LoaderCircle className="size-4 animate-spin" />
           Rendering the clip…
         </div>
-        {video.prompt && <p className="mt-2 line-clamp-3 text-xs text-ink-400">{video.prompt}</p>}
+        {video.prompt && <p className="mt-2 line-clamp-3 text-xs text-muted">{video.prompt}</p>}
       </div>
     )
   }
@@ -110,12 +110,12 @@ export default function VideoCard({ projectId, stepId = null, kind = 'step', vid
   /* ----------------------------------------------------------------- failed */
   if (status === 'failed') {
     return (
-      <div className="rounded-xl border border-ink-700 bg-ink-900 p-4">
+      <div className="rounded-xl border border-line bg-surface p-4">
         <div className="flex items-start gap-2.5">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-flame-300" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-ink-100">Video generation failed</p>
-            <p className="mt-0.5 break-words text-xs text-ink-400">{video.error}</p>
+            <p className="text-sm font-medium text-strong">Video generation failed</p>
+            <p className="mt-0.5 break-words text-xs text-muted">{video.error}</p>
             <button type="button" onClick={generate} disabled={busy} className="btn-ghost mt-3 px-3 py-1.5 text-xs">
               <RefreshCw className="size-3.5" />
               Try again
@@ -128,7 +128,7 @@ export default function VideoCard({ projectId, stepId = null, kind = 'step', vid
 
   /* ------------------------------------------------------------ nothing yet */
   return (
-    <div className="rounded-xl border border-dashed border-ink-700 bg-ink-900/40 p-4">
+    <div className="rounded-xl border border-dashed border-line bg-surface/40 p-4">
       <button type="button" onClick={generate} disabled={busy} className="btn-ghost w-full">
         {busy ? <LoaderCircle className="size-4 animate-spin" /> : kind === 'walkthrough' ? <Play className="size-4" /> : <Sparkles className="size-4" />}
         {busy ? 'Starting…' : kind === 'walkthrough' ? 'Generate full walkthrough' : 'Generate demo clip'}

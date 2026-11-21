@@ -62,7 +62,7 @@ export default function Home() {
             </span>
           </h1>
 
-          <p className="max-w-lg text-[15px] leading-relaxed text-ink-300">
+          <p className="max-w-lg text-[15px] leading-relaxed text-body">
             A camera, a circuit board, a keyboard, a drone, a robot. BuildFromVision recognises the
             device, dismantles it into components you can actually order, prices the whole build
             with a link to a distributor for each part, writes the assembly steps, and generates a
@@ -75,7 +75,7 @@ export default function Home() {
           <form onSubmit={handleSubmit} className="card space-y-5 p-5 sm:p-6">
             <div>
               <h2 className="text-base font-semibold">Start a build</h2>
-              <p className="mt-0.5 text-xs text-ink-400">
+              <p className="mt-0.5 text-xs text-muted">
                 No account needed — you can attach an email afterwards to keep your builds.
               </p>
             </div>
@@ -130,7 +130,7 @@ export default function Home() {
               </p>
             )}
 
-            <p className="text-center text-[11px] text-ink-400">
+            <p className="text-center text-[11px] text-muted">
               Analysis takes 20–60 seconds. You can watch it work.
             </p>
           </form>
@@ -142,19 +142,19 @@ export default function Home() {
       {/* The four stages, as a strip. In the hero column they were cramped into
           two tight rows and left a dead band across the bottom of the page. */}
       <section aria-label="How it works">
-        <ol className="grid gap-px overflow-hidden rounded-2xl border border-ink-700/70 bg-ink-700/70 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="grid gap-px overflow-hidden rounded-2xl border border-line/70 bg-line/70 sm:grid-cols-2 lg:grid-cols-4">
           {PIPELINE.map(({ icon: Icon, title: t, body }, i) => (
-            <li key={t} className="group relative bg-ink-900/80 p-5 transition hover:bg-ink-850">
+            <li key={t} className="group relative bg-surface/80 p-5 transition hover:bg-sunken">
               <div className="flex items-center gap-2.5">
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-ink-700 bg-ink-850 text-flame-400 transition group-hover:border-flame-500/40 group-hover:bg-flame-500/10">
+                <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-line bg-sunken text-flame-400 transition group-hover:border-flame-500/40 group-hover:bg-flame-500/10">
                   <Icon className="size-4" />
                 </span>
-                <span className="font-mono text-[11px] text-ink-600">
+                <span className="font-mono text-[11px] text-line-strong">
                   {String(i + 1).padStart(2, '0')}
                 </span>
               </div>
-              <h3 className="mt-3 text-sm font-semibold text-ink-100">{t}</h3>
-              <p className="mt-1 text-xs leading-relaxed text-ink-400">{body}</p>
+              <h3 className="mt-3 text-sm font-semibold text-strong">{t}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted">{body}</p>
             </li>
           ))}
         </ol>
