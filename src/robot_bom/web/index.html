@@ -119,11 +119,18 @@
     <div id="thumbs"></div>
     <div class="row">
       <label>Project name <input type="text" id="project" value="my-rover"></label>
+      <label>Detection
+        <select id="detection">
+          <option value="vlm">VLM / LLM only (Mistral)</option>
+          <option value="grounding">Mistral + Grounding DINO + SAM 2 (local, slower)</option>
+        </select>
+      </label>
       <label class="inline" title="Canned sample responses; no API call is made"><input type="checkbox" id="mock"> Mock mode (no API call)</label>
       <button id="analyze-btn" type="button" disabled>Analyze photos</button>
       <button id="clear-btn" type="button" class="ghost hidden">Start over</button>
       <div id="status" class="hidden"><div class="spinner"></div><span id="status-text"></span></div>
     </div>
+    <p class="hint" id="detection-hint" style="margin:10px 0 0"></p>
   </section>
 
   <div id="error" class="error hidden"></div>
@@ -134,7 +141,8 @@
 
     <section class="card">
       <h2>Your photos</h2>
-      <p class="hint">Outlines are the model's approximate locations and exist only where it could localise a part. Hover a row below to highlight it.</p>
+      <p class="hint" id="photos-hint"></p>
+      <label class="inline hidden" id="masks-toggle" style="margin-bottom:10px"><input type="checkbox" id="masks" checked> Show SAM 2 masks</label>
       <div id="photos"></div>
     </section>
 
@@ -290,8 +298,10 @@ function componentTable(components, visible) {
       el("td", {}, field(c, "sku", "text")),
       el("td", {}, field(c, "specs", "specs")),
     ]);
+    const located = c.evidence.filter((e) => e.source === "grounding_dino");
     const detail = el("td", { colSpan: headers.length }, [
-      ...c.evidence.map((e) => el("div", {}, [el("code", { text: e.image_id }), " " + e.description])),
+      ...c.evidence.filter((e) => e.source !== "grounding_dino").map((e) => el("div", {}, [el("code", { text: e.image_id }), " " + e.description])),
+      located.length ? el("div", { text: `Located by Grounding DINO: ${located.length} region(s) outlined on the photo (detector scores ${located.map((e) => (/score ([\d.]+)/.exec(e.description) || [])[1]).filter(Boolean).join(", ")}; not calibrated).` }) : null,
       ...(c.notes || []).map((note) => el("div", { class: "note", text: note })),
     ]);
     group.append(main, el("tr", { class: "detail" }, detail));
@@ -307,7 +317,8 @@ function renderPhotos(bom) {
   const colour = {};
   bom.components.forEach((c, i) => { colour[c.id] = PALETTE[i % PALETTE.length]; });
   $("photos").replaceChildren(...bom.image_ids.map((imageId) => {
-    const frame = el("div", { class: "frame" }, el("img", { src: state.images[imageId] || "", alt: imageId }));
+    const masked = $("masks").checked && state.overlays[imageId];
+    const frame = el("div", { class: "frame" }, el("img", { src: masked || state.images[imageId] || "", alt: imageId }));
     let count = 0;
     for (const c of bom.components) {
       if (c.status === "rejected") continue;
@@ -349,6 +360,11 @@ function render(bom) {
     stat(bom.components.filter((c) => c.status === "confirmed").length + " / " + bom.components.length, "lines confirmed"),
   );
 
+  const grounded = bom.metadata.detection_mode === "vlm+grounding";
+  $("photos-hint").textContent = grounded
+    ? `Outlines come from Grounding DINO for the parts the vision model listed (${bom.metadata.grounder}); parts it could not locate keep the vision model's rough box. Detector hits never add parts or change counts. Hover a row below to highlight it.`
+    : "VLM-only mode: outlines are the vision model's approximate locations and exist only where it could localise a part. Hover a row below to highlight it.";
+  $("masks-toggle").classList.toggle("hidden", Object.keys(state.overlays).length === 0);
   renderPhotos(bom);
   $("observed").replaceChildren(componentTable(observed, true));
   $("unverified").replaceChildren(componentTable(unverified, false));
@@ -400,8 +416,12 @@ $("analyze-btn").addEventListener("click", async () => {
   for (const entry of submitted) data.append("images", entry.file);
   data.append("project_name", $("project").value);
   data.append("mock", $("mock").checked ? "true" : "false");
+  const grounding = $("detection").value === "grounding";
+  data.append("grounding", grounding ? "true" : "false");
+  localStorage.setItem("robot-bom-detection", $("detection").value);
   $("analyze-btn").disabled = true;
-  busy($("mock").checked ? "Loading mock result…" : `Analyzing ${submitted.length} photo(s) with Mistral — this can take a few minutes…`);
+  busy(($("mock").checked ? "Loading mock result" : `Analyzing ${submitted.length} photo(s) with Mistral — this can take a few minutes`)
+    + (grounding ? ", then locating parts with Grounding DINO + SAM 2…" : "…"));
   try {
     const result = await call("/analyze", { method: "POST", body: data });
     const images = {};
@@ -409,7 +429,7 @@ $("analyze-btn").addEventListener("click", async () => {
       const position = parseInt((/^img(\d+)-/.exec(imageId) || [])[1], 10);
       if (submitted[position - 1]) images[imageId] = submitted[position - 1].url;
     }
-    state = { job_id: result.job_id, review: result.review, images };
+    state = { job_id: result.job_id, review: result.review, images, overlays: result.overlays || {} };
     $("downloads").replaceChildren();
     $("clear-btn").classList.remove("hidden");
     render(state.review.bom);
@@ -446,7 +466,23 @@ fetch("/health").then((r) => r.json()).then((h) => {
   const key = h.api_key_configured ? el("b", { text: "API key configured" }) : el("b", { class: "off", text: "no API key — mock mode only" });
   $("env").replaceChildren("Model: ", el("b", { text: h.vision_model }), " · ", key);
   if (!h.api_key_configured || h.mock_default) $("mock").checked = true;
+  const select = $("detection"), option = select.querySelector('option[value="grounding"]');
+  if (!h.grounding_available) {
+    option.disabled = true; select.value = "vlm";
+    $("detection-hint").textContent = "Grounding DINO + SAM 2 mode is unavailable: torch / transformers are not installed in this environment. The app runs on the vision/language model alone.";
+  } else {
+    select.value = localStorage.getItem("robot-bom-detection") || (h.grounding_default ? "grounding" : "vlm");
+    if (!h.sam_available) option.textContent = "Mistral + Grounding DINO (local, slower; SAM 2 not installed)";
+    describeDetection();
+  }
 }).catch(() => {});
+function describeDetection() {
+  $("detection-hint").textContent = $("detection").value === "grounding"
+    ? "Mistral lists the visible parts, then local Grounding DINO + SAM 2 models outline them on the photo. Slower (runs on this computer); the models never add parts or counts."
+    : "Only the Mistral vision/language model is used — no local detection models. Fastest; outlines are approximate.";
+}
+$("detection").addEventListener("change", describeDetection);
+$("masks").addEventListener("change", () => { if (state) renderPhotos(state.review.bom); });
 renderThumbs();
 </script>
 </body>
