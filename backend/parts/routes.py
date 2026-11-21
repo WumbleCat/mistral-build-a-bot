@@ -1,11 +1,18 @@
 """FastAPI routes for the Parts & Shop service (Person 3).
 
 Mounted by backend/main.py under /api.
+
+POST /api/match and /api/match/smart accept the shared VisionResult body
+(backend/shared/schemas.py): {"parts": [{name, category, qty, confidence}],
+"robot_guess": ..., "owned": [...]}. The legacy {"components": [...]} shape is
+still accepted.
 """
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+
+from shared.schemas import MatchRequest
 
 from . import agents, match
 
@@ -39,15 +46,34 @@ def get_recipe(recipe_id: str) -> dict:
 
 
 @router.post("/match")
-def post_match(payload: dict) -> dict:
-    """Deterministic BOM (fast, no LLM). Body: {"components": [...], "owned": [...]}."""
-    return match.match_components(payload)
+def post_match(req: MatchRequest) -> dict:
+    """Deterministic BOM (fast, no LLM). Body: VisionResult (+owned)."""
+    return match.match_components(req.model_dump())
 
 
 @router.post("/match/smart")
-def post_match_smart(payload: dict) -> dict:
-    """Multi-agent BOM + warnings + substitutions. Falls back to /api/match on any failure."""
-    return agents.smart_match(payload)
+async def post_match_smart(req: MatchRequest,
+                           async_mode: bool = Query(False, alias="async")) -> dict:
+    """Multi-agent BOM + warnings + substitutions. Falls back to /api/match on any failure.
+
+    With ?async=true returns the fast deterministic BOM immediately plus a job_id;
+    poll GET /api/jobs/{job_id} for the agent-enriched result.
+    """
+    payload = req.model_dump()
+    if async_mode:
+        job_id = agents.start_smart_job(payload)
+        fast = match.match_components(payload)
+        return {"job_id": job_id, "status": "running", "smart": False, **fast}
+    return await agents.smart_match_async(payload)
+
+
+@router.get("/jobs/{job_id}")
+def get_job(job_id: str) -> dict:
+    """Status of an async /api/match/smart job. Returns the full result when done."""
+    job = agents.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"unknown job_id: {job_id}")
+    return job
 
 
 @router.post("/alternatives")

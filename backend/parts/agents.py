@@ -28,6 +28,9 @@ import asyncio
 import hashlib
 import json
 import os
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -298,10 +301,104 @@ def _out(state: Any, output_type: type[BaseModel]) -> BaseModel:
 # ---------------------------------------------------------------------------
 
 _CACHE: dict[str, dict] = {}
+_CACHE_DIR = Path(__file__).parent / ".cache"
+_CACHE_FILE = _CACHE_DIR / "smart_match.json"
 
 
 def _cache_key(payload: dict) -> str:
     return hashlib.sha1(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def _load_file_cache() -> dict:
+    """Load the persistent smart-match cache (JSON file) into memory."""
+    try:
+        if _CACHE_FILE.exists():
+            return json.loads(_CACHE_FILE.read_text())
+    except Exception:
+        pass
+    return {}
+
+
+def _save_file_cache() -> None:
+    """Persist the smart-match cache to disk (best effort)."""
+    try:
+        _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        _CACHE_FILE.write_text(json.dumps(_CACHE, default=str))
+    except Exception:
+        pass
+
+
+_CACHE.update(_load_file_cache())
+
+# The 3 demo/test inputs (mirrors tests/test_match.py) — pre-warmed at startup,
+# obstacle_avoider_car first because it is the live-demo robot.
+DEMO_INPUTS: list[dict] = [
+    {"parts": [
+        {"name": "Arduino Uno", "category": "controller", "qty": 1, "confidence": 0.95},
+        {"name": "tb6612 motor driver", "category": "motor_driver", "qty": 1, "confidence": 0.9},
+        {"name": "yellow motor", "category": "motor", "qty": 2, "confidence": 0.9},
+        {"name": "ultrasonic sensor", "category": "sensor", "qty": 1, "confidence": 0.85},
+        {"name": "2wd chassis", "category": "chassis", "qty": 1, "confidence": 0.8},
+    ], "robot_guess": "obstacle-avoiding car", "owned": []},
+    {"parts": [
+        {"name": "arduino", "category": "controller", "qty": 1, "confidence": 0.9},
+        {"name": "tt motor", "category": "motor", "qty": 2, "confidence": 0.9},
+        {"name": "line sensor", "category": "sensor", "qty": 3, "confidence": 0.85},
+        {"name": "flux capacitor", "category": "power", "qty": 1, "confidence": 0.3},
+    ], "robot_guess": "line-following car", "owned": []},
+    {"parts": [
+        {"name": "mearm", "category": "chassis", "qty": 1, "confidence": 0.9},
+        {"name": "5v power supply", "category": "power", "qty": 1, "confidence": 0.8},
+    ], "robot_guess": "robot arm", "owned": []},
+]
+
+
+async def prewarm() -> None:
+    """Pre-warm the smart-match cache for the demo inputs (called at startup).
+
+    Skipped in BFV_MOCK mode or without an API key (the deterministic result is
+    cached instead). Never raises — a failed pre-warm must not block the server.
+    """
+    try:
+        for payload in DEMO_INPUTS:
+            try:
+                await smart_match_async(payload)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Async jobs: POST /api/match/smart?async=true -> job_id; GET /api/jobs/{id}
+# ---------------------------------------------------------------------------
+
+_JOBS: dict[str, dict] = {}
+
+
+def start_smart_job(payload: dict) -> str:
+    """Start a background smart-match job. Must be called from a running event loop."""
+    job_id = uuid.uuid4().hex[:12]
+    _JOBS[job_id] = {
+        "job_id": job_id,
+        "status": "running",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    asyncio.create_task(_run_job(job_id, payload))
+    return job_id
+
+
+async def _run_job(job_id: str, payload: dict) -> None:
+    try:
+        result = await smart_match_async(payload)
+        _JOBS[job_id].update({"status": "done", "finished_at": datetime.now(timezone.utc).isoformat(),
+                               "result": result})
+    except Exception as e:
+        _JOBS[job_id].update({"status": "error", "error": f"{type(e).__name__}: {e}"})
+
+
+def get_job(job_id: str) -> dict | None:
+    return _JOBS.get(job_id)
 
 
 def alternatives_for(part_id: str) -> dict:
@@ -328,12 +425,82 @@ def alternatives_for(part_id: str) -> dict:
     return {"part_id": part_id, "name": item["name"], "alternatives": alts}
 
 
+async def _stage_matcher(baseline: dict) -> MatchResolution | None:
+    """catalog-matcher: resolve unmatched components to catalogue IDs."""
+    if not baseline["unmatched"]:
+        return None
+    matcher = create_catalog_matcher()
+    answers = agents.ClientToolAnswers(
+        search_catalog.answer(lambda query, category=None, limit=5:
+                              _search_catalog_answer(query, category=category, limit=limit)),
+    )
+    content = (f"Robot: {baseline['robot_name']} (recipe {baseline['recipe_id']}). "
+               f"Resolve these unmatched components to catalogue IDs:\n"
+               f"{json.dumps(baseline['unmatched'])}")
+    state = await run_agent(matcher, content, MatchResolution, on_client_tool=answers)
+    return _out(state, MatchResolution)
+
+
+async def _stage_scout(bom_rows: list[dict]) -> PriceScoutResult | None:
+    """price-scout (optional): find UK prices for TODO-url parts. Skips cleanly."""
+    todo_parts = [r for r in bom_rows if r.get("url") == "TODO"]
+    if not todo_parts:
+        return None
+    scout = create_price_scout()
+    answers = agents.ClientToolAnswers(
+        web_search.answer(lambda query, max_results=5: _web_search_impl(query, max_results)),
+    )
+    content = ("Find current UK price + product page for these parts (allowed shops only):\n"
+               + json.dumps([{"part_id": r["part_id"], "name": r["name"]} for r in todo_parts], indent=2))
+    state = await run_agent(scout, content, PriceScoutResult, on_client_tool=answers)
+    return _out(state, PriceScoutResult)
+
+
+async def _stage_substitutions(payload: dict, baseline_json: str) -> SubstitutionAdvice | None:
+    """substitution-advisor: alternatives for owned parts."""
+    owned = set(payload.get("owned", []) or [])
+    if not owned:
+        return None
+    advisor = create_substitution_advisor()
+    content = (f"Suggest up to 2 alternatives for these parts the user already owns or wants to replace: "
+               f"{json.dumps(list(owned))}\nBOM:\n{baseline_json}")
+    state = await run_agent(advisor, content, SubstitutionAdvice)
+    return _out(state, SubstitutionAdvice)
+
+
+async def _stage_audit(robot_name: str, bom_rows: list[dict]) -> AuditResult | None:
+    """bom-auditor: compatibility warnings (incl. L298N + 6V AA pack rule)."""
+    bom_with_specs = []
+    for row in bom_rows:
+        item = match.get_item(row["part_id"]) or {}
+        bom_with_specs.append({**row, "specs": item.get("specs", {})})
+    auditor = create_bom_auditor()
+    content = json.dumps({"robot": robot_name, "bom": bom_with_specs}, indent=2)
+    state = await run_agent(auditor, content, AuditResult)
+    return _out(state, AuditResult)
+
+
+async def _safe(coro) -> object:
+    """Run a stage, converting any failure into an exception sentinel (never raises)."""
+    try:
+        return await coro
+    except Exception as e:
+        return e
+
+
 async def smart_match_async(payload: dict) -> dict:
-    """Multi-agent BOM. Always returns the §8 contract keys; on any agent failure
-    it returns the deterministic result with smart=false."""
+    """Multi-agent BOM. Always returns the §8 contract keys; on agent failure the
+    affected stage is skipped and the deterministic result is kept (smart flag
+    reflects whether any agent contributed). Results cached in memory + JSON file.
+
+    Speed: matcher, price-scout, substitution-advisor and bom-auditor run in
+    PARALLEL (asyncio.gather); the parts-coordinator runs last.
+    """
     key = _cache_key(payload)
     if key in _CACHE:
-        return _CACHE[key]
+        cached = dict(_CACHE[key])
+        cached["cached"] = True
+        return cached
 
     baseline = match.match_components(payload)
     result = dict(baseline)
@@ -346,98 +513,87 @@ async def smart_match_async(payload: dict) -> dict:
     if os.getenv("BFV_MOCK", "0") == "1" or not os.getenv("MISTRAL_API_KEY"):
         result["agent_trace"].append("smart-skipped (BFV_MOCK or no API key) — deterministic only")
         _CACHE[key] = result
+        _save_file_cache()
         return result
 
+    components_json = json.dumps(payload.get("components") or payload.get("parts") or [], indent=2, default=str)
+    baseline_json = json.dumps(baseline, indent=2)
+
+    # matcher, price-scout, substitution-advisor, bom-auditor — in parallel
+    matcher_res, scout_res, subst_res, audit_res = await asyncio.gather(
+        _safe(_stage_matcher(baseline)),
+        _safe(_stage_scout(baseline["bom"])),
+        _safe(_stage_substitutions(payload, baseline_json)),
+        _safe(_stage_audit(baseline["robot_name"], baseline["bom"])),
+    )
+
+    contributed = False
+
+    # assemble catalog-matcher resolutions into the BOM
+    if isinstance(matcher_res, MatchResolution):
+        contributed = True
+        result["agent_trace"].append(f"catalog-matcher: {len(matcher_res.resolutions)} resolved")
+        resolved_names = set()
+        for r in matcher_res.resolutions:
+            pid = r.part_id
+            resolved_names.add(r.name)
+            if pid and match.get_item(pid):
+                qty = int(r.qty or 1)
+                item = match.get_item(pid)
+                unit_gbp = match.to_gbp(item["price"], item["currency"])
+                line = round(unit_gbp * qty, 2)
+                row = {
+                    "part_id": pid, "name": item["name"], "category": item["category"],
+                    "shop": item["shop"], "url": item["url"],
+                    "currency": item["currency"], "unit_price": item["price"],
+                    "unit_price_gbp": round(unit_gbp, 2),
+                    "qty": qty, "line_total_gbp": line, "owned": False, "added_from_recipe": False,
+                    "sku": item.get("sku"), "verified": item.get("verified", False),
+                }
+                if item.get("price_note"):
+                    row["price_note"] = item["price_note"]
+                result["bom"].append(row)
+                result["bom_total_gbp"] = round(result["bom_total_gbp"] + line, 2)
+                result["parts"].append({"id": pid, "name": item["name"], "category": item["category"],
+                                        "qty": qty, "visible_in_photo": True})
+        result["unmatched"] = [u for u in baseline["unmatched"] if u["name"] not in resolved_names]
+    elif matcher_res is not None:
+        result["agent_trace"].append(f"catalog-matcher failed ({type(matcher_res).__name__}) — skipped")
+
+    # assemble price-scout quotes (always unverified)
+    if isinstance(scout_res, PriceScoutResult):
+        if scout_res.skipped or not scout_res.quotes:
+            result["agent_trace"].append("price-scout: skipped (web_search unavailable/empty) — URLs stay TODO")
+        else:
+            contributed = True
+            result["price_quotes"] = [q.model_dump() for q in scout_res.quotes]
+            result["agent_trace"].append(f"price-scout: {len(scout_res.quotes)} unverified quotes")
+    elif scout_res is not None:
+        result["agent_trace"].append(f"price-scout: skipped ({type(scout_res).__name__})")
+
+    # assemble substitution advice
+    if isinstance(subst_res, SubstitutionAdvice):
+        if subst_res.substitutions:
+            contributed = True
+        for sub in subst_res.substitutions:
+            if match.get_item(sub.part_id):
+                result["substitutions"][sub.part_id] = [
+                    {**a, "url": a.get("url", "TODO")} for a in sub.alternatives
+                ] or alternatives_for(sub.part_id)["alternatives"]
+        result["agent_trace"].append(f"substitution-advisor: {len(subst_res.substitutions)} advised")
+    elif subst_res is not None:
+        result["agent_trace"].append(f"substitution-advisor failed ({type(subst_res).__name__}) — skipped")
+
+    # assemble auditor warnings
+    if isinstance(audit_res, AuditResult):
+        contributed = True
+        result["warnings"] = audit_res.warnings
+        result["agent_trace"].append(f"bom-auditor: {len(audit_res.warnings)} warnings")
+    elif audit_res is not None:
+        result["agent_trace"].append(f"bom-auditor failed ({type(audit_res).__name__}) — skipped")
+
+    # coordinator last — final verdict over everything
     try:
-        components_json = json.dumps(payload.get("components", []), indent=2)
-        baseline_json = json.dumps(baseline, indent=2)
-
-        # 2. catalog-matcher resolves anything unmatched
-        if baseline["unmatched"]:
-            matcher = create_catalog_matcher()
-            answers = agents.ClientToolAnswers(
-                search_catalog.answer(lambda query, category=None, limit=5:
-                                      _search_catalog_answer(query, category=category, limit=limit)),
-            )
-            content = (f"Robot: {baseline['robot_name']} (recipe {baseline['recipe_id']}). "
-                       f"Resolve these unmatched components to catalogue IDs:\n"
-                       f"{json.dumps(baseline['unmatched'])}")
-            state = await run_agent(matcher, content, MatchResolution, on_client_tool=answers)
-            res = _out(state, MatchResolution)
-            result["agent_trace"].append(f"catalog-matcher: {len(res.resolutions)} resolved")
-            resolved_names = set()
-            for r in res.resolutions:
-                pid = r.part_id
-                resolved_names.add(r.name)
-                if pid and match.get_item(pid):
-                    qty = int(r.qty or 1)
-                    item = match.get_item(pid)
-                    unit_gbp = match.to_gbp(item["price"], item["currency"])
-                    line = round(unit_gbp * qty, 2)
-                    row = {
-                        "part_id": pid, "name": item["name"], "category": item["category"],
-                        "shop": item["shop"], "url": item["url"],
-                        "currency": item["currency"], "unit_price": item["price"],
-                        "unit_price_gbp": round(unit_gbp, 2),
-                        "qty": qty, "line_total_gbp": line, "owned": False, "added_from_recipe": False,
-                        "sku": item.get("sku"), "verified": item.get("verified", False),
-                    }
-                    if item.get("price_note"):
-                        row["price_note"] = item["price_note"]
-                    result["bom"].append(row)
-                    result["bom_total_gbp"] = round(result["bom_total_gbp"] + line, 2)
-                    result["parts"].append({"id": pid, "name": item["name"], "category": item["category"],
-                                            "qty": qty, "visible_in_photo": True})
-            result["unmatched"] = [u for u in baseline["unmatched"] if u["name"] not in resolved_names]
-
-        # 3. price-scout (optional) — TODO urls only; skips cleanly if web_search unavailable
-        todo_parts = [r for r in result["bom"] if r["url"] == "TODO"]
-        if todo_parts:
-            try:
-                scout = create_price_scout()
-                answers = agents.ClientToolAnswers(
-                    web_search.answer(lambda query, max_results=5: _web_search_impl(query, max_results)),
-                )
-                content = ("Find current UK price + product page for these parts (allowed shops only):\n"
-                           + json.dumps([{"part_id": r["part_id"], "name": r["name"]} for r in todo_parts], indent=2))
-                state = await run_agent(scout, content, PriceScoutResult, on_client_tool=answers)
-                quotes = _out(state, PriceScoutResult)
-                if quotes.skipped or not quotes.quotes:
-                    result["agent_trace"].append("price-scout: skipped (web_search unavailable/empty) — URLs stay TODO")
-                else:
-                    result["price_quotes"] = [q.model_dump() for q in quotes.quotes]
-                    result["agent_trace"].append(f"price-scout: {len(quotes.quotes)} unverified quotes")
-            except Exception as e:  # clean skip
-                result["agent_trace"].append(f"price-scout: skipped ({type(e).__name__})")
-
-        # 4. substitution-advisor for owned parts
-        owned = set(payload.get("owned", []) or [])
-        if owned:
-            advisor = create_substitution_advisor()
-            content = (f"Suggest up to 2 alternatives for these parts the user already owns or wants to replace: "
-                       f"{json.dumps(list(owned))}\nBOM:\n{baseline_json}")
-            state = await run_agent(advisor, content, SubstitutionAdvice)
-            advice = _out(state, SubstitutionAdvice)
-            for sub in advice.substitutions:
-                if match.get_item(sub.part_id):
-                    result["substitutions"][sub.part_id] = [
-                        {**a, "url": a.get("url", "TODO")} for a in sub.alternatives
-                    ] or alternatives_for(sub.part_id)["alternatives"]
-            result["agent_trace"].append(f"substitution-advisor: {len(advice.substitutions)} advised")
-
-        # 5. bom-auditor — compatibility warnings
-        bom_with_specs = []
-        for row in result["bom"]:
-            item = match.get_item(row["part_id"]) or {}
-            bom_with_specs.append({**row, "specs": item.get("specs", {})})
-        auditor = create_bom_auditor()
-        content = json.dumps({"robot": result["robot_name"], "bom": bom_with_specs}, indent=2)
-        state = await run_agent(auditor, content, AuditResult)
-        audit = _out(state, AuditResult)
-        result["warnings"] = audit.warnings
-        result["agent_trace"].append(f"bom-auditor: {len(audit.warnings)} warnings")
-
-        # 1. coordinator — final verdict (notes only; baseline fields are authoritative)
         coordinator = create_parts_coordinator()
         content = (f"Components:\n{components_json}\nDeterministic match:\n{baseline_json}\n"
                    f"Warnings so far: {result['warnings']}")
@@ -447,15 +603,14 @@ async def smart_match_async(payload: dict) -> dict:
         if verdict.robot_name and verdict.robot_name != "Custom robot":
             result["robot_name"] = verdict.robot_name
         result["agent_trace"].append("parts-coordinator: done")
-
-        result["smart"] = True
+        contributed = True
     except Exception as e:
-        result["smart"] = False
-        result["agent_trace"].append(f"fallback-to-deterministic ({type(e).__name__}: {e})")
+        result["agent_trace"].append(f"parts-coordinator failed ({type(e).__name__}) — baseline kept")
 
+    result["smart"] = contributed
     _CACHE[key] = result
+    _save_file_cache()
     return result
-
 
 def smart_match(payload: dict) -> dict:
     """Sync wrapper for FastAPI."""

@@ -181,11 +181,21 @@ def _match_component(comp: dict) -> tuple[str | None, float]:
     return None, best_score
 
 
-def _pick_recipe(matched_ids: set[str]) -> dict | None:
-    """Pick the recipe with the best overlap with the matched parts."""
+def _pick_recipe(matched_ids: set[str], hint: str | None = None) -> dict | None:
+    """Pick the recipe with the best overlap with the matched parts.
+
+    If `hint` (e.g. VisionResult.robot_guess from the vision agent) fuzzy-matches
+    a recipe id or name (score >= 70), that recipe wins.
+    """
     recipes = load_recipes()["recipes"]
     if not recipes:
         return None
+    if hint:
+        h = hint.lower().strip()
+        for rec in recipes:
+            if fuzz.token_set_ratio(h, rec["id"].replace("_", " ")) >= 70 or \
+               fuzz.token_set_ratio(h, rec["name"].lower()) >= 70:
+                return rec
     best, best_score = None, -1.0
     for rec in recipes:
         rec_ids = {p["id"] for p in rec["parts"]}
@@ -247,11 +257,23 @@ def build_bom(matched: dict[str, int], owned: set[str], recipe: dict | None,
 
 
 def match_components(payload: dict | list) -> dict:
-    """Deterministic match. Accepts {"components": [...], "owned": [...]} or a bare list."""
+    """Deterministic match.
+
+    Accepts the legacy {"components": [...], "owned": [...]} shape, a bare list,
+    or a shared VisionResult-style payload {"parts": [{name, category, qty, ...}],
+    "robot_guess": ..., "owned": [...]} (see backend/shared/schemas.py).
+    """
     if isinstance(payload, list):
         payload = {"components": payload}
-    components = payload.get("components", []) or []
+    components = payload.get("components") or []
+    if not components and payload.get("parts"):
+        # VisionResult shape (Pydantic model_dump or plain dicts)
+        components = [
+            {"name": p.get("name"), "category": p.get("category"), "qty": p.get("qty", 1)}
+            for p in payload["parts"]
+        ]
     owned = set(payload.get("owned", []) or [])
+    recipe_hint = payload.get("robot_guess")
 
     matched: dict[str, int] = {}
     parts_out: list[dict] = []
@@ -272,7 +294,7 @@ def match_components(payload: dict | list) -> dict:
             unmatched.append({"name": comp.get("name"), "category": comp.get("category"),
                               "qty": qty, "best_score": round(score, 1)})
 
-    recipe = _pick_recipe(set(matched))
+    recipe = _pick_recipe(set(matched), hint=recipe_hint)
     added_from_recipe: set[str] = set()
     if recipe is not None:
         for p in recipe["parts"]:
