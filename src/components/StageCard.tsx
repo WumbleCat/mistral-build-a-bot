@@ -1,3 +1,4 @@
+import { ArrowLeft, ArrowRight, Lightbulb, TriangleAlert, Wrench } from 'lucide-react';
 import type { AssemblyData, AssemblyStep, Part } from '../types';
 import type { ImageResult } from '../lib/imageGen';
 import type { StepAudioState } from '../hooks/useNarrationEngine';
@@ -36,13 +37,19 @@ export function StageCard(props: StageCardProps) {
   const installedBefore = step.installed_components.filter((id) => !step.component_ids.includes(id));
 
   return (
-    <section className="stage-card" key={step.id}>
-      <div className="stage-enter" key={step.id}>
-        <div className="stage-heading">
-          <span className="step-chip">
-            Step {step.number} / {data.steps.length}
+    <section className="card min-w-0 p-5 sm:p-6" key={step.id}>
+      <div className="stage-enter space-y-5" key={step.id}>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-flame-500/30 bg-flame-500/10 font-mono text-sm font-bold text-flame-500">
+            {step.number}
           </span>
-          <h1 className="stage-title">{step.title}</h1>
+          <div className="min-w-0">
+            <p className="label">
+              Step {step.number} of {data.steps.length}
+            </p>
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{step.title}</h2>
+          </div>
+          {step.uncertain && <span className="chip ml-auto">Not verified</span>}
         </div>
 
         <Illustration
@@ -58,42 +65,56 @@ export function StageCard(props: StageCardProps) {
           onToggleExploded={props.onToggleExploded}
         />
 
-        <p className="stage-instruction">{step.instruction}</p>
+        <p className="max-w-[70ch] text-[16px] leading-relaxed text-body">{step.instruction}</p>
 
         {step.tip && (
-          <div className="stage-tip">
-            <span className="stage-tip-icon" aria-hidden>💡</span>
-            <span>{step.tip}</span>
-          </div>
-        )}
-        {step.tools && step.tools.length > 0 && (
-          <div className="stage-tools">
-            <span className="stage-tools-label">Tools</span>
-            {step.tools.map((t) => (
-              <span key={t} className="chip chip-muted">🔧 {t}</span>
-            ))}
-          </div>
+          <p className="flex gap-2 rounded-xl border border-line bg-sunken/60 p-3 text-sm text-body">
+            <Lightbulb className="mt-0.5 size-4 shrink-0 text-flame-400" />
+            {step.tip}
+          </p>
         )}
 
-        <div className="stage-parts">
-          <div className="parts-group">
-            <span className="parts-label">Add in this step</span>
-            <div className="chip-row">
-              {required.length === 0 && <span className="chip chip-muted">No new parts</span>}
+        {step.safety && (
+          <p className="flex gap-2 rounded-xl border border-flame-500/30 bg-flame-500/10 p-3 text-sm text-flame-600">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+            {step.safety}
+          </p>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="label mb-1.5">Add in this step</p>
+            <div className="flex flex-wrap gap-1.5">
+              {required.length === 0 && <span className="chip text-muted">No new parts</span>}
               {required.map((p) => (
-                <span key={p.id} className="chip chip-accent">
+                <span key={p.id} className="chip border-flame-500/40 bg-flame-500/10 text-flame-600">
                   {p.name}
                   {p.quantity > 1 ? ` ×${p.quantity}` : ''}
                 </span>
               ))}
             </div>
           </div>
+
+          {step.tools && step.tools.length > 0 && (
+            <div>
+              <p className="label mb-1.5">Tools</p>
+              <div className="flex flex-wrap gap-1.5">
+                {step.tools.map((t) => (
+                  <span key={t} className="chip">
+                    <Wrench className="size-3" />
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {installedBefore.length > 0 && (
-            <div className="parts-group">
-              <span className="parts-label">Already installed</span>
-              <div className="chip-row">
+            <div className="sm:col-span-2">
+              <p className="label mb-1.5">Already installed</p>
+              <div className="flex flex-wrap gap-1.5">
                 {installedBefore.map((id) => (
-                  <span key={id} className="chip chip-muted">
+                  <span key={id} className="chip text-muted">
                     {partsById.get(id)?.name ?? id}
                   </span>
                 ))}
@@ -114,12 +135,14 @@ export function StageCard(props: StageCardProps) {
           onRegenerate={props.onRegenerateAudio}
         />
 
-        <div className="stage-nav">
-          <button type="button" className="btn btn-secondary btn-nav" onClick={props.onPrev} disabled={props.isFirst}>
-            ← Previous
+        <div className="flex justify-between gap-3 border-t border-line-soft pt-5">
+          <button type="button" className="btn-ghost min-w-32" onClick={props.onPrev} disabled={props.isFirst}>
+            <ArrowLeft className="size-4" />
+            Previous
           </button>
-          <button type="button" className="btn btn-primary btn-nav" onClick={props.onNext} disabled={props.isLast}>
-            Next →
+          <button type="button" className="btn-primary min-w-32" onClick={props.onNext} disabled={props.isLast}>
+            Next
+            <ArrowRight className="size-4" />
           </button>
         </div>
       </div>

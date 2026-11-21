@@ -15,6 +15,8 @@ import { AssistantPanel } from './components/AssistantPanel';
 import { LandingScreen } from './components/LandingScreen';
 
 import { PhotoAnalysisDialog } from './components/PhotoAnalysisDialog';
+import { Footer } from './components/Shell';
+import { Boxes, CircleDollarSign, ListChecks, ListOrdered } from 'lucide-react';
 
 function initialStep(): number {
   const s = new URLSearchParams(window.location.search).get('step');
@@ -324,8 +326,16 @@ export default function App() {
 
   if (!step) return null;
 
+  const goHome = () => {
+    stop();
+    clearDwell();
+    setMode('workbook');
+    setGuided((g) => ({ ...g, playing: false }));
+    setScreen('landing');
+  };
+
   return (
-    <div className="app">
+    <div className="flex min-h-dvh flex-col">
       <Header
         robotName={data.robot_name}
         stepNumber={step.number}
@@ -333,49 +343,80 @@ export default function App() {
         mode={mode}
         onModeChange={handleModeChange}
         onImportClick={() => setImportOpen(true)}
+        onHome={goHome}
       />
-      <main className="app-main">
-        <StageCard
-          data={data}
-          step={step}
-          partsById={partsById}
-          isFirst={index === 0}
-          isLast={index === data.steps.length - 1}
-          audio={audio}
-          isCurrentAudio={isCurrentAudio}
-          audioPlaying={isCurrentAudio && !isPaused && playingKey !== null}
-          audioPaused={isCurrentAudio && isPaused}
-          image={images[step.id]}
-          imageLoading={imageLoading}
-          imageAvailable={imageAvailable}
-          onGenerateImage={() => void generateImageFor(step)}
-          explodedAvailable={exploded.available}
-          explodedUrl={exploded.url}
-          explodedOn={explodedOn && exploded.available}
-          onToggleExploded={() => setExplodedOn((v) => !v)}
-          onRegenerateAudio={regenerateAudio}
-          onPlayAudio={playAudio}
-          onPauseAudio={pause}
-          onResumeAudio={resume}
-          onPrev={workbookPrev}
-          onNext={workbookNext}
-        />
-        <Sidebar
-          data={data}
-          currentIndex={index}
-          importNotes={importNotes}
-          onLoadSample={loadSample}
-          stepAudio={stepAudio}
-          playingIndex={playingIndex}
-          playingPaused={playingIndex === index && isPaused}
-          onToggleStepAudio={toggleStepAudio}
-          narrationStats={narrationStats}
-          checklist={checklist}
-          onToggleChecklist={toggleChecklist}
-          allTools={allTools}
-          onLoadUpstream={() => void loadUpstreamSample()}
-        />
+      <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-6 sm:px-6 sm:py-8">
+        <header className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="min-w-0">
+            <p className="label">Robot</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{data.robot_name}</h1>
+            {data.description && <p className="mt-2 max-w-2xl text-sm leading-relaxed text-body">{data.description}</p>}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {data.illustrative && <span className="chip">Illustrative</span>}
+              {data.confidence != null && <span className="chip">{Math.round(data.confidence * 100)}% confidence</span>}
+              {data.recipe_id && <span className="chip font-mono">{data.recipe_id}</span>}
+              {data.review_flags && data.review_flags.length > 0 && (
+                <span className="chip border-flame-500/40 bg-flame-500/10 text-flame-600">{data.review_flags.length} to review</span>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat icon={Boxes} label="Parts" value={String(data.parts.length)} />
+            <Stat icon={ListOrdered} label="Steps" value={String(data.steps.length)} />
+            <Stat
+              icon={CircleDollarSign}
+              label="Est. cost"
+              value={data.bom_total != null ? `£${data.bom_total.toFixed(2)}` : '—'}
+              accent="text-flame-500"
+            />
+            <Stat icon={ListChecks} label="Located" value={`${data.parts.filter((p) => checklist.has(p.id)).length}/${data.parts.length}`} />
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <StageCard
+            data={data}
+            step={step}
+            partsById={partsById}
+            isFirst={index === 0}
+            isLast={index === data.steps.length - 1}
+            audio={audio}
+            isCurrentAudio={isCurrentAudio}
+            audioPlaying={isCurrentAudio && !isPaused && playingKey !== null}
+            audioPaused={isCurrentAudio && isPaused}
+            image={images[step.id]}
+            imageLoading={imageLoading}
+            imageAvailable={imageAvailable}
+            onGenerateImage={() => void generateImageFor(step)}
+            explodedAvailable={exploded.available}
+            explodedUrl={exploded.url}
+            explodedOn={explodedOn && exploded.available}
+            onToggleExploded={() => setExplodedOn((v) => !v)}
+            onRegenerateAudio={regenerateAudio}
+            onPlayAudio={playAudio}
+            onPauseAudio={pause}
+            onResumeAudio={resume}
+            onPrev={workbookPrev}
+            onNext={workbookNext}
+          />
+          <Sidebar
+            data={data}
+            currentIndex={index}
+            importNotes={importNotes}
+            onLoadSample={loadSample}
+            stepAudio={stepAudio}
+            playingIndex={playingIndex}
+            playingPaused={playingIndex === index && isPaused}
+            onToggleStepAudio={toggleStepAudio}
+            narrationStats={narrationStats}
+            checklist={checklist}
+            onToggleChecklist={toggleChecklist}
+            allTools={allTools}
+            onLoadUpstream={() => void loadUpstreamSample()}
+          />
+        </div>
       </main>
+      <Footer />
 
       {mode === 'guided' && (
         <WalkthroughOverlay
@@ -434,6 +475,18 @@ export default function App() {
       )}
 
       {importOpen && <ImportDialog onLoad={handleImport} onClose={() => setImportOpen(false)} />}
+    </div>
+  );
+}
+
+function Stat({ icon: Icon, label, value, accent }: { icon: typeof Boxes; label: string; value: string; accent?: string }) {
+  return (
+    <div className="card min-w-28 p-4">
+      <div className="flex items-center gap-2 text-muted">
+        <Icon className="size-3.5" />
+        <span className="label">{label}</span>
+      </div>
+      <p className={`mt-1.5 font-mono text-xl font-bold ${accent ?? 'text-strong'}`}>{value}</p>
     </div>
   );
 }

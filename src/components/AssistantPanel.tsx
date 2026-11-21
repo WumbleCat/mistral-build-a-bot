@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AudioLines, Bot, Check, LoaderCircle, Mic, MicOff, Search, SendHorizontal, Square, TriangleAlert, X, Zap } from 'lucide-react';
 
 import type { AssemblyData, AssemblyStep } from '../types';
 
@@ -199,31 +200,49 @@ export function AssistantPanel({ data, step, stepIndex, checklist, open, onClose
 
   const suggestions = suggestedQuestions(step, data);
   const voiceLabel =
-    voiceState === 'idle' ? '🎤 Voice'
-    : voiceState === 'listening' ? '🎙 Listening…'
-    : voiceState === 'speech' ? '🗣 Heard you'
-    : voiceState === 'processing' ? '🤖 Thinking…'
-    : voiceState === 'responding' ? '💬 Answering…'
-    : voiceState === 'speaking' ? '🔊 Speaking…'
-    : '⚠ Mic error';
+    voiceState === 'idle' ? 'Voice'
+    : voiceState === 'listening' ? 'Listening…'
+    : voiceState === 'speech' ? 'Heard you'
+    : voiceState === 'processing' ? 'Thinking…'
+    : voiceState === 'responding' ? 'Answering…'
+    : voiceState === 'speaking' ? 'Speaking…'
+    : 'Mic error';
 
   if (!open) return null;
 
   return (
-    <aside className={`assistant-panel ${open ? 'open' : ''}`} aria-label="Assembly assistant">
-      <div className="assistant-header">
-        <span className="assistant-title">🤖 Assembly assistant</span>
-        <span className="assistant-step">Step {step.number}: {step.title}</span>
-        <button type="button" className="btn btn-ghost btn-small" onClick={onClose} aria-label="Close assistant">✕</button>
+    <aside
+      className="drawer-enter fixed inset-y-0 right-0 z-[70] flex w-full flex-col border-l border-line bg-surface shadow-2xl shadow-black/10 sm:w-[min(400px,92vw)]"
+      aria-label="Assembly assistant"
+    >
+      <div className="flex items-center gap-3 border-b border-line-soft px-4 py-3">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-flame-500 text-on-accent">
+          <Bot className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-strong">Assembly assistant</p>
+          <p className="truncate text-xs text-muted">
+            Step {step.number}: {step.title}
+          </p>
+        </div>
+        <button type="button" className="rounded-lg p-2 text-muted transition hover:bg-sunken hover:text-strong" onClick={onClose} aria-label="Close assistant">
+          <X className="size-4" />
+        </button>
       </div>
 
-      <div className="assistant-messages" ref={scrollRef}>
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4" ref={scrollRef}>
         {history.length === 0 && !busy && (
-          <div className="assistant-empty">
-            <p>Ask anything about this build — e.g. where a part goes, what a step means, or what to do next.</p>
-            <div className="assistant-suggestions">
+          <div className="space-y-3">
+            <p className="text-sm text-muted">Ask anything about this build — e.g. where a part goes, what a step means, or what to do next.</p>
+            <div className="flex flex-col items-start gap-2">
               {suggestions.map((q) => (
-                <button key={q} type="button" className="chip chip-suggestion" onClick={() => void send(q)} disabled={busy}>
+                <button
+                  key={q}
+                  type="button"
+                  className="chip cursor-pointer text-left transition hover:border-flame-500/50 hover:bg-flame-500/10 hover:text-flame-600"
+                  onClick={() => void send(q)}
+                  disabled={busy}
+                >
                   {q}
                 </button>
               ))}
@@ -231,41 +250,59 @@ export function AssistantPanel({ data, step, stepIndex, checklist, open, onClose
           </div>
         )}
         {history.map((m, i) => (
-          <div key={i} className={`assistant-msg assistant-msg-${m.role}`}>
-            <span className="assistant-msg-role">{m.role === 'user' ? 'You' : 'Assistant'}</span>
-            <p>{m.content}</p>
+          <div
+            key={i}
+            className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+              m.role === 'user'
+                ? 'self-end rounded-br-md bg-strong text-canvas'
+                : 'self-start rounded-bl-md border border-line bg-sunken/60 text-body'
+            }`}
+          >
+            <span className={`text-[10px] font-semibold tracking-[0.14em] uppercase ${m.role === 'user' ? 'text-canvas/60' : 'text-muted'}`}>
+              {m.role === 'user' ? 'You' : 'Assistant'}
+            </span>
+            <p className="mt-1 whitespace-pre-wrap">{m.content}</p>
           </div>
         ))}
         {busy && (
-          <div className="assistant-msg assistant-msg-assistant">
-            <span className="assistant-msg-role">Assistant</span>
-            <p className="assistant-thinking"><span className="spinner spinner-small" aria-hidden /> Thinking…</p>
+          <div className="max-w-[92%] self-start rounded-2xl rounded-bl-md border border-line bg-sunken/60 px-3.5 py-2.5 text-sm">
+            <span className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase">Assistant</span>
+            <p className="mt-1 flex items-center gap-2 text-muted italic">
+              <LoaderCircle className="size-3.5 animate-spin text-flame-400" /> Thinking…
+            </p>
             {trace.map((t, i) => (
-              <p key={i} className={`assistant-trace assistant-trace-${t.status}`}>
-                {t.status === 'action' ? '⚡' : t.status === 'error' ? '⚠' : '🔍'} {t.label}
+              <p
+                key={i}
+                className={`mt-1.5 flex items-center gap-1.5 text-xs ${t.status === 'action' ? 'font-semibold text-flame-600' : t.status === 'error' ? 'text-flame-600' : 'text-muted'}`}
+              >
+                <TraceIcon status={t.status} running /> {t.label}
               </p>
             ))}
           </div>
         )}
         {!busy && trace.length > 0 && (
-          <div className="assistant-trace-summary">
+          <div className="flex flex-wrap gap-1.5">
             {trace.map((t, i) => (
-              <span key={i} className={`assistant-trace-chip assistant-trace-${t.status}`} title={t.tool}>
-                {t.status === 'action' ? '⚡' : t.status === 'error' ? '⚠' : '✓'} {t.label.replace(/…$/, '')}
+              <span
+                key={i}
+                title={t.tool}
+                className={`chip px-2 py-0.5 text-[11px] ${t.status === 'action' || t.status === 'error' ? 'border-flame-500/40 bg-flame-500/10 text-flame-600' : ''}`}
+              >
+                <TraceIcon status={t.status} /> {t.label.replace(/…$/, '')}
               </span>
             ))}
           </div>
         )}
-        {liveTranscript && <p className="assistant-live-transcript">“{liveTranscript}”</p>}
+        {liveTranscript && <p className="px-1 text-xs text-flame-500 italic">“{liveTranscript}”</p>}
       </div>
 
-      {error && <p className="assistant-error">{error}</p>}
+      {error && <p className="border-t border-flame-500/30 bg-flame-500/10 px-4 py-2 text-xs text-flame-600">{error}</p>}
 
-      <div className="assistant-controls">
-        <div className="assistant-input-row">
+      <div className="space-y-2.5 border-t border-line-soft bg-sunken/40 px-4 py-3">
+        <div className="flex gap-2">
           <input
             type="text"
-            className="assistant-input"
+            className="input py-2"
             placeholder="Ask about this step…"
             value={input}
             disabled={busy}
@@ -274,37 +311,50 @@ export function AssistantPanel({ data, step, stepIndex, checklist, open, onClose
               if (e.key === 'Enter' && input.trim()) void send(input);
             }}
           />
-          <button type="button" className="btn btn-primary btn-small" disabled={!input.trim() || busy} onClick={() => void send(input)}>
-            Send
+          <button type="button" className="btn-primary px-3 py-2" disabled={!input.trim() || busy} onClick={() => void send(input)} aria-label="Send">
+            <SendHorizontal className="size-4" />
           </button>
         </div>
-        <div className="assistant-toolbar">
+        <div className="flex flex-wrap items-center gap-2">
           {(voxtralAvailable || voiceSupported) && (
             <button
               type="button"
-              className={`btn btn-small ${voiceState !== 'idle' && voiceState !== 'error' ? 'btn-voice-active' : 'btn-secondary'}`}
+              className={`${voiceState !== 'idle' && voiceState !== 'error' ? 'btn-primary voice-pulse' : 'btn-ghost'} px-3 py-1.5 text-xs`}
               onClick={toggleVoice}
               title={voiceState === 'idle' ? 'Start continuous voice mode' : 'Stop voice mode'}
             >
+              {voiceState === 'idle' ? <Mic className="size-3.5" /> : voiceState === 'error' ? <MicOff className="size-3.5" /> : <AudioLines className="size-3.5" />}
               {voiceLabel}
             </button>
           )}
           {assistantSpeaking && (
-            <button type="button" className="btn btn-small btn-secondary" onClick={stopSpeaking}>⏹ Stop voice</button>
+            <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={stopSpeaking}>
+              <Square className="size-3" /> Stop voice
+            </button>
           )}
-          <label className="assistant-mute">
-            <input type="checkbox" checked={speakAnswers} onChange={(e) => setSpeakAnswers(e.target.checked)} />
-            Speak answers
-          </label>
-          <span className="assistant-status">
-            {voiceState === 'listening' && <span className="mic-dot" aria-hidden />}
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+            {voiceState === 'listening' && <span className="size-2 animate-pulse rounded-full bg-red-500" aria-hidden />}
             {voiceState === 'listening' ? 'Listening — just speak' : voiceState === 'idle' ? 'Voice off' : ''}
           </span>
+          <label className="ml-auto inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted">
+            <input type="checkbox" className="accent-flame-500" checked={speakAnswers} onChange={(e) => setSpeakAnswers(e.target.checked)} />
+            Speak answers
+          </label>
         </div>
-        {voiceEngine && <p className="assistant-note">🎙 Engine: {voiceEngine}</p>}
-        {!voxtralAvailable && !voiceSupported && <p className="assistant-note">Voice mode unavailable — text input always works.</p>}
-        {!voxtralAvailable && voiceSupported && <p className="assistant-note">No MISTRAL_API_KEY on the server — using browser speech recognition fallback. Voxtral Realtime activates automatically when a key is configured.</p>}
+        {voiceEngine && <p className="text-[11px] text-muted">Engine: {voiceEngine}</p>}
+        {!voxtralAvailable && !voiceSupported && <p className="text-[11px] text-muted">Voice mode unavailable — text input always works.</p>}
+        {!voxtralAvailable && voiceSupported && (
+          <p className="text-[11px] text-muted">
+            No MISTRAL_API_KEY on the server — using browser speech recognition fallback. Voxtral Realtime activates automatically when a key is configured.
+          </p>
+        )}
       </div>
     </aside>
   );
+}
+
+function TraceIcon({ status, running }: { status: AgentTraceEntry['status']; running?: boolean }) {
+  if (status === 'action') return <Zap className="size-3 shrink-0" />;
+  if (status === 'error') return <TriangleAlert className="size-3 shrink-0" />;
+  return running ? <Search className="size-3 shrink-0" /> : <Check className="size-3 shrink-0" />;
 }

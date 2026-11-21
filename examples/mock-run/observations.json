@@ -1,0 +1,159 @@
+{
+  "images": [
+    {
+      "image_id": "img1-rover-top-synthetic",
+      "filename": "rover_top_synthetic.png",
+      "sha256": "d0868c93d233c93a9a9da273f98bd42f0ce8762ee79d9ea23c954fe4e6d7c3f5",
+      "width": 960,
+      "height": 720
+    }
+  ],
+  "pass1_observations": [
+    {
+      "view": "top",
+      "parts": [
+        {
+          "category": "wheel",
+          "name": "rubber wheel",
+          "description": "Four chunky black treaded tyres, one at each corner of the frame.",
+          "visible_quantity": 4,
+          "bbox_xyxy_norm": null,
+          "parent_assembly": null,
+          "visible_markings": null,
+          "confidence": 0.93
+        },
+        {
+          "category": "chassis",
+          "name": "green chassis frame",
+          "description": "Flat green frame/plate that everything is mounted on.",
+          "visible_quantity": 1,
+          "bbox_xyxy_norm": [
+            0.18,
+            0.12,
+            0.82,
+            0.88
+          ],
+          "parent_assembly": null,
+          "visible_markings": null,
+          "confidence": 0.9
+        },
+        {
+          "category": "breadboard",
+          "name": "solderless breadboard",
+          "description": "White solderless breadboard near the centre with components plugged in.",
+          "visible_quantity": 1,
+          "bbox_xyxy_norm": [
+            0.36,
+            0.3,
+            0.64,
+            0.5
+          ],
+          "parent_assembly": null,
+          "visible_markings": null,
+          "confidence": 0.88
+        },
+        {
+          "category": "relay_module",
+          "name": "relay module board",
+          "description": "Blue PCB carrying relay blocks with screw terminals, wired to the breadboard.",
+          "visible_quantity": 1,
+          "bbox_xyxy_norm": [
+            0.38,
+            0.56,
+            0.62,
+            0.74
+          ],
+          "parent_assembly": null,
+          "visible_markings": null,
+          "confidence": 0.8
+        },
+        {
+          "category": "relay",
+          "name": "blue relay block",
+          "description": "Two blue cube relays soldered onto the relay module board.",
+          "visible_quantity": 2,
+          "bbox_xyxy_norm": null,
+          "parent_assembly": "relay module board",
+          "visible_markings": null,
+          "confidence": 0.78
+        },
+        {
+          "category": "wiring",
+          "name": "jumper wires",
+          "description": "Bundle of multicoloured jumper wires between breadboard and relay board; count not determinable.",
+          "visible_quantity": null,
+          "bbox_xyxy_norm": null,
+          "parent_assembly": null,
+          "visible_markings": null,
+          "confidence": 0.85
+        },
+        {
+          "category": "led",
+          "name": "LED",
+          "description": "Three small lit indicator LEDs on the breadboard.",
+          "visible_quantity": 3,
+          "bbox_xyxy_norm": null,
+          "parent_assembly": null,
+          "visible_markings": null,
+          "confidence": 0.7
+        }
+      ],
+      "notes": [
+        "MOCK DATA: canned top-view response, not derived from the supplied image."
+      ],
+      "image_id": "img1-rover-top-synthetic",
+      "unconfirmed": [],
+      "verification": "ok"
+    }
+  ],
+  "pass2_inference_audit": {
+    "inferred_components": [
+      {
+        "category": "motor_driver",
+        "name": "motor driver / motor switching stage",
+        "evidence_type": "unknown",
+        "rationale": "Something must switch motor current; a relay board is visible but its role is not established.",
+        "related_component_ids": []
+      },
+      {
+        "category": "microcontroller",
+        "name": "controller board",
+        "evidence_type": "unknown",
+        "rationale": "No controller board is identifiable; it may be hidden or off-frame.",
+        "related_component_ids": []
+      },
+      {
+        "category": "fastener",
+        "name": "mounting screws, nuts and standoffs",
+        "evidence_type": "inferred",
+        "rationale": "Boards and wheels must be fixed to the frame; fasteners are not visible from this view.",
+        "related_component_ids": []
+      }
+    ],
+    "connections": [],
+    "issues": [
+      {
+        "severity": "warning",
+        "component_ids": [],
+        "message": "Wire routing between the relay board and the rest of the electronics cannot be traced from the photo.",
+        "next_action": "Sketch or photograph the wiring so each relay terminal's load is known."
+      }
+    ],
+    "requested_views": [
+      {
+        "view": "underside",
+        "reason": "Shows drive motors, gearboxes, axles and fasteners."
+      },
+      {
+        "view": "close-up of PCB labels",
+        "reason": "Readable silkscreen identifies the controller and relay board."
+      }
+    ]
+  },
+  "metadata": {
+    "stage": "draft",
+    "mode": "mock",
+    "vision_model": "mock",
+    "analyzed_at": "2026-11-21T12:36:20+00:00"
+  }
+}

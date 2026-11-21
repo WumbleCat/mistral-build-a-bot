@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { handleApi } from './server/api';
 
 // Load .env into process.env for the server-side middleware (Node 22+ built-in,
@@ -37,7 +38,7 @@ function apiPlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), apiPlugin()],
+  plugins: [react(), tailwindcss(), apiPlugin()],
   server: {
     port: 5173,
     host: true,

@@ -1,0 +1,100 @@
+[
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "example reviewer",
+    "action": "component_modified",
+    "target": "wheel-1",
+    "field": "required_quantity",
+    "old": null,
+    "new": 4
+  },
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "example reviewer",
+    "action": "component_modified",
+    "target": "wheel-1",
+    "field": "purchase_quantity",
+    "old": null,
+    "new": 4
+  },
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "example reviewer",
+    "action": "component_confirmed",
+    "target": "wheel-1",
+    "field": "status",
+    "old": "needs_review",
+    "new": "confirmed"
+  },
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "example reviewer",
+    "action": "component_modified",
+    "target": "chassis-1",
+    "field": "required_quantity",
+    "old": null,
+    "new": 1
+  },
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "example reviewer",
+    "action": "component_modified",
+    "target": "chassis-1",
+    "field": "purchase_quantity",
+    "old": null,
+    "new": 0
+  },
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "example reviewer",
+    "action": "component_confirmed",
+    "target": "chassis-1",
+    "field": "status",
+    "old": "needs_review",
+    "new": "confirmed"
+  },
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "example reviewer",
+    "action": "component_modified",
+    "target": "chassis-1",
+    "field": "notes",
+    "old": [],
+    "new": [
+      "Reviewer: custom 3D-printed frame, nothing to buy."
+    ]
+  },
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "example reviewer",
+    "action": "component_rejected",
+    "target": "led-1",
+    "field": "status",
+    "old": "needs_review",
+    "new": "rejected"
+  },
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "example reviewer",
+    "action": "issue_resolved",
+    "target": "compat.mounting_connectors",
+    "field": "resolved",
+    "old": {
+      "resolved": false,
+      "note": null
+    },
+    "new": {
+      "resolved": true,
+      "note": "Measured hole spacing and connector pitch by hand."
+    }
+  },
+  {
+    "timestamp": "2026-11-21T12:36:24+00:00",
+    "actor": "robot-bom",
+    "action": "finalized",
+    "target": "bom",
+    "field": "ready_to_purchase",
+    "old": false,
+    "new": false
+  }
+]

@@ -1,14 +1,25 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
 .venv/
 __pycache__/
-.env
-.env.local
-.runs/
-.cache/
-*.pyc
-node_modules/
-build/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 dist/
-*.log
-*.tsbuildinfo
-teardown-work/
-.vibe/trusted_folders.toml.bak-teardown
+build/
+
+# IDE
+.idea/
+.vscode/
+
+# generated pipeline output (a committed sample lives in examples/)
+output/
+
+# node
+node_modules/

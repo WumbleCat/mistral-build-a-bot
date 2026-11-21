@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Robot BOM builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231a2130'/%3E%3Crect x='9' y='8' width='14' height='16' rx='2' fill='%23f25c05'/%3E%3Crect x='4' y='7' width='4' height='7' rx='1.5' fill='%23fff'/%3E%3Crect x='24' y='7' width='4' height='7' rx='1.5' fill='%23fff'/%3E%3Crect x='4' y='18' width='4' height='7' rx='1.5' fill='%23fff'/%3E%3Crect x='24' y='18' width='4' height='7' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --ink:#1a2130; --muted:#5f6b7c; --line:#dde2ea; --soft:#f0f2f6;
+          --accent:#f25c05; --accent-ink:#fff; --ok:#17794d; --bad:#b42318; --warn:#946200; --info:#2b5cad; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:var(--ink); color:#fff; padding:14px 28px; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:18px; letter-spacing:.01em; }
+  header p { margin:0; color:#b6bfce; font-size:13px; flex:1; }
+  #env { font-size:12px; color:#b6bfce; }
+  #env b { color:#fff; font-weight:600; }
+  #env .off { color:#ffb4a8; }
+  main { max-width:1320px; margin:0 auto; padding:22px 28px 70px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-bottom:16px; }
+  h2 { font-size:15px; margin:0 0 4px; }
+  .hint { color:var(--muted); font-size:12.5px; margin:0 0 12px; }
+  .hidden { display:none !important; }
+
+  /* upload */
+  #drop { border:2px dashed #c3cad6; border-radius:10px; padding:26px 16px; text-align:center; cursor:pointer;
+          background:var(--soft); transition:border-color .12s, background .12s; }
+  #drop:hover, #drop:focus-visible, #drop.over { border-color:var(--accent); background:#fff4ec; outline:none; }
+  #drop strong { display:block; font-size:15px; margin-bottom:2px; }
+  #drop span { color:var(--muted); font-size:12.5px; }
+  #thumbs { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+  .thumb { position:relative; width:132px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff; }
+  .thumb img { display:block; width:100%; height:96px; object-fit:cover; }
+  .thumb .name { padding:4px 6px; font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .thumb button { position:absolute; top:4px; right:4px; width:22px; height:22px; padding:0; border-radius:50%;
+                  background:rgba(26,33,48,.78); color:#fff; font-size:14px; line-height:1; }
+  .row { display:flex; flex-wrap:wrap; gap:14px; align-items:end; margin-top:14px; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:12.5px; color:var(--muted); }
+  label.inline { flex-direction:row; align-items:center; gap:6px; color:var(--ink); }
+  input[type=text], input[type=number], select { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--ink); }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  button { font:inherit; font-weight:600; padding:9px 18px; border:0; border-radius:7px; background:var(--accent); color:var(--accent-ink); cursor:pointer; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button.ghost { background:#e7eaf0; color:var(--ink); }
+  #status { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; }
+  .spinner { width:16px; height:16px; border:2px solid #cfd5df; border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .error { background:#fdecea; color:var(--bad); border:1px solid #f3c3bd; padding:11px 14px; border-radius:8px; white-space:pre-wrap; margin-bottom:16px; }
+
+  /* results */
+  .banner { padding:13px 16px; border-radius:10px; font-weight:600; margin-bottom:16px; }
+  .banner.no { background:#fdecea; color:var(--bad); border:1px solid #f3c3bd; }
+  .banner.yes { background:#e5f4ec; color:var(--ok); border:1px solid #b5dcc6; }
+  .banner.mock { background:#fff5d6; color:var(--warn); border:1px solid #ead28a; }
+  .banner ul { margin:6px 0 0 18px; padding:0; font-weight:400; font-size:13px; }
+  .stats { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 16px; min-width:128px; }
+  .stat b { display:block; font-size:22px; line-height:1.15; }
+  .stat span { color:var(--muted); font-size:12px; }
+  .stat.crit b { color:var(--bad); }
+  #photos { display:flex; flex-wrap:wrap; gap:16px; }
+  figure { margin:0; flex:1 1 320px; max-width:560px; }
+  .frame { position:relative; line-height:0; border-radius:8px; overflow:hidden; border:1px solid var(--line); background:#000; }
+  .frame img { width:100%; height:auto; display:block; }
+  .box { position:absolute; border:2px solid var(--c); border-radius:3px; pointer-events:none; opacity:.9; transition:box-shadow .1s, opacity .1s; }
+  .box i { position:absolute; left:-2px; top:-2px; transform:translateY(-100%); background:var(--c); color:#fff; font:600 11px/1.5 system-ui,sans-serif;
+           padding:0 5px; border-radius:3px 3px 3px 0; white-space:nowrap; font-style:normal; }
+  .box.flip i { top:auto; bottom:-2px; transform:translateY(100%); border-radius:0 3px 3px 3px; }
+  .frame.focus .box { opacity:.18; }
+  .frame.focus .box.on { opacity:1; box-shadow:0 0 0 3px rgba(255,255,255,.85), 0 0 0 5px var(--c); }
+  figcaption { font-size:12.5px; color:var(--muted); margin-top:6px; }
+  .scroll { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { text-align:left; padding:8px 8px 4px; vertical-align:top; }
+  th { font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); white-space:nowrap; border-bottom:1px solid var(--line); padding-bottom:8px; }
+  tbody.item { border-bottom:1px solid var(--line); }
+  tbody.item:hover { background:#fafbfd; }
+  tbody.item.rejected .part strong { text-decoration:line-through; }
+  tbody.item.rejected tr.detail, tbody.item.rejected .part { opacity:.5; }
+  td.part { min-width:230px; }
+  td.part .meta { color:var(--muted); font-size:12px; margin-top:2px; }
+  tr.detail td { padding:0 8px 10px; color:var(--muted); font-size:12.5px; }
+  tr.detail div { max-width:1000px; }
+  tr.detail .note { font-style:italic; }
+  td input[type=number] { width:62px; }
+  td input[type=text] { width:104px; }
+  td input.specs { width:150px; }
+  td select { width:124px; }
+  code { background:#edf0f4; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .tag { display:inline-block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:1px 6px; border-radius:4px; margin-right:6px; color:#fff; vertical-align:1px; }
+  .tag.critical { background:var(--bad); } .tag.warning { background:var(--warn); } .tag.info { background:var(--info); }
+  .tag.ai { background:#7c3aed; } .stock { font-size:11px; font-weight:700; padding:0 5px; border-radius:4px; margin-left:4px; }
+  .stock.in_stock { background:#e5f4ec; color:var(--ok); } .stock.unknown, .stock.backorder { background:#eef0f4; color:var(--muted); }
+  .tag.observed { background:var(--ok); } .tag.inferred { background:var(--warn); } .tag.unknown { background:var(--muted); }
+  .issue { border-left:4px solid var(--line); padding:7px 12px; margin:8px 0; background:#fafbfc; border-radius:0 6px 6px 0; }
+  .issue.critical { border-color:var(--bad); } .issue.warning { border-color:var(--warn); } .issue.info { border-color:var(--info); }
+  .issue.resolved { opacity:.55; }
+  .issue .next { color:var(--muted); font-size:12.5px; margin-top:2px; }
+  .issue .controls { display:flex; gap:10px; align-items:center; margin-top:6px; }
+  .issue .controls input[type=text] { flex:1; max-width:440px; }
+  ol#views { margin:0; padding-left:20px; } ol#views li { margin:3px 0; }
+  .finalize { display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
+  .downloads a { margin-right:14px; font-weight:600; color:var(--info); }
+  #model { min-width:230px; max-width:340px; }
+  #model-filter { width:150px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Robot BOM builder</h1>
+  <p>Photos &rarr; evidence-linked parts &rarr; your review &rarr; verified bill of materials</p>
+  <div id="env"></div>
+</header>
+<main>
+  <section class="card">
+    <h2>1. Add photos of your robot</h2>
+    <p class="hint">A top view plus an underside view and close-ups of board labels work best. Up to 8 images. Parts that are not visible are never assumed.</p>
+    <div id="drop" tabindex="0" role="button" aria-label="Add photos">
+      <strong>Drop photos here, or click to choose</strong>
+      <span>JPG, PNG or WebP &middot; you can also paste an image from the clipboard</span>
+    </div>
+    <input type="file" id="images" accept="image/*" multiple class="hidden">
+    <div id="thumbs"></div>
+    <div class="row">
+      <label>Project name <input type="text" id="project" value="my-rover"></label>
+      <label>Detection
+        <select id="detection">
+          <option value="vlm">VLM / LLM only (Mistral)</option>
+          <option value="grounding">Mistral + Grounding DINO + SAM 2 (local, slower)</option>
+        </select>
+      </label>
+      <label>Search models <input type="search" id="model-filter" placeholder="e.g. large, small, 8b" autocomplete="off"></label>
+      <label>Model
+        <select id="model"><option value="">loading…</option></select>
+      </label>
+      <label class="inline" title="Canned sample responses; no API call is made"><input type="checkbox" id="mock"> Mock mode (no API call)</label>
+      <button id="analyze-btn" type="button" disabled>Analyze photos</button>
+      <button id="clear-btn" type="button" class="ghost hidden">Start over</button>
+      <div id="status" class="hidden"><div class="spinner"></div><span id="status-text"></span></div>
+    </div>
+    <p class="hint" id="detection-hint" style="margin:10px 0 0"></p>
+    <p class="hint" id="model-hint" style="margin:4px 0 0"></p>
+  </section>
+
+  <div id="error" class="error hidden"></div>
+
+  <div id="results" class="hidden">
+    <div id="banners"></div>
+    <div class="stats" id="stats"></div>
+
+    <section class="card">
+      <h2>Your photos</h2>
+      <p class="hint" id="photos-hint"></p>
+      <label class="inline hidden" id="masks-toggle" style="margin-bottom:10px"><input type="checkbox" id="masks" checked> Show SAM 2 masks</label>
+      <div id="photos"></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Visible components</h2>
+      <p class="hint">Seen in at least one photo. Confirm or reject each line, correct counts, and enter make / model / SKU only if you verified them on the part. Empty means unknown, not zero.</p>
+      <div class="scroll" id="observed"></div>
+    </section>
+
+    <section class="card">
+      <h2>3. Unverified / likely hidden</h2>
+      <p class="hint">Not seen in any photo. These are possibilities and open questions &mdash; not confirmed parts.</p>
+      <div class="scroll" id="unverified"></div>
+    </section>
+
+    <section class="card">
+      <h2>4. Issues and compatibility checks</h2>
+      <p class="hint">Rule-based critical issues close only when the component data is corrected (specs such as <code>voltage_v=7.4; current_a=1.2</code>). Warnings can be ticked off with a note.</p>
+      <div id="issues"></div>
+    </section>
+
+    <section class="card">
+      <h2>AI best guess: settle every issue and find the parts</h2>
+      <p class="hint">Runs automatically after every analysis. The model picks the most likely design choice for every open issue and infers the critical parts nobody could see (drive motors, motor driver, power source, controller). Those guesses are written into the tables above with an <b>AI guess</b> tag, and the checks are re-run on them, so &ldquo;unknown&rdquo; issues close. Each part is then looked up on the approved shops by web search, and the pages found are checked for stock. Guesses stay &ldquo;needs review&rdquo;: only you can confirm a line. After editing the tables, use the button to run it again.</p>
+      <div class="finalize">
+        <button id="infer-btn" type="button" class="ghost">Run again with my edits</button>
+        <div id="infer-status" class="hidden" style="display:flex;align-items:center;gap:8px;color:var(--muted)"><div class="spinner"></div><span id="infer-status-text"></span></div>
+        <span class="downloads" id="infer-downloads"></span>
+      </div>
+      <div id="inferred"></div>
+    </section>
+
+    <section class="card">
+      <h2>5. Photos / measurements still needed</h2>
+      <ol id="views"></ol>
+      <p class="hint" id="catalog" style="margin:10px 0 0"></p>
+    </section>
+
+    <section class="card">
+      <h2>6. Finalize</h2>
+      <p class="hint">Applies your edits, re-runs every check and records each change in an audit trail. You can finalize as often as you like.</p>
+      <div class="finalize">
+        <button id="finalize-btn" type="button">Finalize BOM</button>
+        <span class="downloads" id="downloads"></span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+const MAX_IMAGES = 8;
+const PALETTE = ["#f25c05", "#2b7fff", "#12a15e", "#c026d3", "#e0a800", "#0aa5b5", "#e5484d", "#7c5cff"];
+let files = [];          // [{file, url}]
+let state = null;        // { job_id, review, images: {image_id: url} }
+let timer = null;
+let edits = 0;           // counts review edits, so a late AI result never overwrites newer edits
+let models = [];         // from GET /models: [{id, name, aliases, usable, ...}]
+let defaultModel = "";   // the configured VISION_MODEL
+let modelsError = "";
+
+const $ = (id) => document.getElementById(id);
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") node.className = v; else if (k === "text") node.textContent = v; else node[k] = v;
+  }
+  for (const child of [].concat(children)) if (child) node.append(child);
+  return node;
+}
+const showError = (message) => { $("error").textContent = message; $("error").classList.toggle("hidden", !message); };
+const intOrNull = (text) => { const n = parseInt(text, 10); return Number.isFinite(n) ? Math.max(0, n) : null; };
+const textOrNull = (text) => (text.trim() === "" ? null : text.trim());
+const specsToText = (specs) => Object.entries(specs || {}).map(([k, v]) => `${k}=${v}`).join("; ");
+function textToSpecs(text) {
+  const specs = {};
+  for (const pair of text.split(";")) {
+    const i = pair.indexOf("=");
+    if (i > 0 && pair.slice(i + 1).trim()) specs[pair.slice(0, i).trim()] = pair.slice(i + 1).trim();
+  }
+  return specs;
+}
+
+/* ---------- upload ---------- */
+function addFiles(list) {
+  showError("");
+  for (const file of list) {
+    if (!file.type.startsWith("image/")) { showError(`"${file.name}" is not an image and was skipped.`); continue; }
+    if (files.length >= MAX_IMAGES) { showError(`At most ${MAX_IMAGES} photos per analysis.`); break; }
+    if (files.some((f) => f.file.name === file.name && f.file.size === file.size)) continue;
+    files.push({ file, url: URL.createObjectURL(file) });
+  }
+  renderThumbs();
+}
+function renderThumbs() {
+  $("thumbs").replaceChildren(...files.map((entry, index) => {
+    const remove = el("button", { type: "button", text: "×", title: "Remove", ariaLabel: `Remove ${entry.file.name}` });
+    remove.addEventListener("click", () => {
+      const shown = state && Object.values(state.images).includes(entry.url);   // still displayed in the results
+      if (!shown) URL.revokeObjectURL(entry.url);
+      files.splice(index, 1); renderThumbs();
+    });
+    return el("div", { class: "thumb" }, [el("img", { src: entry.url, alt: entry.file.name }), remove,
+                                          el("div", { class: "name", text: entry.file.name, title: entry.file.name })]);
+  }));
+  syncMock();
+  $("analyze-btn").textContent = files.length > 1 ? `Analyze ${files.length} photos` : "Analyze photo" + (files.length ? "" : "s");
+}
+const drop = $("drop");
+drop.addEventListener("click", () => $("images").click());
+drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("images").click(); } });
+$("images").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+for (const type of ["dragenter", "dragover"]) drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.add("over"); });
+for (const type of ["dragleave", "drop"]) drop.addEventListener(type, (e) => { e.preventDefault(); drop.classList.remove("over"); });
+drop.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => e.preventDefault());
+document.addEventListener("paste", (e) => {
+  const pasted = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith("image/"));
+  if (pasted.length) addFiles(pasted);
+});
+
+/* ---------- model picker ---------- */
+function renderModels() {
+  const select = $("model");
+  const query = $("model-filter").value.trim().toLowerCase();
+  const known = models.length ? models : (defaultModel ? [{ id: defaultModel, name: null, aliases: [], usable: true }] : []);
+  const matches = known.filter((m) => !query || [m.id, m.name, ...m.aliases].some((t) => (t || "").toLowerCase().includes(query)));
+  const option = (m) => el("option", { value: m.id, disabled: !m.usable,
+    text: m.id + (m.id === defaultModel ? "  (default)" : "") + (m.name ? `  = ${m.name}` : "") + (m.deprecated ? "  [deprecated]" : "") });
+  const usable = matches.filter((m) => m.usable), other = matches.filter((m) => !m.usable);
+  const wanted = select.value || localStorage.getItem("robot-bom-model") || defaultModel;
+  select.replaceChildren(
+    ...(usable.length ? [el("optgroup", { label: `Can read photos (${usable.length})` }, usable.map(option))] : []),
+    ...(other.length ? [el("optgroup", { label: `Cannot read photos (${other.length})` }, other.map(option))] : []),
+    ...(matches.length ? [] : [el("option", { value: "", text: "no model matches", disabled: true })]),
+  );
+  const pick = usable.find((m) => m.id === wanted) || usable.find((m) => m.id === defaultModel) || usable[0];
+  select.value = pick ? pick.id : "";
+  const total = models.filter((m) => m.usable).length;
+  $("model-hint").textContent = modelsError
+    ? `Could not load the model list (${modelsError}) Using the configured model ${defaultModel}.`
+    : !models.length ? ""
+    : `${total} of ${models.length} models available to your API key can read photos` + (query ? `; ${usable.length} match “${query}”.` : "; the others are greyed out.")
+      + " Smaller models are faster but miss more parts.";
+  syncMock();
+}
+function syncMock() {
+  const mock = $("mock").checked;
+  $("model").disabled = mock; $("model-filter").disabled = mock;
+  $("analyze-btn").disabled = files.length === 0 || (!mock && !$("model").value && models.length > 0);
+}
+
+/* ---------- review tables ---------- */
+function field(component, key, kind) {
+  const node = el("input", { type: kind === "int" ? "number" : "text" });
+  if (kind === "int") { node.min = 0; node.placeholder = "?"; node.title = "empty = unknown (not zero)"; node.value = component[key] ?? ""; }
+  else if (kind === "specs") { node.className = "specs"; node.placeholder = "key=value; …"; node.title = "e.g. voltage_v=7.4; current_a=1.2"; node.value = specsToText(component.specs); }
+  else { node.placeholder = "unknown"; node.value = component[key] ?? ""; }
+  node.setAttribute("aria-label", `${key} of ${component.id}`);
+  node.addEventListener("change", () => {
+    edits += 1;
+    if (kind === "int") component[key] = intOrNull(node.value);
+    else if (kind === "specs") component.specs = textToSpecs(node.value);
+    else component[key] = textOrNull(node.value);
+  });
+  return node;
+}
+function highlight(componentId) {
+  for (const frame of document.querySelectorAll(".frame")) {
+    const boxes = frame.querySelectorAll(".box");
+    let any = false;
+    for (const box of boxes) { const on = box.dataset.component === componentId; box.classList.toggle("on", on); any = any || on; }
+    frame.classList.toggle("focus", any);
+  }
+}
+function componentTable(components, visible) {
+  if (!components.length) return el("p", { class: "hint", text: "None." });
+  const headers = ["Part", "Your review", ...(visible ? ["Visible"] : []), "Required", "To buy", "Manufacturer", "Model", "SKU", "Specs"];
+  const table = el("table", {}, el("thead", {}, el("tr", {}, headers.map((h) => el("th", { text: h })))));
+  for (const c of components) {
+    const status = el("select", {}, [["needs_review", "needs review"], ["confirmed", "confirmed"], ["rejected", "rejected"]]
+      .map(([value, text]) => el("option", { value, text })));
+    status.value = c.status;
+    status.setAttribute("aria-label", `review status of ${c.id}`);
+    const group = el("tbody", { class: "item" + (c.status === "rejected" ? " rejected" : "") });
+    status.addEventListener("change", () => { edits += 1; c.status = status.value; group.classList.toggle("rejected", c.status === "rejected"); });
+    const confidence = c.confidence == null ? "" : ` · model confidence ${c.confidence.toFixed(2)} (uncalibrated)`;
+    const main = el("tr", {}, [
+      el("td", { class: "part" }, [
+        el("span", { class: `tag ${c.evidence_type}`, text: c.evidence_type }),
+        (c.assumed_fields || []).length ? el("span", { class: "tag ai", text: "AI guess", title: "Filled in by the model, not verified: " + c.assumed_fields.join(", ") }) : null,
+        el("strong", { text: c.name }),
+        el("div", { class: "meta" }, [el("code", { text: c.id }), ` ${c.category}${confidence}`]),
+      ]),
+      el("td", {}, status),
+      visible ? el("td", {}, field(c, "visible_quantity", "int")) : null,
+      el("td", {}, field(c, "required_quantity", "int")),
+      el("td", {}, field(c, "purchase_quantity", "int")),
+      el("td", {}, field(c, "manufacturer", "text")),
+      el("td", {}, field(c, "model", "text")),
+      el("td", {}, field(c, "sku", "text")),
+      el("td", {}, field(c, "specs", "specs")),
+    ]);
+    const located = c.evidence.filter((e) => e.source === "grounding_dino");
+    const detail = el("td", { colSpan: headers.length }, [
+      ...c.evidence.filter((e) => e.source !== "grounding_dino").map((e) => el("div", {}, [el("code", { text: e.image_id }), " " + e.description])),
+      located.length ? el("div", { text: `Located by Grounding DINO: ${located.length} region(s) outlined on the photo (detector scores ${located.map((e) => (/score ([\d.]+)/.exec(e.description) || [])[1]).filter(Boolean).join(", ")}; not calibrated).` }) : null,
+      ...(c.notes || []).map((note) => el("div", { class: "note", text: note })),
+    ]);
+    group.append(main, el("tr", { class: "detail" }, detail));
+    group.addEventListener("mouseenter", () => highlight(c.id));
+    group.addEventListener("mouseleave", () => highlight(null));
+    table.append(group);
+  }
+  return table;
+}
+
+/* ---------- photos with outlines ---------- */
+function renderPhotos(bom) {
+  const colour = {};
+  bom.components.forEach((c, i) => { colour[c.id] = PALETTE[i % PALETTE.length]; });
+  $("photos").replaceChildren(...bom.image_ids.map((imageId) => {
+    const masked = $("masks").checked && state.overlays[imageId];
+    const frame = el("div", { class: "frame" }, el("img", { src: masked || state.images[imageId] || "", alt: imageId }));
+    let count = 0;
+    for (const c of bom.components) {
+      if (c.status === "rejected") continue;
+      for (const e of c.evidence) {
+        if (e.image_id !== imageId || !e.bbox_xyxy_norm) continue;
+        const [x1, y1, x2, y2] = e.bbox_xyxy_norm;
+        const box = el("div", { class: "box" + (y1 < 0.06 ? " flip" : "") }, el("i", { text: c.name }));
+        box.dataset.component = c.id;
+        box.style.cssText = `--c:${colour[c.id]};left:${x1 * 100}%;top:${y1 * 100}%;width:${(x2 - x1) * 100}%;height:${(y2 - y1) * 100}%`;
+        frame.append(box);
+        count += 1;
+      }
+    }
+    const view = bom.image_views[imageId] || "unknown";
+    return el("figure", {}, [frame, el("figcaption", {}, [el("code", { text: imageId }), ` · ${view} view · ${count} part(s) outlined`])]);
+  }));
+}
+
+/* ---------- everything ---------- */
+function render(bom) {
+  const banners = $("banners");
+  banners.replaceChildren();
+  if (bom.metadata.mode === "mock")
+    banners.append(el("div", { class: "banner mock", text: "MOCK DATA — canned sample responses, not an analysis of your photos." }));
+  const ready = el("div", { class: "banner " + (bom.ready_to_purchase ? "yes" : "no"),
+    text: bom.ready_to_purchase ? "Ready to purchase (based on your confirmations)." : `Not ready to purchase — this ${bom.metadata.stage} BOM is incomplete.` });
+  if (bom.readiness_blockers.length) ready.append(el("ul", {}, bom.readiness_blockers.map((b) => el("li", { text: b }))));
+  banners.append(ready);
+
+  const observed = bom.components.filter((c) => c.evidence_type === "observed");
+  const unverified = bom.components.filter((c) => c.evidence_type !== "observed");
+  const open = bom.issues.filter((i) => !i.resolved);
+  const stat = (value, label, cls = "") => el("div", { class: "stat " + cls }, [el("b", { text: String(value) }), el("span", { text: label })]);
+  $("stats").replaceChildren(
+    stat(observed.length, "visible part types"),
+    stat(unverified.length, "unverified / hidden"),
+    stat(open.filter((i) => i.severity === "critical").length, "open critical issues", "crit"),
+    stat(open.filter((i) => i.severity === "warning").length, "open warnings"),
+    stat(bom.components.filter((c) => c.status === "confirmed").length + " / " + bom.components.length, "lines confirmed"),
+  );
+
+  const grounded = bom.metadata.detection_mode === "vlm+grounding";
+  $("photos-hint").textContent = grounded
+    ? `Analysed with ${bom.metadata.vision_model}. ` + `Outlines come from Grounding DINO for the parts the vision model listed (${bom.metadata.grounder}); parts it could not locate keep the vision model's rough box. Detector hits never add parts or change counts. Hover a row below to highlight it.`
+    : `Analysed with ${bom.metadata.vision_model}. ` + "VLM-only mode: outlines are the vision model's approximate locations and exist only where it could localise a part. Hover a row below to highlight it.";
+  $("masks-toggle").classList.toggle("hidden", Object.keys(state.overlays).length === 0);
+  renderPhotos(bom);
+  $("observed").replaceChildren(componentTable(observed, true));
+  $("unverified").replaceChildren(componentTable(unverified, false));
+
+  const order = { critical: 0, warning: 1, info: 2 };
+  const issues = [...bom.issues].sort((a, b) => (a.resolved - b.resolved) || (order[a.severity] - order[b.severity]));
+  $("issues").replaceChildren(...(issues.length ? issues.map((issue) => {
+    const box = el("input", { type: "checkbox", checked: issue.resolved });
+    const note = el("input", { type: "text", placeholder: "resolution note", value: issue.resolution_note ?? "" });
+    note.setAttribute("aria-label", `resolution note for ${issue.id}`);
+    box.addEventListener("change", () => { edits += 1; issue.resolved = box.checked; });
+    note.addEventListener("change", () => { edits += 1; issue.resolution_note = textOrNull(note.value); });
+    return el("div", { class: `issue ${issue.severity}` + (issue.resolved ? " resolved" : "") }, [
+      el("span", { class: `tag ${issue.severity}`, text: issue.severity }), el("code", { text: issue.id }),
+      el("div", { text: issue.message + (issue.component_ids.length ? `  (${issue.component_ids.join(", ")})` : "") }),
+      el("div", { class: "next", text: "Next: " + issue.next_action }),
+      el("div", { class: "controls" }, [el("label", { class: "inline" }, [box, "resolved"]), note]),
+    ]);
+  }) : [el("p", { class: "hint", text: "No issues." })]));
+
+  $("views").replaceChildren(...bom.requested_views.map((v) => el("li", {}, [el("strong", { text: v.view }), ` — ${v.reason}`])));
+  const candidates = bom.catalog_candidates.length ? ` ${bom.catalog_candidates.length} candidate(s) — see bom.md.` : " No store links or prices are listed.";
+  $("catalog").textContent = `Catalog: ${bom.catalog_status}.` + candidates;
+  $("results").classList.remove("hidden");
+}
+
+async function call(url, options) {
+  let response;
+  try { response = await fetch(url, options); }
+  catch { throw new Error("Could not reach the server. Is `robot-bom serve` still running?"); }
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail || body));
+  return body;
+}
+function busy(text) {
+  clearInterval(timer);
+  $("status").classList.toggle("hidden", !text);
+  if (!text) return;
+  const started = Date.now();
+  const tick = () => { $("status-text").textContent = `${text} ${Math.round((Date.now() - started) / 1000)}s`; };
+  tick(); timer = setInterval(tick, 1000);
+}
+
+$("analyze-btn").addEventListener("click", async () => {
+  if (!files.length) return;
+  showError("");
+  const submitted = [...files];
+  const data = new FormData();
+  for (const entry of submitted) data.append("images", entry.file);
+  data.append("project_name", $("project").value);
+  data.append("mock", $("mock").checked ? "true" : "false");
+  const grounding = $("detection").value === "grounding";
+  data.append("grounding", grounding ? "true" : "false");
+  localStorage.setItem("robot-bom-detection", $("detection").value);
+  const model = $("mock").checked ? "" : $("model").value;
+  if (model) { data.append("model", model); localStorage.setItem("robot-bom-model", model); }
+  $("analyze-btn").disabled = true;
+  busy(($("mock").checked ? "Loading mock result" : `Analyzing ${submitted.length} photo(s) with ${model || defaultModel || "the configured model"} — this can take a few minutes`)
+    + (grounding ? ", then locating parts with Grounding DINO + SAM 2…" : "…"));
+  try {
+    const result = await call("/analyze", { method: "POST", body: data });
+    const images = {};
+    for (const imageId of result.bom.image_ids) {       // ids look like img<position>-<name>
+      const position = parseInt((/^img(\d+)-/.exec(imageId) || [])[1], 10);
+      if (submitted[position - 1]) images[imageId] = submitted[position - 1].url;
+    }
+    state = { job_id: result.job_id, review: result.review, images, overlays: result.overlays || {} };
+    $("downloads").replaceChildren();
+    $("inferred").replaceChildren(); $("infer-downloads").replaceChildren();
+    $("clear-btn").classList.remove("hidden");
+    render(state.review.bom);
+    $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+    runInfer();   // starts automatically; the parts list is already usable while it runs
+  } catch (error) { showError(error.message); }
+  finally { busy(""); syncMock(); }
+});
+
+$("finalize-btn").addEventListener("click", async () => {
+  if (!state) return;
+  showError("");
+  $("finalize-btn").disabled = true;
+  try {
+    const result = await call("/finalize", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: state.job_id, review: state.review }) });
+    state.review.bom = result.bom;      // baseline stays the first analysis, so the audit trail stays complete
+    render(result.bom);
+    $("downloads").replaceChildren(...Object.entries(result.exports).map(([name, text]) =>
+      el("a", { href: URL.createObjectURL(new Blob([text], { type: "text/plain" })), download: name, text: "⤓ " + name })));
+    $("banners").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (error) { showError(error.message); }
+  finally { $("finalize-btn").disabled = false; }
+});
+
+/* ---------- AI best guess: design choices, component list, shop search links ---------- */
+function renderInferred(result) {
+  const design = result.inferred_components, order = result.order_links;
+  const jsonLink = (name, doc) => el("a", { download: name, text: "⤓ " + name,
+    href: URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" })) });
+  $("infer-downloads").replaceChildren(jsonLink("inferred_components.json", design), jsonLink("order_links.json", order));
+  const table = el("table", {}, el("thead", {}, el("tr", {}, ["Qty", "Component", "Assumed specs", "Search for", "Order from"].map((h) => el("th", { text: h })))));
+  for (const row of order.components) {
+    const part = design.components.find((c) => c.name === row.name) || {};
+    const keys = [...row.recommended_sites, ...Object.keys(row.links).filter((k) => !row.recommended_sites.includes(k))];
+    const links = el("td", {});
+    keys.forEach((key, i) => {
+      if (i) links.append(" · ");
+      const a = el("a", { href: row.links[key], target: "_blank", rel: "noopener noreferrer", text: order.sites[key].name });
+      if (row.recommended_sites.includes(key)) a.style.fontWeight = "700";
+      links.append(a);
+    });
+    table.append(el("tbody", { class: "item" }, [
+      el("tr", {}, [
+        el("td", { text: String(row.quantity) }),
+        el("td", { class: "part" }, [el("span", { class: `tag ${row.basis}`, text: row.basis }), el("strong", { text: row.name })]),
+        el("td", { text: specsToText(part.specs) || "—" }),
+        el("td", {}, el("code", { text: row.search_query })),
+        links,
+      ]),
+      el("tr", { class: "detail" }, el("td", { colSpan: 5 }, [
+        ...(row.products || []).map((p) => el("div", {}, [
+          el("a", { href: p.url, target: "_blank", rel: "noopener noreferrer", text: `${order.sites[p.site].name}: ${p.title || p.url}` }),
+          el("span", { class: `stock ${p.stock}`, text: p.stock === "in_stock" ? "in stock (page checked)" : p.stock === "backorder" ? "backorder" : "stock not verifiable" }),
+        ])),
+        (row.products || []).length ? null : el("div", { text: "No product page found by web search — use the shop search links." }),
+        part.reason ? el("div", { text: part.reason }) : null, row.note ? el("div", { class: "note", text: row.note }) : null])),
+    ]));
+  }
+  $("inferred").replaceChildren(
+    el("div", { class: "banner mock", text: design.disclaimer }),
+    design.summary ? el("p", { text: design.summary }) : null,
+    el("h2", { text: `Design choices (${design.design_choices.length})` }),
+    ...design.design_choices.map((d) => el("div", { class: "issue info" }, [el("code", { text: d.issue_id }), el("div", { text: d.choice }), d.reason ? el("div", { class: "next", text: d.reason }) : null])),
+    el("h2", { text: `Components (${order.components.length}) and where to search for them`, style: "margin-top:16px" }),
+    el("p", { class: "hint", text: order.disclaimer + " Shops in bold are the ones the model recommends for that part." }),
+    order.power_budget ? el("p", { class: "hint", text: "Power budget (estimate): " + order.power_budget }) : null,
+    el("p", { class: "hint", text: order.availability.checked_at
+      ? `Shop lookup at ${order.availability.checked_at}: product pages found for ${order.availability.parts_with_products} of ${order.availability.parts_total} parts, ${order.availability.in_stock_confirmed} confirmed in stock on the page.` + (order.availability.error ? ` (${order.availability.error})` : "")
+      : `Shop lookup: ${order.availability.method}.` }),
+    el("div", { class: "scroll" }, table),
+  );
+}
+async function runInfer() {
+  if (!state || $("infer-btn").disabled) return;
+  const job = state.job_id;
+  showError("");
+  $("infer-btn").disabled = true;
+  const mock = state.review.bom.metadata.mode === "mock";
+  const model = mock ? "" : $("model").value;
+  const started = Date.now();
+  const tick = () => { $("infer-status-text").textContent = `Asking ${mock ? "the mock client" : model || defaultModel} (two queries)… ${Math.round((Date.now() - started) / 1000)}s`; };
+  tick(); const ticking = setInterval(tick, 1000);
+  $("infer-status").classList.remove("hidden");
+  try {
+    const editsAtStart = edits;
+    const result = await call("/infer", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: job, review: state.review, model: model || null, mock }) });
+    if (state && state.job_id === job) {   // ignore a reply for photos that were replaced meanwhile
+      renderInferred(result);
+      if (edits === editsAtStart) {
+        state.review = result.review;      // critical parts now carry the guess; every check was re-run
+        render(state.review.bom);
+      } else {
+        $("inferred").prepend(el("div", { class: "error", text: "You edited the tables while this was running, so the guess was not written into them. Press “Run again with my edits” to apply it to your current version." }));
+      }
+    }
+  } catch (error) {
+    if (state && state.job_id === job)
+      $("inferred").replaceChildren(el("div", { class: "error", text: "The AI best guess could not be produced: " + error.message + " The parts list above is unaffected. Use the button to try again." }));
+  }
+  finally { clearInterval(ticking); $("infer-status").classList.add("hidden"); $("infer-btn").disabled = false; }
+}
+$("infer-btn").addEventListener("click", runInfer);
+
+$("clear-btn").addEventListener("click", () => {
+  $("inferred").replaceChildren(); $("infer-downloads").replaceChildren();
+  for (const entry of files) URL.revokeObjectURL(entry.url);
+  files = []; state = null;
+  renderThumbs(); showError("");
+  $("results").classList.add("hidden"); $("clear-btn").classList.add("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+fetch("/health").then((r) => r.json()).then((h) => {
+  const key = h.api_key_configured ? el("b", { text: "API key configured" }) : el("b", { class: "off", text: "no API key — mock mode only" });
+  $("env").replaceChildren(key);
+  if (!h.api_key_configured || h.mock_default) $("mock").checked = true;
+  if (!defaultModel) defaultModel = h.vision_model;
+  renderModels();
+  const select = $("detection"), option = select.querySelector('option[value="grounding"]');
+  if (!h.grounding_available) {
+    option.disabled = true; select.value = "vlm";
+    $("detection-hint").textContent = "Grounding DINO + SAM 2 mode is unavailable: torch / transformers are not installed in this environment. The app runs on the vision/language model alone.";
+  } else {
+    select.value = localStorage.getItem("robot-bom-detection") || (h.grounding_default ? "grounding" : "vlm");
+    if (!h.sam_available) option.textContent = "Mistral + Grounding DINO (local, slower; SAM 2 not installed)";
+    describeDetection();
+  }
+}).catch(() => {});
+function describeDetection() {
+  $("detection-hint").textContent = $("detection").value === "grounding"
+    ? "Mistral lists the visible parts, then local Grounding DINO + SAM 2 models outline them on the photo. Slower (runs on this computer); the models never add parts or counts."
+    : "Only the Mistral vision/language model is used — no local detection models. Fastest; outlines are approximate.";
+}
+$("detection").addEventListener("change", describeDetection);
+fetch("/models").then((r) => r.json()).then((m) => {
+  models = m.models || []; defaultModel = m.default || defaultModel; modelsError = m.error || "";
+  renderModels();
+}).catch(() => { modelsError = "server not reachable."; renderModels(); });
+$("model-filter").addEventListener("input", renderModels);
+$("model").addEventListener("change", () => localStorage.setItem("robot-bom-model", $("model").value));
+$("mock").addEventListener("change", syncMock);
+$("masks").addEventListener("change", () => { if (state) renderPhotos(state.review.bom); });
+renderThumbs();
+</script>
+</body>
+</html>
