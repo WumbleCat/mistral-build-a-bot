@@ -291,7 +291,15 @@ _CACHE_FILE = _CACHE_DIR / "smart_match.json"
 
 
 def _cache_key(payload: dict) -> str:
-    return hashlib.sha1(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
+    """Hash of the canonical payload: None/empty values dropped, so the startup
+    pre-warm inputs hash identically to the same request arriving via HTTP."""
+    def canon(o):
+        if isinstance(o, dict):
+            return {k: canon(v) for k, v in sorted(o.items()) if v not in (None, [], {})}
+        if isinstance(o, list):
+            return [canon(v) for v in o]
+        return o
+    return hashlib.sha1(json.dumps(canon(payload), sort_keys=True, default=str).encode()).hexdigest()
 
 
 def _load_file_cache() -> dict:

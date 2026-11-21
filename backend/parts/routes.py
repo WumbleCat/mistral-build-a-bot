@@ -85,6 +85,29 @@ def get_job(job_id: str) -> dict:
     return job
 
 
+@router.get("/search")
+def get_search(q: str = Query(..., min_length=1), limit: int = Query(5, ge=1, le=10)) -> dict:
+    """Live shop search: LCSC + Mouser side by side.
+
+    Returns {"q": ..., "lcsc": [...], "mouser": [...]} where each offer is
+    {shop, title, part_number, price_gbp, currency, stock, url, verified, source}.
+    Results are cached 1h; a failing shop API just yields an empty list — never a 500.
+    """
+    from . import live as live_mod
+
+    def _safe(fn, *args, **kwargs) -> list:
+        try:
+            return fn(*args, **kwargs)
+        except Exception:
+            return []  # a failing shop API yields an empty list, never a 500
+
+    return {
+        "q": q,
+        "lcsc": _safe(live_mod.lcsc_search, q, limit=limit),
+        "mouser": _safe(live_mod.mouser_search, q, records=limit),
+    }
+
+
 @router.post("/alternatives")
 def post_alternatives(payload: dict) -> dict:
     """Substitutions for one part. Body: {"part_id": "l298n"}."""

@@ -133,6 +133,31 @@ class TestSearchBehaviour(unittest.TestCase):
         kws2 = live._keywords_for("Ultrasonic Distance Sensor HC-SR04 5V (Kitronik 46130)")
         self.assertTrue(any("HC-SR04" in k for k in kws2))
 
+    def test_api_search_endpoint_side_by_side(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        c = TestClient(app)
+        with mock.patch.object(live, "lcsc_search", return_value=[
+                {"shop": "LCSC", "price_gbp": 0.85, "title": "t", "url": "u", "stock": 1, "verified": False}]), \
+             mock.patch.object(live, "mouser_search", return_value=[]):
+            r = c.get("/api/search", params={"q": "SG90 servo"})
+            self.assertEqual(r.status_code, 200)
+            d = r.json()
+            self.assertEqual(d["q"], "SG90 servo")
+            self.assertEqual(d["lcsc"][0]["shop"], "LCSC")
+            self.assertEqual(d["mouser"], [])  # failed/empty shop -> empty list, no crash
+
+    def test_api_search_never_500_on_shop_error(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        c = TestClient(app)
+        with mock.patch.object(live, "lcsc_search", side_effect=RuntimeError("boom")), \
+             mock.patch.object(live, "mouser_search", side_effect=RuntimeError("boom")):
+            r = c.get("/api/search", params={"q": "anything"})
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.json()["lcsc"], [])
+            self.assertEqual(r.json()["mouser"], [])
+
     def test_live_offers_falls_back_to_part_number_keyword(self):
         # full name yields nothing, part-number keyword yields offers
         def fake_lcsc(kw, limit=5):
