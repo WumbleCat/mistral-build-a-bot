@@ -45,6 +45,17 @@ export function PhotoBuild({ onGenerated }: PhotoBuildProps) {
   }, [file]);
 
   const busy = stage !== 'idle';
+
+  // Honest progress feedback: each stage is one blocking request, so show a live
+  // elapsed timer for the running stage rather than fake percentages.
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    setElapsed(0);
+    if (stage === 'idle') return;
+    const t0 = Date.now();
+    const iv = window.setInterval(() => setElapsed(Math.floor((Date.now() - t0) / 1000)), 1000);
+    return () => window.clearInterval(iv);
+  }, [stage]);
   const mock = health ? !health.api_key_configured || health.mock_default : false;
 
   const pick = (f: File | undefined) => {
@@ -196,7 +207,11 @@ export function PhotoBuild({ onGenerated }: PhotoBuildProps) {
                 </span>
                 <div>
                   <p className={`text-sm ${active ? 'font-semibold text-strong' : done ? 'text-body' : 'text-muted'}`}>{s.label}</p>
-                  {active && <p className="text-xs text-muted">{s.hint}</p>}
+                  {active && (
+                    <p className="text-xs text-muted" aria-live="polite">
+                      {s.hint} <span className="font-mono">{elapsed}s</span>
+                    </p>
+                  )}
                 </div>
               </li>
             );
