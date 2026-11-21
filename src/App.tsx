@@ -14,7 +14,6 @@ import { AssistantPanel } from './components/AssistantPanel';
 
 import { LandingScreen } from './components/LandingScreen';
 
-import { PhotoAnalysisDialog } from './components/PhotoAnalysisDialog';
 import { Footer } from './components/Shell';
 import { Boxes, CircleDollarSign, ListChecks, ListOrdered } from 'lucide-react';
 
@@ -37,7 +36,6 @@ export default function App() {
   const [guided, setGuided] = useState({ playing: false, auto: true });
   const [tick, setTick] = useState(0); // bump to force replay (restart)
   const [importOpen, setImportOpen] = useState(false);
-  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [importNotes, setImportNotes] = useState<string[]>([]);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantMention, setAssistantMention] = useState<string | null>(null);
@@ -301,18 +299,11 @@ export default function App() {
           onLoadSample={loadSample}
           onLoadUpstream={() => void loadUpstreamSample()}
           onImport={openImport}
-          onPhotoAnalysis={() => setPhotoDialogOpen(true)}
+          onGenerated={(d, notes) => {
+            applyData(d, notes);
+            setScreen('studio');
+          }}
         />
-        {photoDialogOpen && (
-          <PhotoAnalysisDialog
-            onGenerated={(d, notes) => {
-              applyData(d, notes);
-              setPhotoDialogOpen(false);
-              setScreen('studio');
-            }}
-            onClose={() => setPhotoDialogOpen(false)}
-          />
-        )}
         {importOpen && <ImportDialog onLoad={handleImport} onClose={() => setImportOpen(false)} />}
       </>
     );
