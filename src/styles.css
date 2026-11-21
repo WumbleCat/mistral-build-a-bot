@@ -6,8 +6,15 @@
   --line: #e6e3dc;
   --muted: #6d7278;
   --faint: #9aa0a6;
-  --accent: #ff5a1f;
+  /* Mistral ramp (Le Chonk nod) */
+  --mistral-yellow: #FFD800;
+  --mistral-amber: #FFAF00;
+  --mistral-orange: #FF8205;
+  --mistral-flame: #FA500F;
+  --mistral-red: #E10500;
+  --accent: var(--mistral-flame);
   --accent-soft: #ffd9c2;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --radius: 14px;
   --shadow: 0 1px 2px rgba(23, 24, 26, 0.05), 0 6px 24px rgba(23, 24, 26, 0.06);
 }
@@ -46,10 +53,24 @@ html, body {
 .header-robot { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
 .header-robot-label { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--faint); }
 .header-robot-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
-.header-progress { flex: 1; max-width: 340px; margin-left: auto; }
-.header-progress-text { font-size: 12px; color: var(--muted); margin-bottom: 5px; font-variant-numeric: tabular-nums; }
-.progress-track { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; }
-.progress-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.45s ease; }
+.header-progress { flex: 1; max-width: 340px; margin-left: auto; container-type: inline-size; }
+.header-progress-text { font-size: 12px; color: var(--muted); margin-bottom: 5px; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+.progress-track { height: 8px; background: var(--line); border-radius: 3px; overflow: hidden; }
+/* 5 square "pixel" segments in the Mistral ramp yellow→red; gradient spans the
+   full track (100cqw) and the fill's width clips how many segments show. */
+.progress-fill {
+  height: 100%;
+  border-radius: 0;
+  transition: width 0.45s ease;
+  background: linear-gradient(90deg,
+    var(--mistral-yellow) 0 20%,
+    var(--mistral-amber) 20% 40%,
+    var(--mistral-orange) 40% 60%,
+    var(--mistral-flame) 60% 80%,
+    var(--mistral-red) 80% 100%);
+  background-size: 100cqw 100%;
+  background-repeat: no-repeat;
+}
 .mode-toggle { display: flex; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
 .mode-toggle button {
   border: 0; background: transparent; padding: 7px 14px; border-radius: 999px;
@@ -376,3 +397,33 @@ html, body {
   .header-progress { order: 5; max-width: none; flex-basis: 100%; }
   .assistant-panel { width: 100vw; }
 }
+
+/* ---------- Phase 4 tokens: mono accents + 3D stage view (hein-3d) ---------- */
+.step-chip { font-family: var(--font-mono); }
+.stage-view-toggle { margin: 0 0 10px; width: max-content; }
+.stage-view-toggle button { font-family: var(--font-mono); font-size: 12px; padding: 6px 16px; }
+.stage-view-toggle button.active { background: var(--accent); color: #fff; }
+
+.robot3d-wrap { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); overflow: hidden; }
+.robot3d-wrap canvas { display: block; width: 100%; height: 460px; touch-action: none; }
+.robot3d-toolbar {
+  position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; align-items: center;
+  background: rgba(255, 255, 255, 0.9); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px;
+}
+.robot3d-explode { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.robot3d-explode input { width: 110px; accent-color: var(--accent); }
+.robot3d-wrap .illustrative-badge { position: absolute; left: 10px; bottom: 10px; }
+
+.part3d-label { pointer-events: none; }
+.part3d-label-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--ink);
+  color: #fff;
+  padding: 3px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.part3d-label-wrap { z-index: 5; }
+.robot3d-toolbar { top: auto; bottom: 10px; }
+.robot3d-wrap .illustrative-badge { bottom: auto; top: 10px; }
