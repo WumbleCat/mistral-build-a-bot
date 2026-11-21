@@ -134,3 +134,39 @@ curl -X POST localhost:8000/api/alternatives -H 'Content-Type: application/json'
 - BOM/audit rule of thumb: the bom-auditor warns when L298N + a 6 V AA pack are combined (~2 V drop starves the motors) and suggests `driver_tb6612fng`.
 - Never invent URLs: catalogue URLs are real (`verified:true`) or `"TODO"` (`verified:false`); live offers are always `verified:false` for human checking.
 - `.env` is gitignored; only `.env.example` is committed.
+
+## Use from Python (no HTTP)
+
+`backend/parts/parts_api.py` is the public interface — pass Person 2's vision output straight in (a plain list of dicts with `name, category, quantity, evidence, source_ids, sku, product_url, review_required, notes`, or `VisionPart` models):
+
+```python
+import sys, json; sys.path.insert(0, "backend")
+from parts.parts_api import build_bom, build_bom_smart, search_live, get_catalog, get_recipes
+
+vision_parts = json.load(open("mock/vision_person2_sample.json"))
+bom = build_bom(vision_parts)                 # instant, deterministic, no AI (<50 ms)
+bom = build_bom(vision_parts, owned=["arduino_uno"])
+smart = build_bom_smart(vision_parts)         # agents + live prices, cached, async-safe, never fails
+offers = search_live("TB6612FNG")             # {"q", "lcsc", "mouser", "exact", "similar"}
+catalog = get_catalog()                       # list[dict], all 59 parts
+recipes = get_recipes()                       # list[dict]
+```
+
+Full runnable example: `backend/.venv/bin/python examples/use_parts_api.py`
+
+`build_bom` returns `{robot_name, recipe_id, recipe_confidence, closest_recipe, confidence, parts, bom, bom_total_gbp, unmatched}`; each BOM row has `unit_price_gbp, qty, packs_to_buy, units_needed, status ("identified"|"suggested"), needs_check, source_ids, live_offers (exact) / live_offers_similar` in smart mode.
+
+## Parts list in Python
+
+`backend/parts/parts_catalog.py` is **generated** from `catalog.json` + `recipes.json` (source of truth) by `backend/.venv/bin/python scripts/export_parts_py.py`. It is standalone (pydantic + rapidfuzz only) — copy that one file if you just need the list:
+
+```python
+from parts_catalog import PARTS, RECIPES, Part, get_part, parts_by_category, find_part
+
+PARTS            # list[Part] — Part(id, name, category, aliases, specs, price, currency,
+                 #   price_gbp, shop, sku, url, verified, alternatives, notes)
+RECIPES          # dict[str, list[tuple[str, int]]] — recipe id -> [(part_id, qty)]
+get_part("driver_tb6612fng")          # -> Part or None
+parts_by_category("relay")            # -> [Part, ...]
+find_part("yellow motor")             # -> [(score, Part), ...] fuzzy, best first
+```

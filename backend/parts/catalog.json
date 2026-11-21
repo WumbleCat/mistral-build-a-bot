@@ -888,7 +888,10 @@
         "slide switch",
         "power switch",
         "spst switch",
-        "mini switch"
+        "mini switch",
+        "spst toggle switch",
+        "toggle switch",
+        "spst slide switch"
       ],
       "specs": {
         "current_a": 3
@@ -1345,7 +1348,11 @@
         "relay module",
         "single channel relay",
         "blue relay board",
-        "relay board"
+        "relay board",
+        "srd-05vdc-sl-c",
+        "srd-05vdc",
+        "songle relay",
+        "1 channel relay module"
       ],
       "specs": {
         "voltage": 5,
@@ -1359,6 +1366,52 @@
       "alternatives": [
         "driver_tb6612fng"
       ],
+      "verified": false
+    },
+    {
+      "id": "relay_module_2ch",
+      "name": "5V 2-Channel Relay Module (SRD-05VDC-SL-C)",
+      "category": "relay",
+      "aliases": [
+        "2 channel relay module",
+        "dual relay module",
+        "srd-05vdc-sl-c 2ch",
+        "double relay board"
+      ],
+      "specs": {
+        "voltage": 5,
+        "channels": 2,
+        "switches": "on/off only"
+      },
+      "price": 2.8,
+      "currency": "GBP",
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [
+        "relay_module_1ch"
+      ],
+      "verified": false
+    },
+    {
+      "id": "rf_receiver_433",
+      "name": "433MHz RF Receiver Module (XY-MK-5V / RXB6)",
+      "category": "sensor",
+      "aliases": [
+        "433mhz rf receiver",
+        "rf receiver module",
+        "xy-mk-5v",
+        "rxb6",
+        "433 mhz receiver"
+      ],
+      "specs": {
+        "voltage": 5,
+        "frequency_mhz": 433
+      },
+      "price": 1.2,
+      "currency": "GBP",
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [],
       "verified": false
     }
   ]

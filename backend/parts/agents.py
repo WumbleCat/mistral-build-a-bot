@@ -601,7 +601,11 @@ async def smart_match_async(payload: dict) -> dict:
     # attach live_offers next to each BOM part (catalogue stays the fallback);
     # live.py caches 1h, rate-limits Mouser to 30/min, and never raises
     async def _attach_live(row: dict) -> None:
-        row["live_offers"] = await asyncio.to_thread(live.live_offers_for_part, row["name"])
+        offers = await asyncio.to_thread(live.live_offers_for_part, row["name"], row.get("category"), row.get("part_id"))
+        exact, similar = live.split_offers(offers)
+        row["live_offers"] = exact            # 'exact' matches shown by default
+        if similar:
+            row["live_offers_similar"] = similar  # 'similar' (e.g. bare ICs) in a separate list
     await asyncio.gather(*[_attach_live(r) for r in result["bom"]])
     result["agent_trace"].append("live-offers attached to BOM rows")
 

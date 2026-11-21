@@ -59,7 +59,11 @@ def post_match(payload: MatchPayload, live_offers: bool = Query(False, alias="li
     if live_offers:
         from . import live as live_mod
         for row in result["bom"]:
-            row["live_offers"] = live_mod.live_offers_for_part(row["name"])
+            offers = live_mod.live_offers_for_part(row["name"], row.get("category"), row.get("part_id"))
+            exact, similar = live_mod.split_offers(offers)
+            row["live_offers"] = exact
+            if similar:
+                row["live_offers_similar"] = similar
     return result
 
 
@@ -104,10 +108,20 @@ def get_search(q: str = Query(..., min_length=1), limit: int = Query(5, ge=1, le
         except Exception:
             return []  # a failing shop API yields an empty list, never a 500
 
+    lcsc = _safe(live_mod.lcsc_search, q, limit=limit)
+    mouser = _safe(live_mod.mouser_search, q, records=limit)
+    # annotate each offer with match_quality against the closest catalogue part
+    best = match.search_catalog(q, limit=1)
+    item = match.get_item(best[0]["id"]) if best and best[0]["score"] >= match.SCORE_THRESHOLD else None
+    for o in lcsc + mouser:
+        o["match_quality"] = live_mod.classify_offer(o, (item or {}).get("category"), item)
+    exact, similar = live_mod.split_offers(lcsc + mouser)
     return {
         "q": q,
-        "lcsc": _safe(live_mod.lcsc_search, q, limit=limit),
-        "mouser": _safe(live_mod.mouser_search, q, records=limit),
+        "lcsc": lcsc,
+        "mouser": mouser,
+        "exact": exact,      # shown by default
+        "similar": similar,  # e.g. bare ICs for module categories — separate list
     }
 
 

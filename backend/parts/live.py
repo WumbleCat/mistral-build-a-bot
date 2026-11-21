@@ -203,10 +203,61 @@ def _keywords_for(name: str) -> list[str]:
     return kws[:3]
 
 
-def live_offers_for_part(part_name: str, max_per_shop: int = 3) -> list[dict]:
-    """live_offers for one catalogue part name: LCSC + Mouser, cheapest first.
-    Never raises; catalogue entry remains the fallback. Tries the full name,
-    then part-number keywords, stopping at the first keyword with offers."""
+# ---------------------------------------------------------------------------
+# Match quality: for module-type categories, reject bare-IC live hits
+# ---------------------------------------------------------------------------
+
+# Categories where a bare IC is NOT an acceptable substitute for the module.
+STRICT_CATEGORIES = {"motor_driver", "controller", "sensor", "relay"}
+MODULE_WORDS_RE = re.compile(r"\b(module|board|breakout|devkit|dev board|development)\b", re.I)
+
+
+def _pn_like_tokens(text: str) -> set[str]:
+    """Part-number-looking tokens of a catalogue name, e.g. TB6612FNG, HC-SR04."""
+    out = set()
+    for t in re.findall(r"[A-Za-z0-9][A-Za-z0-9\-]{3,}", text or ""):
+        if any(c.isdigit() for c in t) or t.isupper():
+            out.add(t.upper())
+    return out
+
+
+def classify_offer(offer: dict, part_category: str | None, part_item: dict | None) -> str:
+    """'exact' or 'similar' for a live offer against a catalogue part.
+
+    For motor_driver/controller/sensor/relay, an offer is 'exact' only if its
+    description says module/board/breakout/devkit/development, OR its text
+    contains a part-number token of the catalogue item (e.g. TB6612FNG).
+    Bare ICs (e.g. Mouser 757-TB67H481FNGEL for driver_tb6612fng) -> 'similar'.
+    All other categories: 'exact'.
+    """
+    cat = (part_category or "").lower()
+    if cat not in STRICT_CATEGORIES:
+        return "exact"
+    title = (offer.get("title") or "") + " " + (offer.get("manufacturer") or "")
+    if MODULE_WORDS_RE.search(title):
+        return "exact"
+    item_tokens = _pn_like_tokens((part_item or {}).get("name", ""))
+    offer_text = f"{offer.get('title', '')} {offer.get('part_number', '')} {offer.get('manufacturer', '')}".upper()
+    if any(tok in offer_text for tok in item_tokens):
+        return "exact"
+    return "similar"
+
+
+def split_offers(offers: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Split annotated offers into (exact, similar)."""
+    exact = [o for o in offers if o.get("match_quality") == "exact"]
+    similar = [o for o in offers if o.get("match_quality") != "exact"]
+    return exact, similar
+
+
+def live_offers_for_part(part_name: str, part_category: str | None = None,
+                         part_id: str | None = None, max_per_shop: int = 3) -> list[dict]:
+    """live_offers for one catalogue part: LCSC + Mouser, annotated with
+    match_quality ('exact'|'similar'), exact first then cheapest.
+    Never raises; the catalogue entry remains the fallback. Tries the full
+    name, then part-number keywords, stopping at the first keyword with offers."""
+    from . import match as _match
+    item = _match.get_item(part_id) if part_id else None
     offers: list[dict] = []
     seen_urls: set[str] = set()
     for kw in _keywords_for(part_name):
@@ -216,8 +267,9 @@ def live_offers_for_part(part_name: str, max_per_shop: int = 3) -> list[dict]:
                 continue
             if url:
                 seen_urls.add(url)
+            o["match_quality"] = classify_offer(o, part_category or (item or {}).get("category"), item)
             offers.append(o)
         if offers:
             break
-    offers.sort(key=lambda o: o.get("price_gbp") or 1e9)
+    offers.sort(key=lambda o: (o.get("match_quality") != "exact", o.get("price_gbp") or 1e9))
     return offers[: max_per_shop * 2]
