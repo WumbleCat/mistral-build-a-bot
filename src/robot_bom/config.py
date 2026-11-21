@@ -11,6 +11,9 @@ from dataclasses import dataclass, field
 
 DEFAULT_BASE_URL = "https://api.mistral.ai/v1"
 DEFAULT_MODEL = "mistral-large-latest"
+# Seconds to wait for one model reply. A large vision model writing a full parts list for a
+# photo has been seen to take longer than two minutes, so the limit is generous.
+DEFAULT_TIMEOUT_S = 300.0
 
 _TRUTHY = {"1", "true", "yes", "on"}
 
@@ -26,7 +29,7 @@ class Settings:
     vision_model: str = DEFAULT_MODEL
     reasoning_model: str = DEFAULT_MODEL
     json_mode: str = "json_object"  # json_object | none
-    timeout_s: float = 120.0
+    timeout_s: float = DEFAULT_TIMEOUT_S
     max_retries: int = 2  # extra attempts after a malformed model response
     mock: bool = False
     verify: bool = True  # visibility re-check after pass 1
@@ -73,12 +76,14 @@ def load_settings(env: Mapping[str, str] | None = None, *, dotenv: bool = True) 
     if json_mode not in {"json_object", "none"}:
         raise ConfigError("VISION_JSON_MODE must be 'json_object' or 'none'")
     try:
-        timeout_s = float(get("VISION_TIMEOUT_S") or 120)
+        timeout_s = float(get("VISION_TIMEOUT_S") or DEFAULT_TIMEOUT_S)
         max_retries = int(get("VISION_MAX_RETRIES") or 2)
         box_threshold = float(get("GROUNDING_BOX_THRESHOLD") or 0.25)
         text_threshold = float(get("GROUNDING_TEXT_THRESHOLD") or 0.20)
     except ValueError as exc:
         raise ConfigError(f"Invalid numeric setting: {exc}") from None
+    if timeout_s <= 0:
+        raise ConfigError("VISION_TIMEOUT_S must be greater than 0")
 
     return Settings(
         api_key=get("VISION_API_KEY") or get("MISTRAL_API_KEY"),

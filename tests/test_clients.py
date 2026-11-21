@@ -106,6 +106,39 @@ def test_network_failure_is_reported_without_the_key():
     assert "network error" in str(excinfo.value) and SECRET not in str(excinfo.value)
 
 
+def test_slow_reply_is_asked_for_once_more_then_reported_with_the_way_out():
+    attempts = []
+
+    def handler(request):
+        attempts.append(1)
+        raise httpx.ReadTimeout("The read operation timed out")
+
+    with pytest.raises(VisionAPIError) as excinfo:
+        vision_client(handler, timeout_s=300).analyze([], "s", ImageObservation, "u")
+    message = str(excinfo.value)
+    assert len(attempts) == 2  # not three: each retry restarts the whole generation
+    assert "did not answer within 300s" in message and "VISION_TIMEOUT_S" in message
+    assert "vision-model" in message and SECRET not in message
+
+
+def test_one_slow_reply_does_not_fail_the_call():
+    attempts = []
+
+    def handler(request):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise httpx.ReadTimeout("The read operation timed out")
+        return chat_reply("{}")
+
+    assert vision_client(handler).analyze([], "s", ImageObservation, "u") == "{}"
+
+
+def test_default_wait_for_a_reply_is_long_and_connecting_is_not():
+    client = OpenAICompatVisionClient(api_key=SECRET, model="m", base_url="https://api.mistral.ai/v1")
+    timeout = client._client.timeout
+    assert Settings().timeout_s == 300 and timeout.read == 300 and timeout.connect == 20
+
+
 def test_unexpected_response_shape_is_an_api_error():
     with pytest.raises(VisionAPIError, match="unexpected response shape"):
         vision_client(lambda request: httpx.Response(200, json={"oops": True})).analyze([], "s", ImageObservation, "u")

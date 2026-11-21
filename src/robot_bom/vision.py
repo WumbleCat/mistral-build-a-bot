@@ -19,11 +19,13 @@ from typing import Protocol
 import httpx
 from pydantic import BaseModel
 
-from .config import Settings
+from .config import DEFAULT_TIMEOUT_S, Settings
 from .ingest import ImageInput
 from .models import ImageObservation, InferenceAudit, VisibilityAudit
 
 log = logging.getLogger(__name__)
+
+CONNECT_TIMEOUT_S = 20.0
 
 
 class VisionAPIError(RuntimeError):
@@ -64,6 +66,9 @@ class OpenAICompatVisionClient:
     """Chat-completions client for Mistral and other OpenAI-compatible vision APIs."""
 
     _RETRYABLE_STATUS = {408, 409, 429, 500, 502, 503, 504}
+    # A reply that outlasts the read timeout is asked for once more, not three times: every
+    # retry restarts the whole generation, so repeating it only multiplies the wait.
+    _READ_TIMEOUT_ATTEMPTS = 2
 
     def __init__(
         self,
@@ -72,7 +77,7 @@ class OpenAICompatVisionClient:
         base_url: str,
         *,
         json_mode: str = "json_object",
-        timeout_s: float = 120.0,
+        timeout_s: float = DEFAULT_TIMEOUT_S,
         transport_retries: int = 3,
         http_client: httpx.Client | None = None,
         sleep=time.sleep,
@@ -84,7 +89,13 @@ class OpenAICompatVisionClient:
         self._transport_retries = max(1, transport_retries)
         self._sleep = sleep
         self._headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        self._client = http_client or httpx.Client(timeout=timeout_s, verify=system_trust_context())
+        self._timeout_s = timeout_s
+        # timeout_s is how long to wait for the reply, which arrives in one piece once the
+        # model has finished writing; connecting should never take that long.
+        self._client = http_client or httpx.Client(
+            timeout=httpx.Timeout(timeout_s, connect=min(timeout_s, CONNECT_TIMEOUT_S)),
+            verify=system_trust_context(),
+        )
 
     def with_model(self, model: str) -> "OpenAICompatVisionClient":
         clone = object.__new__(OpenAICompatVisionClient)
@@ -122,9 +133,19 @@ class OpenAICompatVisionClient:
 
     def _post(self, payload: dict) -> str:
         last_error = "no attempt made"
+        read_timeouts = 0
         for attempt in range(1, self._transport_retries + 1):
             try:
                 response = self._client.post(self._url, headers=self._headers, json=payload)
+            except httpx.ReadTimeout:
+                read_timeouts += 1
+                last_error = f"no reply within {self._timeout_s:.0f}s"
+                if read_timeouts >= self._READ_TIMEOUT_ATTEMPTS:
+                    raise VisionAPIError(
+                        f"The model '{self._model}' did not answer within {self._timeout_s:.0f}s "
+                        f"(tried {read_timeouts} times). Choose a faster model, or allow more time "
+                        "with VISION_TIMEOUT_S."
+                    ) from None
             except httpx.HTTPError as exc:
                 last_error = f"network error: {exc.__class__.__name__}: {exc}"
             else:
