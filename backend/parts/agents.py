@@ -14,9 +14,12 @@ Mistral Workflow:
   5. bom-auditor            — compatibility warnings (voltage, driver channels,
                               pins, missing wires/screws/switch)
 
-Every agent call is wrapped in a ~20s timeout and returns strict JSON via
+Every agent call is wrapped in a 30s timeout and returns strict JSON via
 `output_type`. On ANY failure the caller falls back to the deterministic
 match.py result, so the demo never breaks. Results are cached per input hash.
+
+Catalogue money schema (shared contract): items carry `price` + `currency`
+(GBP|USD); GBP values are derived with match.to_gbp(price, currency).
 """
 
 from __future__ import annotations
@@ -53,8 +56,27 @@ ALLOWED_SHOP_DOMAINS = [
 @agents.client_tool
 def search_catalog(query: str, category: str | None = None, limit: int = 5) -> list[dict]:
     """Search the BuildFromVision parts catalogue by free-text query and optional
-    category. Returns catalogue IDs (only IDs that really exist), with scores."""
-    return match.search_catalog(query, category=category, limit=limit)
+    category. Returns catalogue IDs (only IDs that really exist) with score,
+    price_gbp (converted to GBP via match.to_gbp), original currency, shop, sku."""
+    return _search_catalog_answer(query, category=category, limit=limit)
+
+
+def _search_catalog_answer(query: str, category: str | None = None, limit: int = 5) -> list[dict]:
+    """match.search_catalog hits in the NEW schema: each hit carries
+    id, name, category, score, price_gbp (GBP), currency, shop, sku."""
+    hits = match.search_catalog(query, category=category, limit=limit)
+    out = []
+    for h in hits:
+        item = match.get_item(h.get("id", "")) or {}
+        if "price" in item and "currency" in item:
+            h = {
+                **h,
+                "price_gbp": round(match.to_gbp(item["price"], item["currency"]), 2),
+                "currency": item["currency"],
+                "sku": item.get("sku"),
+            }
+        out.append(h)
+    return out
 
 
 @agents.client_tool
@@ -122,7 +144,7 @@ class PriceScoutResult(BaseModel):
 class Substitution(BaseModel):
     part_id: str
     reason: str
-    alternatives: list[dict] = Field(default_factory=list)  # [{id, name, price_gbp, shop, url, delta_gbp}]
+    alternatives: list[dict] = Field(default_factory=list)  # [{id, name, category, price, currency, unit_price_gbp, delta_gbp, shop, url, sku, verified}]
 
 
 class SubstitutionAdvice(BaseModel):
@@ -149,8 +171,9 @@ _CATALOG_SUMMARY = ""  # injected at runtime
 
 
 def _catalog_summary() -> str:
+    """One line per catalogue item: id | name | category | price currency | shop | sku."""
     items = match.catalog_items()
-    lines = [f'- {i["id"]} | {i["name"]} | {i["category"]} | £{i["price_gbp"]:.2f} | {i["shop"]}'
+    lines = [f'- {i["id"]} | {i["name"]} | {i["category"]} | {i["price"]} {i["currency"]} | {i["shop"]} | {i.get("sku") or "-"}'
              for i in items]
     return "\n".join(lines)
 
@@ -214,8 +237,12 @@ def create_bom_auditor() -> Agent:
             instructions=(
                 "You audit a robot BOM for electrical and mechanical compatibility. Check: "
                 "battery voltage vs motor voltage range and driver motor-input range; "
-                "driver channel count >= number of motors; controller logic voltage vs 3.3V sensors/peripherals; "
-                "presence of breadboard/jumper wires/M3 screws/power switch/USB cable for a buildable kit. "
+                "driver channel count >= number of motors; controller logic voltage vs 3.3V sensors/peripherals "
+                "(3.3V-only sensors like line_sensor must not be wired to a 5V logic pin); "
+                "presence of breadboard, jumper wires and a power source for a buildable kit. "
+                "HARD RULE: if the BOM contains driver_l298n_breakout (or legacy l298n) AND a 6V AA pack "
+                "(battery_4xaa_barrel / battery_4xaa_leads / batt_holder_4aa), you MUST emit exactly this warning: "
+                "\"L298N drops ~2V, so on a 6V AA pack the TT motors get only ~4V and may stall — use driver_tb6612fng (TB6612FNG) instead\". "
                 "Return plain-English warnings with concrete fixes. If all good, warnings=[] and ok=true. "
                 "BOM (with specs) follows the colon:\n"
             ),
@@ -278,18 +305,25 @@ def _cache_key(payload: dict) -> str:
 
 
 def alternatives_for(part_id: str) -> dict:
-    """Deterministic substitutions from the catalogue `alternatives` field."""
+    """Deterministic substitutions from the catalogue `alternatives` field.
+    Each alternative carries id, name, category, price (original currency),
+    currency, unit_price_gbp (via match.to_gbp), delta_gbp, shop, url, sku, verified."""
     item = match.get_item(part_id)
     if item is None:
         return {"part_id": part_id, "error": "unknown part_id", "alternatives": []}
+    item_gbp = match.to_gbp(item["price"], item["currency"])
     alts = []
     for alt_id in item.get("alternatives", []):
         alt = match.get_item(alt_id)
         if alt:
+            alt_gbp = match.to_gbp(alt["price"], alt["currency"])
             alts.append({
                 "id": alt["id"], "name": alt["name"], "category": alt["category"],
-                "price_gbp": alt["price_gbp"], "shop": alt["shop"], "url": alt["url"],
-                "delta_gbp": round(alt["price_gbp"] - item["price_gbp"], 2),
+                "price": alt["price"], "currency": alt["currency"],
+                "unit_price_gbp": round(alt_gbp, 2),
+                "delta_gbp": round(alt_gbp - item_gbp, 2),
+                "shop": alt["shop"], "url": alt["url"],
+                "sku": alt.get("sku"), "verified": alt.get("verified", False),
             })
     return {"part_id": part_id, "name": item["name"], "alternatives": alts}
 
@@ -323,7 +357,7 @@ async def smart_match_async(payload: dict) -> dict:
             matcher = create_catalog_matcher()
             answers = agents.ClientToolAnswers(
                 search_catalog.answer(lambda query, category=None, limit=5:
-                                      match.search_catalog(query, category=category, limit=limit)),
+                                      _search_catalog_answer(query, category=category, limit=limit)),
             )
             content = (f"Robot: {baseline['robot_name']} (recipe {baseline['recipe_id']}). "
                        f"Resolve these unmatched components to catalogue IDs:\n"
@@ -338,12 +372,19 @@ async def smart_match_async(payload: dict) -> dict:
                 if pid and match.get_item(pid):
                     qty = int(r.qty or 1)
                     item = match.get_item(pid)
-                    line = round(item["price_gbp"] * qty, 2)
-                    result["bom"].append({
+                    unit_gbp = match.to_gbp(item["price"], item["currency"])
+                    line = round(unit_gbp * qty, 2)
+                    row = {
                         "part_id": pid, "name": item["name"], "category": item["category"],
-                        "shop": item["shop"], "url": item["url"], "unit_price_gbp": item["price_gbp"],
+                        "shop": item["shop"], "url": item["url"],
+                        "currency": item["currency"], "unit_price": item["price"],
+                        "unit_price_gbp": round(unit_gbp, 2),
                         "qty": qty, "line_total_gbp": line, "owned": False, "added_from_recipe": False,
-                    })
+                        "sku": item.get("sku"), "verified": item.get("verified", False),
+                    }
+                    if item.get("price_note"):
+                        row["price_note"] = item["price_note"]
+                    result["bom"].append(row)
                     result["bom_total_gbp"] = round(result["bom_total_gbp"] + line, 2)
                     result["parts"].append({"id": pid, "name": item["name"], "category": item["category"],
                                             "qty": qty, "visible_in_photo": True})

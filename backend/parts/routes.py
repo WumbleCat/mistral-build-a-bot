@@ -18,6 +18,12 @@ def get_catalog() -> dict:
     return match.load_catalog()
 
 
+@router.get("/config")
+def get_config() -> dict:
+    """Public runtime config: the USD->GBP rate used for all price conversions."""
+    return {"USD_TO_GBP": match.USD_TO_GBP}
+
+
 @router.get("/recipes")
 def get_recipes() -> dict:
     """All build recipes."""

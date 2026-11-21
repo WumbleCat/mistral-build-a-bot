@@ -6,56 +6,1311 @@
     "Mouser UK": "mouser.co.uk",
     "LCSC": "lcsc.com"
   },
-  "categories": ["controller", "motor_driver", "motor", "servo", "sensor", "power", "wheel", "chassis", "wiring", "fasteners"],
+  "categories": [
+    "controller",
+    "motor_driver",
+    "motor",
+    "servo",
+    "sensor",
+    "power",
+    "wheel",
+    "chassis",
+    "wiring",
+    "fasteners"
+  ],
   "items": [
-    { "id": "arduino_uno", "name": "Arduino Uno R3", "category": "controller", "aliases": ["arduino uno", "uno r3", "arduino", "uno board"], "specs": { "input_voltage_min": 7, "input_voltage_max": 12, "logic_voltage": 5, "pins_digital": 14 }, "price_gbp": 18.50, "shop": "RS Components UK", "url": "TODO", "alternatives": ["arduino_nano", "esp32_devkit", "rpi_pico"], "verified": false },
-    { "id": "arduino_nano", "name": "Arduino Nano", "category": "controller", "aliases": ["nano", "arduino nano", "nano board"], "specs": { "input_voltage_min": 7, "input_voltage_max": 12, "logic_voltage": 5, "pins_digital": 14 }, "price_gbp": 12.00, "shop": "RS Components UK", "url": "TODO", "alternatives": ["arduino_uno", "esp32_devkit", "rpi_pico"], "verified": false },
-    { "id": "esp32_devkit", "name": "ESP32-WROOM-32 DevKit", "category": "controller", "aliases": ["esp32", "esp-32", "esp32 devkit", "wroom32"], "specs": { "input_voltage_min": 5, "input_voltage_max": 12, "logic_voltage": 3.3, "pins_digital": 30, "wifi": true }, "price_gbp": 6.50, "shop": "Mouser UK", "url": "TODO", "alternatives": ["rpi_pico", "arduino_nano"], "verified": false },
-    { "id": "rpi_pico", "name": "Raspberry Pi Pico", "category": "controller", "aliases": ["pico", "rp2040", "pi pico", "raspberry pico"], "specs": { "input_voltage_min": 1.8, "input_voltage_max": 5.5, "logic_voltage": 3.3, "pins_digital": 23 }, "price_gbp": 4.20, "shop": "RS Components UK", "url": "TODO", "alternatives": ["esp32_devkit", "arduino_nano"], "verified": false },
-
-    { "id": "l298n", "name": "L298N Dual H-Bridge Motor Driver", "category": "motor_driver", "aliases": ["l298n module", "h-bridge l298n", "l298n driver", "dual h bridge"], "specs": { "motor_voltage_min": 5, "motor_voltage_max": 35, "channels": 2, "logic_voltage": 5, "max_current_per_channel_a": 2 }, "price_gbp": 3.80, "shop": "SparkFun", "url": "TODO", "alternatives": ["tb6612fng", "drv8833"], "verified": false },
-    { "id": "tb6612fng", "name": "TB6612FNG Dual Motor Driver", "category": "motor_driver", "aliases": ["tb6612", "tb6612fng", "dual motor driver carrier"], "specs": { "motor_voltage_min": 4.5, "motor_voltage_max": 13.5, "channels": 2, "logic_voltage": 3.3, "max_current_per_channel_a": 1.2 }, "price_gbp": 4.50, "shop": "SparkFun", "url": "TODO", "alternatives": ["drv8833", "l298n"], "verified": false },
-    { "id": "drv8833", "name": "DRV8833 Dual Motor Driver", "category": "motor_driver", "aliases": ["drv8833", "drv8833 carrier", "low voltage driver"], "specs": { "motor_voltage_min": 2.7, "motor_voltage_max": 10.8, "channels": 2, "logic_voltage": 3.3, "max_current_per_channel_a": 1.5 }, "price_gbp": 3.20, "shop": "SparkFun", "url": "TODO", "alternatives": ["tb6612fng", "l298n"], "verified": false },
-
-    { "id": "motor_tt", "name": "TT DC Gear Motor 3-6V", "category": "motor", "aliases": ["yellow gear motor", "tt motor", "yellow motor", "tt dc motor", "gear motor yellow"], "specs": { "voltage_min": 3, "voltage_max": 6, "no_load_rpm": 200 }, "price_gbp": 2.50, "shop": "SparkFun", "url": "TODO", "alternatives": ["motor_n20"], "verified": false },
-    { "id": "motor_n20", "name": "N20 Micro Gear Motor 6V", "category": "motor", "aliases": ["n20 motor", "micro gear motor", "n20"], "specs": { "voltage_min": 3, "voltage_max": 6, "no_load_rpm": 300 }, "price_gbp": 3.50, "shop": "SparkFun", "url": "TODO", "alternatives": ["motor_tt"], "verified": false },
-    { "id": "motor_130", "name": "130 DC Motor", "category": "motor", "aliases": ["130 motor", "small dc motor", "toy motor"], "specs": { "voltage_min": 3, "voltage_max": 6, "no_load_rpm": 10000 }, "price_gbp": 1.20, "shop": "LCSC", "url": "TODO", "alternatives": ["motor_tt"], "verified": false },
-
-    { "id": "servo_sg90", "name": "SG90 Micro Servo 9g", "category": "servo", "aliases": ["sg90", "micro servo", "9g servo"], "specs": { "voltage_min": 4.8, "voltage_max": 6, "torque_kgcm": 1.8 }, "price_gbp": 2.20, "shop": "SparkFun", "url": "TODO", "alternatives": ["servo_mg90s"], "verified": false },
-    { "id": "servo_mg90s", "name": "MG90S Metal Gear Micro Servo", "category": "servo", "aliases": ["mg90s", "metal gear micro servo"], "specs": { "voltage_min": 4.8, "voltage_max": 6, "torque_kgcm": 2.2 }, "price_gbp": 3.50, "shop": "SparkFun", "url": "TODO", "alternatives": ["servo_sg90"], "verified": false },
-    { "id": "servo_mg996r", "name": "MG996R Servo", "category": "servo", "aliases": ["mg996r", "standard servo", "high torque servo"], "specs": { "voltage_min": 4.8, "voltage_max": 7.2, "torque_kgcm": 11 }, "price_gbp": 5.90, "shop": "SparkFun", "url": "TODO", "alternatives": ["servo_mg90s"], "verified": false },
-
-    { "id": "hcsr04", "name": "HC-SR04 Ultrasonic Sensor", "category": "sensor", "aliases": ["ultrasonic sensor", "hc-sr04", "hcsr04", "sonar sensor", "distance sensor ultrasonic"], "specs": { "voltage": 5, "range_cm_max": 400 }, "price_gbp": 2.80, "shop": "SparkFun", "url": "TODO", "alternatives": ["tof_vl53l0x", "sharp_gp2y0a21"], "verified": false },
-    { "id": "tof_vl53l0x", "name": "VL53L0X Time-of-Flight Sensor", "category": "sensor", "aliases": ["vl53l0x", "tof sensor", "laser distance sensor", "time of flight"], "specs": { "voltage": 3.3, "range_cm_max": 200 }, "price_gbp": 6.50, "shop": "Mouser UK", "url": "TODO", "alternatives": ["hcsr04"], "verified": false },
-    { "id": "tcrt5000", "name": "TCRT5000 IR Line Sensor", "category": "sensor", "aliases": ["ir line sensor", "tcrt5000", "reflectance sensor", "line tracking sensor single"], "specs": { "voltage": 5 }, "price_gbp": 1.50, "shop": "LCSC", "url": "TODO", "alternatives": ["ir_array_qre1113"], "verified": false },
-    { "id": "ir_array_qre1113", "name": "QRE1113 IR Sensor Array (3ch)", "category": "sensor", "aliases": ["ir sensor array", "line sensor array", "qre1113", "3 channel ir array", "line follower array"], "specs": { "voltage": 5, "channels": 3 }, "price_gbp": 4.00, "shop": "SparkFun", "url": "TODO", "alternatives": ["tcrt5000"], "verified": false },
-    { "id": "mpu6050", "name": "MPU6050 Gyro + Accelerometer", "category": "sensor", "aliases": ["mpu-6050", "mpu6050", "gyro", "imu", "accelerometer gyro"], "specs": { "voltage": 3.3 }, "price_gbp": 3.50, "shop": "LCSC", "url": "TODO", "alternatives": [], "verified": false },
-    { "id": "ir_obstacle", "name": "IR Obstacle Avoidance Sensor", "category": "sensor", "aliases": ["ir obstacle sensor", "infrared obstacle sensor", "obstacle detector ir", "ir proximity"], "specs": { "voltage": 3.3, "range_cm_max": 20 }, "price_gbp": 1.20, "shop": "LCSC", "url": "TODO", "alternatives": ["hcsr04"], "verified": false },
-    { "id": "sharp_gp2y0a21", "name": "Sharp GP2Y0A21 IR Distance Sensor", "category": "sensor", "aliases": ["sharp ir", "gp2y0a21", "sharp distance sensor"], "specs": { "voltage": 5, "range_cm_max": 80 }, "price_gbp": 8.50, "shop": "Mouser UK", "url": "TODO", "alternatives": ["hcsr04", "tof_vl53l0x"], "verified": false },
-
-    { "id": "batt_holder_4aa", "name": "4xAA Battery Holder with switch", "category": "power", "aliases": ["aa battery holder", "4 aa holder", "battery pack aa", "4x aa"], "specs": { "output_voltage": 6, "cells": 4 }, "price_gbp": 1.80, "shop": "RS Components UK", "url": "TODO", "alternatives": ["batt_holder_18650", "batt_9v"], "verified": false },
-    { "id": "batt_holder_18650", "name": "2x18650 Battery Holder (7.4V)", "category": "power", "aliases": ["18650 holder", "2s battery holder", "18650 battery pack", "2x 18650"], "specs": { "output_voltage": 7.4, "cells": 2 }, "price_gbp": 2.50, "shop": "RS Components UK", "url": "TODO", "alternatives": ["batt_holder_4aa", "lipo_7v4"], "verified": false },
-    { "id": "lipo_7v4", "name": "7.4V 2S LiPo Battery 1500mAh", "category": "power", "aliases": ["lipo 7.4v", "2s lipo", "7.4v lipo", "lipo battery 2s"], "specs": { "output_voltage": 7.4, "capacity_mah": 1500 }, "price_gbp": 9.50, "shop": "Mouser UK", "url": "TODO", "alternatives": ["batt_holder_18650"], "verified": false },
-    { "id": "buck_lm2596", "name": "LM2596 Buck Converter Module", "category": "power", "aliases": ["buck converter", "lm2596", "step down converter", "dc-dc buck"], "specs": { "input_voltage_max": 40, "output_voltage": 5 }, "price_gbp": 2.20, "shop": "LCSC", "url": "TODO", "alternatives": [], "verified": false },
-    { "id": "batt_9v", "name": "9V Battery with clip", "category": "power", "aliases": ["9v battery", "pp3 battery", "9 volt"], "specs": { "output_voltage": 9 }, "price_gbp": 1.50, "shop": "RS Components UK", "url": "TODO", "alternatives": ["batt_holder_4aa"], "verified": false },
-    { "id": "xt60_connector", "name": "XT60 Connector Pair", "category": "power", "aliases": ["xt60", "xt60 plug", "battery connector xt60"], "specs": { "current_a": 60 }, "price_gbp": 1.20, "shop": "LCSC", "url": "TODO", "alternatives": [], "verified": false },
-
-    { "id": "wheel_65mm", "name": "65mm Wheel for TT motor", "category": "wheel", "aliases": ["wheel 65mm", "tt wheel", "65mm wheel", "wheel tt motor"], "specs": { "diameter_mm": 65 }, "price_gbp": 1.00, "shop": "SparkFun", "url": "TODO", "alternatives": ["wheel_80mm"], "verified": false },
-    { "id": "wheel_80mm", "name": "80mm Wheel", "category": "wheel", "aliases": ["80mm wheel", "big wheel", "80 mm wheel"], "specs": { "diameter_mm": 80 }, "price_gbp": 1.40, "shop": "SparkFun", "url": "TODO", "alternatives": ["wheel_65mm"], "verified": false },
-    { "id": "caster_ball", "name": "Ball Caster", "category": "wheel", "aliases": ["caster ball", "ball caster", "ball wheel", "omni ball"], "specs": {}, "price_gbp": 1.20, "shop": "SparkFun", "url": "TODO", "alternatives": ["caster_wheel"], "verified": false },
-    { "id": "caster_wheel", "name": "Caster Wheel", "category": "wheel", "aliases": ["caster wheel", "jockey wheel", "support wheel"], "specs": {}, "price_gbp": 1.80, "shop": "SparkFun", "url": "TODO", "alternatives": ["caster_ball"], "verified": false },
-
-    { "id": "chassis_2wd", "name": "2WD Chassis Kit", "category": "chassis", "aliases": ["2wd chassis", "2 wheel chassis", "car chassis", "2wd car chassis", "robot chassis 2wd"], "specs": { "motor_mounts": 2 }, "price_gbp": 8.50, "shop": "SparkFun", "url": "TODO", "alternatives": ["chassis_4wd"], "verified": false },
-    { "id": "chassis_4wd", "name": "4WD Chassis Kit", "category": "chassis", "aliases": ["4wd chassis", "4 wheel chassis", "4wd car chassis", "robot chassis 4wd"], "specs": { "motor_mounts": 4 }, "price_gbp": 14.00, "shop": "SparkFun", "url": "TODO", "alternatives": ["chassis_2wd"], "verified": false },
-    { "id": "arm_kit_4dof", "name": "4DOF Robot Arm Kit (brackets + claw)", "category": "chassis", "aliases": ["robot arm kit", "4dof arm", "claw arm", "arm kit", "robot arm"], "specs": { "dof": 4 }, "price_gbp": 12.50, "shop": "SparkFun", "url": "TODO", "alternatives": [], "verified": false },
-
-    { "id": "breadboard_mini", "name": "Mini Breadboard 170pt", "category": "wiring", "aliases": ["breadboard", "mini breadboard", "solderless breadboard", "170 tie point"], "specs": { "tie_points": 170 }, "price_gbp": 1.50, "shop": "SparkFun", "url": "TODO", "alternatives": [], "verified": false },
-    { "id": "jumpers_mm", "name": "Jumper Wires M-M 40pc", "category": "wiring", "aliases": ["jumper wires male male", "dupont mm", "m-m jumpers", "male to male wires"], "specs": { "count": 40 }, "price_gbp": 2.00, "shop": "SparkFun", "url": "TODO", "alternatives": ["jumpers_mf"], "verified": false },
-    { "id": "jumpers_mf", "name": "Jumper Wires M-F 40pc", "category": "wiring", "aliases": ["jumper wires male female", "dupont mf", "m-f jumpers", "male to female wires"], "specs": { "count": 40 }, "price_gbp": 2.00, "shop": "SparkFun", "url": "TODO", "alternatives": ["jumpers_mm"], "verified": false },
-    { "id": "usb_cable", "name": "USB A to B Cable", "category": "wiring", "aliases": ["usb cable", "arduino usb cable", "usb a-b", "printer cable"], "specs": { "length_m": 1 }, "price_gbp": 2.50, "shop": "SparkFun", "url": "TODO", "alternatives": [], "verified": false },
-    { "id": "switch_spst", "name": "SPST Slide Switch", "category": "wiring", "aliases": ["slide switch", "power switch", "spst switch", "mini switch"], "specs": { "current_a": 3 }, "price_gbp": 0.80, "shop": "RS Components UK", "url": "TODO", "alternatives": [], "verified": false },
-    { "id": "heatshrink_kit", "name": "Heat Shrink Tubing Kit", "category": "wiring", "aliases": ["heat shrink", "heatshrink", "shrink tubing"], "specs": {}, "price_gbp": 2.00, "shop": "LCSC", "url": "TODO", "alternatives": [], "verified": false },
-
-    { "id": "screws_m3_kit", "name": "M3 Screws + Nuts + Standoffs kit", "category": "fasteners", "aliases": ["m3 screws", "standoffs", "screw kit", "m3 standoff kit", "spacers"], "specs": { "thread": "M3" }, "price_gbp": 2.50, "shop": "RS Components UK", "url": "TODO", "alternatives": [], "verified": false }
+    {
+      "id": "arduino_uno",
+      "name": "Arduino UNO Rev3 (A000066)",
+      "category": "controller",
+      "aliases": [
+        "arduino uno",
+        "uno r3",
+        "arduino",
+        "uno board",
+        "arduino board",
+        "blue arduino"
+      ],
+      "specs": {
+        "logic_voltage": 5,
+        "input_voltage_min": 7,
+        "input_voltage_max": 12
+      },
+      "price": 24.88,
+      "currency": "GBP",
+      "price_note": "£20.73 exc. VAT / £24.88 inc. VAT",
+      "shop": "RS Components UK",
+      "sku": "715-4081",
+      "url": "https://uk.rs-online.com/web/p/arduino/7154081",
+      "alternatives": [
+        "arduino_uno_smd"
+      ],
+      "verified": true
+    },
+    {
+      "id": "arduino_nano",
+      "name": "Arduino Nano",
+      "category": "controller",
+      "aliases": [
+        "nano",
+        "arduino nano",
+        "nano board"
+      ],
+      "specs": {
+        "input_voltage_min": 7,
+        "input_voltage_max": 12,
+        "logic_voltage": 5,
+        "pins_digital": 14
+      },
+      "shop": "RS Components UK",
+      "url": "TODO",
+      "alternatives": [
+        "arduino_uno",
+        "esp32_devkit",
+        "rpi_pico"
+      ],
+      "verified": false,
+      "price": 12.0,
+      "currency": "GBP"
+    },
+    {
+      "id": "esp32_devkit",
+      "name": "ESP32-WROOM-32 DevKit",
+      "category": "controller",
+      "aliases": [
+        "esp32",
+        "esp-32",
+        "esp32 devkit",
+        "wroom32"
+      ],
+      "specs": {
+        "input_voltage_min": 5,
+        "input_voltage_max": 12,
+        "logic_voltage": 3.3,
+        "pins_digital": 30,
+        "wifi": true
+      },
+      "shop": "Mouser UK",
+      "url": "TODO",
+      "alternatives": [
+        "rpi_pico",
+        "arduino_nano"
+      ],
+      "verified": false,
+      "price": 6.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "rpi_pico",
+      "name": "Raspberry Pi Pico",
+      "category": "controller",
+      "aliases": [
+        "pico",
+        "rp2040",
+        "pi pico",
+        "raspberry pico"
+      ],
+      "specs": {
+        "input_voltage_min": 1.8,
+        "input_voltage_max": 5.5,
+        "logic_voltage": 3.3,
+        "pins_digital": 23
+      },
+      "shop": "RS Components UK",
+      "url": "TODO",
+      "alternatives": [
+        "esp32_devkit",
+        "arduino_nano"
+      ],
+      "verified": false,
+      "price": 4.2,
+      "currency": "GBP"
+    },
+    {
+      "id": "l298n",
+      "name": "L298N Dual H-Bridge Motor Driver",
+      "category": "motor_driver",
+      "aliases": [
+        "l298n module",
+        "h-bridge l298n",
+        "l298n driver",
+        "dual h bridge"
+      ],
+      "specs": {
+        "motor_voltage_min": 5,
+        "motor_voltage_max": 35,
+        "channels": 2,
+        "logic_voltage": 5,
+        "max_current_per_channel_a": 2
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "tb6612fng",
+        "drv8833"
+      ],
+      "verified": false,
+      "price": 3.8,
+      "currency": "GBP"
+    },
+    {
+      "id": "tb6612fng",
+      "name": "TB6612FNG Dual Motor Driver",
+      "category": "motor_driver",
+      "aliases": [
+        "tb6612",
+        "tb6612fng",
+        "dual motor driver carrier"
+      ],
+      "specs": {
+        "motor_voltage_min": 4.5,
+        "motor_voltage_max": 13.5,
+        "channels": 2,
+        "logic_voltage": 3.3,
+        "max_current_per_channel_a": 1.2
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "drv8833",
+        "l298n"
+      ],
+      "verified": false,
+      "price": 4.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "drv8833",
+      "name": "DRV8833 Dual Motor Driver",
+      "category": "motor_driver",
+      "aliases": [
+        "drv8833",
+        "drv8833 carrier",
+        "low voltage driver"
+      ],
+      "specs": {
+        "motor_voltage_min": 2.7,
+        "motor_voltage_max": 10.8,
+        "channels": 2,
+        "logic_voltage": 3.3,
+        "max_current_per_channel_a": 1.5
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "tb6612fng",
+        "l298n"
+      ],
+      "verified": false,
+      "price": 3.2,
+      "currency": "GBP"
+    },
+    {
+      "id": "motor_tt",
+      "name": "TT DC Gear Motor 3-6V",
+      "category": "motor",
+      "aliases": [
+        "yellow gear motor",
+        "tt motor",
+        "yellow motor",
+        "tt dc motor",
+        "gear motor yellow"
+      ],
+      "specs": {
+        "voltage_min": 3,
+        "voltage_max": 6,
+        "no_load_rpm": 200
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "motor_n20"
+      ],
+      "verified": false,
+      "price": 2.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "motor_n20",
+      "name": "N20 Micro Gear Motor 6V",
+      "category": "motor",
+      "aliases": [
+        "n20 motor",
+        "micro gear motor",
+        "n20"
+      ],
+      "specs": {
+        "voltage_min": 3,
+        "voltage_max": 6,
+        "no_load_rpm": 300
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "motor_tt"
+      ],
+      "verified": false,
+      "price": 3.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "motor_130",
+      "name": "130 DC Motor",
+      "category": "motor",
+      "aliases": [
+        "130 motor",
+        "small dc motor",
+        "toy motor"
+      ],
+      "specs": {
+        "voltage_min": 3,
+        "voltage_max": 6,
+        "no_load_rpm": 10000
+      },
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [
+        "motor_tt"
+      ],
+      "verified": false,
+      "price": 1.2,
+      "currency": "GBP"
+    },
+    {
+      "id": "servo_sg90",
+      "name": "Mini 180 Degree Resin Gear Servo SG90 (Kitronik 2565)",
+      "category": "servo",
+      "aliases": [
+        "sg90",
+        "micro servo",
+        "9g servo",
+        "blue servo",
+        "small servo"
+      ],
+      "specs": {
+        "voltage_min": 4.8,
+        "voltage_max": 6,
+        "rotation_deg": 180
+      },
+      "price": 3.9,
+      "currency": "GBP",
+      "shop": "RS Components UK",
+      "sku": "215-3180",
+      "url": "https://uk.rs-online.com/web/p/stem-motion-components/2153180",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "servo_mg90s",
+      "name": "MG90S Metal Gear Micro Servo",
+      "category": "servo",
+      "aliases": [
+        "mg90s",
+        "metal gear micro servo"
+      ],
+      "specs": {
+        "voltage_min": 4.8,
+        "voltage_max": 6,
+        "torque_kgcm": 2.2
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "servo_sg90"
+      ],
+      "verified": false,
+      "price": 3.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "servo_mg996r",
+      "name": "MG996R Servo",
+      "category": "servo",
+      "aliases": [
+        "mg996r",
+        "standard servo",
+        "high torque servo"
+      ],
+      "specs": {
+        "voltage_min": 4.8,
+        "voltage_max": 7.2,
+        "torque_kgcm": 11
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "servo_mg90s"
+      ],
+      "verified": false,
+      "price": 5.9,
+      "currency": "GBP"
+    },
+    {
+      "id": "hcsr04",
+      "name": "HC-SR04 Ultrasonic Sensor",
+      "category": "sensor",
+      "aliases": [
+        "ultrasonic sensor",
+        "hc-sr04",
+        "hcsr04",
+        "sonar sensor",
+        "distance sensor ultrasonic"
+      ],
+      "specs": {
+        "voltage": 5,
+        "range_cm_max": 400
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "tof_vl53l0x",
+        "sharp_gp2y0a21"
+      ],
+      "verified": false,
+      "price": 2.8,
+      "currency": "GBP"
+    },
+    {
+      "id": "tof_vl53l0x",
+      "name": "VL53L0X Time-of-Flight Sensor",
+      "category": "sensor",
+      "aliases": [
+        "vl53l0x",
+        "tof sensor",
+        "laser distance sensor",
+        "time of flight"
+      ],
+      "specs": {
+        "voltage": 3.3,
+        "range_cm_max": 200
+      },
+      "shop": "Mouser UK",
+      "url": "TODO",
+      "alternatives": [
+        "hcsr04"
+      ],
+      "verified": false,
+      "price": 6.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "tcrt5000",
+      "name": "TCRT5000 IR Line Sensor",
+      "category": "sensor",
+      "aliases": [
+        "ir line sensor",
+        "tcrt5000",
+        "reflectance sensor",
+        "line tracking sensor single"
+      ],
+      "specs": {
+        "voltage": 5
+      },
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [
+        "ir_array_qre1113"
+      ],
+      "verified": false,
+      "price": 1.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "ir_array_qre1113",
+      "name": "QRE1113 IR Sensor Array (3ch)",
+      "category": "sensor",
+      "aliases": [
+        "ir sensor array",
+        "line sensor array",
+        "qre1113",
+        "3 channel ir array",
+        "line follower array"
+      ],
+      "specs": {
+        "voltage": 5,
+        "channels": 3
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "tcrt5000"
+      ],
+      "verified": false,
+      "price": 4.0,
+      "currency": "GBP"
+    },
+    {
+      "id": "mpu6050",
+      "name": "MPU6050 Gyro + Accelerometer",
+      "category": "sensor",
+      "aliases": [
+        "mpu-6050",
+        "mpu6050",
+        "gyro",
+        "imu",
+        "accelerometer gyro"
+      ],
+      "specs": {
+        "voltage": 3.3
+      },
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [],
+      "verified": false,
+      "price": 3.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "ir_obstacle",
+      "name": "IR Obstacle Avoidance Sensor",
+      "category": "sensor",
+      "aliases": [
+        "ir obstacle sensor",
+        "infrared obstacle sensor",
+        "obstacle detector ir",
+        "ir proximity"
+      ],
+      "specs": {
+        "voltage": 3.3,
+        "range_cm_max": 20
+      },
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [
+        "hcsr04"
+      ],
+      "verified": false,
+      "price": 1.2,
+      "currency": "GBP"
+    },
+    {
+      "id": "sharp_gp2y0a21",
+      "name": "Sharp GP2Y0A21 IR Distance Sensor",
+      "category": "sensor",
+      "aliases": [
+        "sharp ir",
+        "gp2y0a21",
+        "sharp distance sensor"
+      ],
+      "specs": {
+        "voltage": 5,
+        "range_cm_max": 80
+      },
+      "shop": "Mouser UK",
+      "url": "TODO",
+      "alternatives": [
+        "hcsr04",
+        "tof_vl53l0x"
+      ],
+      "verified": false,
+      "price": 8.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "batt_holder_4aa",
+      "name": "4xAA Battery Holder with switch",
+      "category": "power",
+      "aliases": [
+        "aa battery holder",
+        "4 aa holder",
+        "battery pack aa",
+        "4x aa"
+      ],
+      "specs": {
+        "output_voltage": 6,
+        "cells": 4
+      },
+      "shop": "RS Components UK",
+      "url": "TODO",
+      "alternatives": [
+        "batt_holder_18650",
+        "batt_9v"
+      ],
+      "verified": false,
+      "price": 1.8,
+      "currency": "GBP"
+    },
+    {
+      "id": "batt_holder_18650",
+      "name": "2x18650 Battery Holder (7.4V)",
+      "category": "power",
+      "aliases": [
+        "18650 holder",
+        "2s battery holder",
+        "18650 battery pack",
+        "2x 18650"
+      ],
+      "specs": {
+        "output_voltage": 7.4,
+        "cells": 2
+      },
+      "shop": "RS Components UK",
+      "url": "TODO",
+      "alternatives": [
+        "batt_holder_4aa",
+        "lipo_7v4"
+      ],
+      "verified": false,
+      "price": 2.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "lipo_7v4",
+      "name": "7.4V 2S LiPo Battery 1500mAh",
+      "category": "power",
+      "aliases": [
+        "lipo 7.4v",
+        "2s lipo",
+        "7.4v lipo",
+        "lipo battery 2s"
+      ],
+      "specs": {
+        "output_voltage": 7.4,
+        "capacity_mah": 1500
+      },
+      "shop": "Mouser UK",
+      "url": "TODO",
+      "alternatives": [
+        "batt_holder_18650"
+      ],
+      "verified": false,
+      "price": 9.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "buck_lm2596",
+      "name": "LM2596 Buck Converter Module",
+      "category": "power",
+      "aliases": [
+        "buck converter",
+        "lm2596",
+        "step down converter",
+        "dc-dc buck"
+      ],
+      "specs": {
+        "input_voltage_max": 40,
+        "output_voltage": 5
+      },
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [],
+      "verified": false,
+      "price": 2.2,
+      "currency": "GBP"
+    },
+    {
+      "id": "batt_9v",
+      "name": "9V Battery with clip",
+      "category": "power",
+      "aliases": [
+        "9v battery",
+        "pp3 battery",
+        "9 volt"
+      ],
+      "specs": {
+        "output_voltage": 9
+      },
+      "shop": "RS Components UK",
+      "url": "TODO",
+      "alternatives": [
+        "batt_holder_4aa"
+      ],
+      "verified": false,
+      "price": 1.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "xt60_connector",
+      "name": "XT60 Connector Pair",
+      "category": "power",
+      "aliases": [
+        "xt60",
+        "xt60 plug",
+        "battery connector xt60"
+      ],
+      "specs": {
+        "current_a": 60
+      },
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [],
+      "verified": false,
+      "price": 1.2,
+      "currency": "GBP"
+    },
+    {
+      "id": "wheel_65mm",
+      "name": "65mm Wheel for TT motor",
+      "category": "wheel",
+      "aliases": [
+        "wheel 65mm",
+        "tt wheel",
+        "65mm wheel",
+        "wheel tt motor"
+      ],
+      "specs": {
+        "diameter_mm": 65
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "wheel_80mm"
+      ],
+      "verified": false,
+      "price": 1.0,
+      "currency": "GBP"
+    },
+    {
+      "id": "wheel_80mm",
+      "name": "80mm Wheel",
+      "category": "wheel",
+      "aliases": [
+        "80mm wheel",
+        "big wheel",
+        "80 mm wheel"
+      ],
+      "specs": {
+        "diameter_mm": 80
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "wheel_65mm"
+      ],
+      "verified": false,
+      "price": 1.4,
+      "currency": "GBP"
+    },
+    {
+      "id": "caster_ball",
+      "name": "Ball Caster",
+      "category": "wheel",
+      "aliases": [
+        "caster ball",
+        "ball caster",
+        "ball wheel",
+        "omni ball"
+      ],
+      "specs": {},
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "caster_wheel"
+      ],
+      "verified": false,
+      "price": 1.2,
+      "currency": "GBP"
+    },
+    {
+      "id": "caster_wheel",
+      "name": "Caster Wheel",
+      "category": "wheel",
+      "aliases": [
+        "caster wheel",
+        "jockey wheel",
+        "support wheel"
+      ],
+      "specs": {},
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "caster_ball"
+      ],
+      "verified": false,
+      "price": 1.8,
+      "currency": "GBP"
+    },
+    {
+      "id": "chassis_2wd",
+      "name": "2WD Chassis Kit",
+      "category": "chassis",
+      "aliases": [
+        "2wd chassis",
+        "2 wheel chassis",
+        "car chassis",
+        "2wd car chassis",
+        "robot chassis 2wd"
+      ],
+      "specs": {
+        "motor_mounts": 2
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "chassis_4wd"
+      ],
+      "verified": false,
+      "price": 8.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "chassis_4wd",
+      "name": "4WD Chassis Kit",
+      "category": "chassis",
+      "aliases": [
+        "4wd chassis",
+        "4 wheel chassis",
+        "4wd car chassis",
+        "robot chassis 4wd"
+      ],
+      "specs": {
+        "motor_mounts": 4
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "chassis_2wd"
+      ],
+      "verified": false,
+      "price": 14.0,
+      "currency": "GBP"
+    },
+    {
+      "id": "arm_kit_4dof",
+      "name": "4DOF Robot Arm Kit (brackets + claw)",
+      "category": "chassis",
+      "aliases": [
+        "robot arm kit",
+        "4dof arm",
+        "claw arm",
+        "arm kit",
+        "robot arm"
+      ],
+      "specs": {
+        "dof": 4
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [],
+      "verified": false,
+      "price": 12.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "breadboard_mini",
+      "name": "Mini Breadboard 170pt",
+      "category": "wiring",
+      "aliases": [
+        "breadboard",
+        "mini breadboard",
+        "solderless breadboard",
+        "170 tie point"
+      ],
+      "specs": {
+        "tie_points": 170
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [],
+      "verified": false,
+      "price": 1.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "jumpers_mm",
+      "name": "Jumper Wires M-M 40pc",
+      "category": "wiring",
+      "aliases": [
+        "jumper wires male male",
+        "dupont mm",
+        "m-m jumpers",
+        "male to male wires"
+      ],
+      "specs": {
+        "count": 40
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "jumpers_mf"
+      ],
+      "verified": false,
+      "price": 2.0,
+      "currency": "GBP"
+    },
+    {
+      "id": "jumpers_mf",
+      "name": "Jumper Wires M-F 40pc",
+      "category": "wiring",
+      "aliases": [
+        "jumper wires male female",
+        "dupont mf",
+        "m-f jumpers",
+        "male to female wires"
+      ],
+      "specs": {
+        "count": 40
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [
+        "jumpers_mm"
+      ],
+      "verified": false,
+      "price": 2.0,
+      "currency": "GBP"
+    },
+    {
+      "id": "usb_cable",
+      "name": "USB A to B Cable",
+      "category": "wiring",
+      "aliases": [
+        "usb cable",
+        "arduino usb cable",
+        "usb a-b",
+        "printer cable"
+      ],
+      "specs": {
+        "length_m": 1
+      },
+      "shop": "SparkFun",
+      "url": "TODO",
+      "alternatives": [],
+      "verified": false,
+      "price": 2.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "switch_spst",
+      "name": "SPST Slide Switch",
+      "category": "wiring",
+      "aliases": [
+        "slide switch",
+        "power switch",
+        "spst switch",
+        "mini switch"
+      ],
+      "specs": {
+        "current_a": 3
+      },
+      "shop": "RS Components UK",
+      "url": "TODO",
+      "alternatives": [],
+      "verified": false,
+      "price": 0.8,
+      "currency": "GBP"
+    },
+    {
+      "id": "heatshrink_kit",
+      "name": "Heat Shrink Tubing Kit",
+      "category": "wiring",
+      "aliases": [
+        "heat shrink",
+        "heatshrink",
+        "shrink tubing"
+      ],
+      "specs": {},
+      "shop": "LCSC",
+      "url": "TODO",
+      "alternatives": [],
+      "verified": false,
+      "price": 2.0,
+      "currency": "GBP"
+    },
+    {
+      "id": "screws_m3_kit",
+      "name": "M3 Screws + Nuts + Standoffs kit",
+      "category": "fasteners",
+      "aliases": [
+        "m3 screws",
+        "standoffs",
+        "screw kit",
+        "m3 standoff kit",
+        "spacers"
+      ],
+      "specs": {
+        "thread": "M3"
+      },
+      "shop": "RS Components UK",
+      "url": "TODO",
+      "alternatives": [],
+      "verified": false,
+      "price": 2.5,
+      "currency": "GBP"
+    },
+    {
+      "id": "arduino_uno_smd",
+      "name": "Arduino Uno Rev3 SMD (A000073)",
+      "category": "controller",
+      "aliases": [
+        "arduino uno smd",
+        "uno smd"
+      ],
+      "specs": {
+        "logic_voltage": 5
+      },
+      "price": 23.7,
+      "currency": "GBP",
+      "price_note": "£19.75 exc. VAT / £23.70 inc. VAT",
+      "shop": "RS Components UK",
+      "sku": "769-7409",
+      "url": "https://uk.rs-online.com/web/p/arduino/7697409",
+      "alternatives": [
+        "arduino_uno"
+      ],
+      "verified": true
+    },
+    {
+      "id": "hc_sr04",
+      "name": "Ultrasonic Distance Sensor HC-SR04 5V (Kitronik 46130)",
+      "category": "sensor",
+      "aliases": [
+        "ultrasonic sensor",
+        "distance sensor",
+        "hc-sr04",
+        "sonar eyes",
+        "two eyes sensor"
+      ],
+      "specs": {
+        "voltage": 5,
+        "range_cm": "2-400"
+      },
+      "price": 2.19,
+      "currency": "GBP",
+      "shop": "RS Components UK",
+      "sku": "215-3181",
+      "url": "https://uk.rs-online.com/web/p/bbc-micro-bit-add-ons/2153181",
+      "alternatives": [
+        "hc_sr04_sparkfun"
+      ],
+      "verified": true
+    },
+    {
+      "id": "hc_sr04_sparkfun",
+      "name": "Ultrasonic Distance Sensor - 5V (HC-SR04)",
+      "category": "sensor",
+      "aliases": [
+        "ultrasonic sensor",
+        "hc-sr04"
+      ],
+      "specs": {
+        "voltage": 5,
+        "range_cm": "2-400"
+      },
+      "price": 5.25,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "SEN-15569",
+      "url": "https://www.sparkfun.com/ultrasonic-distance-sensor-hc-sr04.html",
+      "alternatives": [
+        "hc_sr04"
+      ],
+      "verified": true
+    },
+    {
+      "id": "motor_tt_pair",
+      "name": "Hobby Gearmotor - 140 RPM (Pair, DAGU TT-style)",
+      "category": "motor",
+      "aliases": [
+        "tt motor",
+        "yellow gear motor",
+        "yellow motor",
+        "gearmotor",
+        "dc gear motor"
+      ],
+      "specs": {
+        "voltage_nominal": 4.5,
+        "gear_ratio": "48:1",
+        "no_load_rpm": 140,
+        "no_load_current_ma": 190,
+        "pack_size": 2
+      },
+      "price": 7.5,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "ROB-13302",
+      "url": "https://www.sparkfun.com/hobby-gearmotor-140-rpm-pair.html",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "wheel_65mm_pair",
+      "name": "Wheel - 65mm (Rubber Tire, Pair)",
+      "category": "wheel",
+      "aliases": [
+        "wheels",
+        "rubber wheels",
+        "65mm wheel",
+        "tyres"
+      ],
+      "specs": {
+        "diameter_mm": 65,
+        "pack_size": 2
+      },
+      "price": 4.5,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "ROB-13259",
+      "url": "https://www.sparkfun.com/wheel-65mm-rubber-tire-pair.html",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "driver_tb6612fng",
+      "name": "SparkFun Motor Driver - Dual TB6612FNG (with Headers)",
+      "category": "motor_driver",
+      "aliases": [
+        "tb6612",
+        "tb6612fng",
+        "motor driver",
+        "h-bridge",
+        "small red board"
+      ],
+      "specs": {
+        "channels": 2,
+        "current_per_channel_a": 1.2,
+        "motor_voltage_max": 15
+      },
+      "price": 14.5,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "ROB-14450",
+      "url": "https://www.sparkfun.com/sparkfun-motor-driver-dual-tb6612fng-with-headers.html",
+      "alternatives": [
+        "driver_l298n_breakout"
+      ],
+      "verified": true
+    },
+    {
+      "id": "driver_l298n_breakout",
+      "name": "SparkFun Full-Bridge Motor Driver Breakout - L298N",
+      "category": "motor_driver",
+      "aliases": [
+        "l298n",
+        "l298",
+        "dual h-bridge",
+        "motor driver"
+      ],
+      "specs": {
+        "channels": 2,
+        "motor_voltage_max": 46,
+        "voltage_drop_v": 2
+      },
+      "price": 4.5,
+      "currency": "USD",
+      "price_note": "Check on the page whether the L298N chip is included or sold separately (COM-09479).",
+      "shop": "SparkFun",
+      "sku": "BOB-09540",
+      "url": "https://sparkfun.com/products/9540",
+      "alternatives": [
+        "driver_tb6612fng"
+      ],
+      "verified": true
+    },
+    {
+      "id": "battery_4xaa_barrel",
+      "name": "Battery Holder - 4xAA to Barrel Jack Connector",
+      "category": "power",
+      "aliases": [
+        "battery pack",
+        "aa battery holder",
+        "4xaa",
+        "battery box"
+      ],
+      "specs": {
+        "cells": 4,
+        "voltage_nominal": 6,
+        "connector": "5.5x2.1mm barrel"
+      },
+      "price": 2.8,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-09835",
+      "url": "https://www.sparkfun.com/battery-holder-4xaa-to-barrel-jack-connector.html",
+      "alternatives": [
+        "battery_4xaa_leads"
+      ],
+      "verified": true
+    },
+    {
+      "id": "battery_4xaa_leads",
+      "name": "Battery Holder - 4xAA Square (tinned leads)",
+      "category": "power",
+      "aliases": [
+        "battery pack",
+        "aa battery holder",
+        "4xaa"
+      ],
+      "specs": {
+        "cells": 4,
+        "voltage_nominal": 6
+      },
+      "price": 2.25,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-00552",
+      "url": "https://www.sparkfun.com/battery-holder-4xaa-square.html",
+      "alternatives": [
+        "battery_4xaa_barrel"
+      ],
+      "verified": true
+    },
+    {
+      "id": "chassis_shadow",
+      "name": "Shadow Chassis (2WD, snap-together, includes nub caster)",
+      "category": "chassis",
+      "aliases": [
+        "chassis",
+        "robot base",
+        "2wd chassis",
+        "robot frame",
+        "car body"
+      ],
+      "specs": {
+        "dimensions_mm": "196 x 126 x 44",
+        "drive": "2WD",
+        "fits": [
+          "motor_tt_pair",
+          "wheel_65mm_pair"
+        ]
+      },
+      "price": 14.95,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "ROB-13301",
+      "url": "https://www.sparkfun.com/products/13301",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "line_sensor",
+      "name": "Line Follower Sensor (QRE1113, 3.3V)",
+      "category": "sensor",
+      "aliases": [
+        "line sensor",
+        "ir sensor",
+        "line follower",
+        "reflectance sensor"
+      ],
+      "specs": {
+        "voltage": 3.3,
+        "sensing_distance_mm": "5-10"
+      },
+      "price": 4.95,
+      "currency": "USD",
+      "price_note": "Power from the Arduino 3.3V pin.",
+      "shop": "SparkFun",
+      "sku": "SEN-24048",
+      "url": "https://www.sparkfun.com/line-follower-sensor.html",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "jumper_mm_20",
+      "name": "Jumper Wires - Connected 6\" (M/M, 20 pack)",
+      "category": "wiring",
+      "aliases": [
+        "jumper wires",
+        "dupont wires",
+        "male to male wires"
+      ],
+      "specs": {
+        "length_in": 6,
+        "count": 20
+      },
+      "price": 2.95,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-12795",
+      "url": "https://www.sparkfun.com/jumper-wires-connected-6-m-m-20-pack.html",
+      "alternatives": [
+        "jumper_ff_20"
+      ],
+      "verified": true
+    },
+    {
+      "id": "jumper_ff_20",
+      "name": "Jumper Wires - Connected 6\" (F/F, 20 pack)",
+      "category": "wiring",
+      "aliases": [
+        "female jumper wires",
+        "female to female wires"
+      ],
+      "specs": {
+        "length_in": 6,
+        "count": 20
+      },
+      "price": 2.75,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-12796",
+      "url": "https://www.sparkfun.com/jumper-wires-connected-6-f-f-20-pack.html",
+      "alternatives": [
+        "jumper_mm_20"
+      ],
+      "verified": true
+    },
+    {
+      "id": "breadboard_400",
+      "name": "Breadboard - Self-Adhesive (White, 400 points)",
+      "category": "wiring",
+      "aliases": [
+        "breadboard",
+        "solderless breadboard",
+        "proto board"
+      ],
+      "specs": {
+        "tie_points": 400
+      },
+      "price": 6.25,
+      "currency": "USD",
+      "shop": "SparkFun",
+      "sku": "PRT-12002",
+      "url": "https://www.sparkfun.com/products/12002",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "power_5v_2a",
+      "name": "Wall Adapter Power Supply - 5VDC, 2A (Barrel Jack)",
+      "category": "power",
+      "aliases": [
+        "power supply",
+        "wall adapter",
+        "5v adapter",
+        "plug"
+      ],
+      "specs": {
+        "voltage": 5,
+        "current_a": 2,
+        "connector": "5.5x2.1mm barrel, centre positive"
+      },
+      "price": 9.5,
+      "currency": "USD",
+      "price_note": "US plug style; use a UK adapter or a UK-plug 5V supply.",
+      "shop": "SparkFun",
+      "sku": "TOL-15312",
+      "url": "https://www.sparkfun.com/products/15312",
+      "alternatives": [],
+      "verified": true
+    },
+    {
+      "id": "mearm_deluxe_kit",
+      "name": "MeArm Deluxe Kit - 4-axis desktop robot arm (Mime Industries)",
+      "category": "chassis",
+      "aliases": [
+        "robot arm",
+        "mearm",
+        "robotic arm kit",
+        "arm kit"
+      ],
+      "specs": {
+        "axes": 4,
+        "includes": [
+          "acrylic parts",
+          "metal gear servos",
+          "Arduino-based Brains board",
+          "joysticks board",
+          "battery pack"
+        ]
+      },
+      "price": 57.75,
+      "currency": "GBP",
+      "shop": "RS Components UK",
+      "sku": "134-0413",
+      "url": "https://uk.rs-online.com/web/p/educational-robots/1340413",
+      "alternatives": [],
+      "verified": true
+    }
   ]
 }
