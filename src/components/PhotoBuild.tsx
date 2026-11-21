@@ -23,7 +23,6 @@ const STAGES: Array<{ key: Exclude<Stage, 'idle'>; label: string; hint: string }
 export function PhotoBuild({ onGenerated }: PhotoBuildProps) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [name, setName] = useState('');
   const [dragging, setDragging] = useState(false);
   const [stage, setStage] = useState<Stage>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +73,7 @@ export function PhotoBuild({ onGenerated }: PhotoBuildProps) {
     const notes: string[] = [];
     try {
       setStage('analyze');
-      const analysis = await analyzePhotos([file], { projectName: name || file.name.replace(/\.[^.]+$/, ''), mock });
+      const analysis = await analyzePhotos([file], { projectName: file.name.replace(/\.[^.]+$/, ''), mock });
       let bom = analysis.bom;
       notes.push(
         `Analysed with ${bom.metadata.vision_model ?? 'the vision model'}${mock ? ' (mock mode: canned analysis, no API key on the pipeline)' : ''}.`,
@@ -185,11 +184,6 @@ export function PhotoBuild({ onGenerated }: PhotoBuildProps) {
           e.target.value = '';
         }}
       />
-
-      <label className="block space-y-1.5">
-        <span className="label">Name this build (optional)</span>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Line-following robot" disabled={busy} maxLength={80} />
-      </label>
 
       {busy ? (
         <ol className="space-y-2.5 rounded-2xl border border-line bg-sunken/40 p-4">
