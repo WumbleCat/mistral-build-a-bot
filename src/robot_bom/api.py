@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 
 from .catalog import build_catalog_client
 from .config import ConfigError, load_settings
-from .design import infer_and_source
+from .design import best_guess
 from .export import BOMExporter, write_json
 from .extraction import VisionResponseError
 from .grounding import build_grounder, grounding_available, sam_available
@@ -140,8 +140,10 @@ def infer_route(payload: dict = Body(...)) -> dict:
 
     Body: ``{"review": {...}, "job_id": "...", "model": "...", "mock": false}``. Two model
     queries run in order: (1) a design choice per open issue plus a simple component list,
-    (2) parts research for that list. Shop links are search links built by the server. The
-    result is the model's assumptions; the review document and BOM are not changed.
+    (2) parts research for that list; then each part is looked up on the approved shops by
+    web search and the pages found are checked for stock. The returned ``review`` is the
+    given one with the guess for the critical parts (motor, driver, power, controller)
+    written in as assumptions and every check re-run; nothing is marked confirmed.
     """
     review_data = payload.get("review")
     job_id = payload.get("job_id")
@@ -155,14 +157,16 @@ def infer_route(payload: dict = Body(...)) -> dict:
         raise HTTPException(400, "invalid model id")
     try:
         settings = load_settings()
-        bom = load_review(review_data).bom
+        review = load_review(review_data)
+        bom = review.bom
         use_mock = bool(payload.get("mock")) or settings.mock or bom.metadata.get("mode") == "mock"
         vision, reasoning, model_name = clients_for_run(
             build_vision_client(settings, mock=use_mock), settings, model
         )
         client = reasoning or vision  # both queries are text-only
-        result = infer_and_source(
-            client, bom, model=getattr(client, "_model", model_name), max_retries=settings.max_retries
+        result, review = best_guess(
+            client, review, model=getattr(client, "_model", model_name), max_retries=settings.max_retries,
+            web_search=settings.web_search,
         )
     except ReviewError as exc:
         raise HTTPException(422, str(exc)) from None
@@ -176,7 +180,9 @@ def infer_route(payload: dict = Body(...)) -> dict:
         out_dir = OUTPUT_ROOT / job_id / "inferred"
         for name, document in result.items():
             write_json(out_dir / f"{name}.json", document)
-    return {**result, "output_dir": out_dir.as_posix() if out_dir else None}
+        write_json(out_dir / "review.json", review.model_dump(mode="json"))
+    return {**result, "review": review.model_dump(mode="json"),
+            "output_dir": out_dir.as_posix() if out_dir else None}
 
 
 @app.post("/finalize")
