@@ -19,6 +19,8 @@ enters them in review or a configured catalog API returns them.
 ```text
 photos ─► A. ingest (validate, EXIF-rotate, downscale)
         ─► B. pass 1: observed-only extraction, one structured result per image
+        ─► B. visibility re-check: each claim is re-examined against the photo;
+              claims that are only implied (wheels → "motors") are demoted to inferred
         ─► C. cross-image reconciliation (same part in two photos is counted once)
         ─► B. pass 2: inference / completeness audit (proposals and questions only)
         ─► D. deterministic mechanical / electrical checks
@@ -52,9 +54,20 @@ cp .env.example .env      # then put your key in .env
 `.env`:
 
 ```dotenv
-MISTRAL_API_KEY=...            # required for live runs
-# VISION_MODEL=mistral-medium-latest   # any vision-capable Mistral chat model
+MISTRAL_API_KEY=...                    # required for live runs
+# MISTRAL_MODEL=mistral-large-latest   # optional; any vision-capable Mistral chat model
 ```
+
+All settings are listed in [`.env.example`](.env.example).
+
+**Model choice.** The default is `mistral-large-latest`. In a single live test on a
+top-view photo of a DIY rover, `mistral-large-latest` labelled the view correctly and
+stated that motors were not visible, while `mistral-medium-latest` mislabelled the view
+as "underside" (which suppresses the underside-photo request) and, before the prompt
+and re-check were tightened, listed four motors as visible. That is one photo, not a
+benchmark – but it is why the larger model is the default. Each image costs two
+vision calls (extraction + re-check) plus one text call per run; set `VISION_VERIFY=0`
+to skip the re-check.
 
 Check the configuration without printing the key:
 
@@ -73,7 +86,10 @@ only needs environment variables: `VISION_API_BASE_URL`, `VISION_API_KEY`,
 - Images are sent as `{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}`.
 - JSON mode is requested with `response_format: {"type": "json_object"}`. Set
   `VISION_JSON_MODE=none` for providers that reject it; replies are still schema-validated.
-- `temperature` is 0.
+- `temperature` is 0 with `top_p` 1 (Mistral's large model rejects greedy sampling
+  unless `top_p` is sent explicitly).
+- `MISTRAL_API_KEY` / `MISTRAL_MODEL` are the fallbacks for `VISION_API_KEY` /
+  `VISION_MODEL`.
 
 ## Usage
 
@@ -112,7 +128,8 @@ Mock mode returns canned responses and labels every output as `MOCK DATA`. A fil
 name contains `underside` or `bottom` gets the canned underside view, which lets you try
 cross-image deduplication offline. Mock mode is always explicit (`--mock` or
 `ROBOT_BOM_MOCK=1`): a missing key produces a clear error, never a silent fallback.
-A committed sample of the outputs is in [`examples/mock-run/`](examples/mock-run/).
+A committed sample is in [`examples/mock-run/`](examples/mock-run/): the draft outputs,
+a hand-edited `review.edited.json`, and the resulting `final/` exports with `audit.json`.
 
 ### Web UI and HTTP API
 
@@ -218,6 +235,11 @@ The tests never call the network; they use fake clients and `httpx.MockTransport
   fasteners are listed as `inferred`/`unknown`, never as confirmed parts.
 - Part *type* recognition depends on the vision model and photo quality. No accuracy
   figures are claimed: nothing has been measured against labelled ground truth.
+- The visibility re-check is the same model auditing its own claims. It removes some
+  implied-but-unseen parts; it does not guarantee that every observed line is real, and
+  it cannot add parts the first pass missed. Human review remains the verification step.
+- The view label (top / underside / …) comes from the model. A wrong label can suppress
+  or add a missing-view request.
 - Bounding boxes are optional model output, kept only when well-formed, and `null`
   otherwise. They are approximate and not produced by a detection model.
 - Cross-image matching compares category and part-type name; it cannot tell two
@@ -231,7 +253,9 @@ The tests never call the network; they use fake clients and `httpx.MockTransport
 
 - **`CERTIFICATE_VERIFY_FAILED` / `UnknownIssuer`** – antivirus or corporate TLS
   inspection. The app already trusts the operating-system certificate store. For `uv`
-  itself, run `uv sync --system-certs`.
+  itself, run `uv sync --inexact --system-certs`.
+- **`uv sync` removed packages** – plain `uv sync` uninstalls everything that is not in
+  `pyproject.toml` (for example a hand-installed torch). Use `uv sync --inexact`.
 - **`No vision API key is configured`** – set `MISTRAL_API_KEY` in `.env`, or use `--mock`.
 - **`did not return schema-valid JSON`** – the model's reply failed validation after the
   retry budget (`VISION_MAX_RETRIES`). No BOM is produced from a malformed reply; rerun,
