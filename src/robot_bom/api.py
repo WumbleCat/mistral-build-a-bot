@@ -20,7 +20,7 @@ from .grounding import build_grounder, grounding_available, sam_available
 from .ingest import IngestError, ingest
 from .pipeline import analyze, write_analysis_outputs
 from .review import ReviewError, finalize, load_review
-from .vision import VisionAPIError, build_vision_client
+from .vision import MODEL_ID, VisionAPIError, build_vision_client, clients_for_run, list_available_models
 
 MAX_IMAGES = 8
 OUTPUT_ROOT = Path("output") / "web"
@@ -51,20 +51,42 @@ def health() -> dict:
     }
 
 
+@app.get("/models")
+def models_route() -> dict:
+    """Models the configured API key can use. ``usable`` = can chat and read photos.
+
+    Never fails the page: when the list cannot be fetched, ``models`` is empty and ``error``
+    says why, so the app can still run with the configured default.
+    """
+    settings = load_settings()
+    body: dict = {"default": settings.vision_model, "endpoint": settings.base_url, "models": [], "error": None}
+    try:
+        body["models"] = list_available_models(settings)
+    except (ConfigError, VisionAPIError) as exc:
+        body["error"] = str(exc)
+    return body
+
+
 @app.post("/analyze")
 def analyze_route(
     images: list[UploadFile] = File(..., description="One or more photos of the robot"),
     project_name: str = Form("robot"),
     mock: bool = Form(False),
     grounding: bool | None = Form(None, description="true = also run local Grounding DINO + SAM 2; false = VLM/LLM only"),
+    model: str | None = Form(None, description="model id from GET /models; default: the configured VISION_MODEL"),
 ) -> dict:
     """Run the pipeline on uploaded photos and return the draft BOM plus a review document."""
     if len(images) > MAX_IMAGES:
         raise HTTPException(400, f"at most {MAX_IMAGES} images per request")
+    model = (model or "").strip() or None
+    if model and not MODEL_ID.match(model):
+        raise HTTPException(400, "invalid model id")
     try:
         settings = load_settings()
         use_mock = mock or settings.mock
-        client = build_vision_client(settings, mock=use_mock)
+        client, reasoning_client, vision_model = clients_for_run(
+            build_vision_client(settings, mock=use_mock), settings, model
+        )
         use_grounding = settings.grounding if grounding is None else grounding
         grounder = build_grounder(settings) if use_grounding else None
         ingested = ingest([(upload.filename or f"upload-{n}", upload.file.read())
@@ -77,7 +99,8 @@ def analyze_route(
             max_retries=settings.max_retries,
             verify=settings.verify,
             mode="mock" if use_mock else "live",
-            vision_model="mock" if use_mock else settings.vision_model,
+            vision_model=vision_model,
+            reasoning_client=reasoning_client,
             grounder=grounder,
         )
     except IngestError as exc:
