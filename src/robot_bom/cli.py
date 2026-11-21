@@ -114,10 +114,34 @@ def _cmd_check_api(args: argparse.Namespace) -> int:
     return 0 if vision is not False else 1
 
 
+def find_free_port(host: str, preferred: int, attempts: int = 20) -> int:
+    """Return ``preferred`` if it can be bound, else the next free port after it."""
+    import socket
+
+    for port in range(preferred, preferred + attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            try:
+                probe.bind((host, port))
+            except OSError:
+                continue
+            return port
+    raise ConfigError(f"no free port found in {preferred}-{preferred + attempts - 1}")
+
+
 def _cmd_serve(args: argparse.Namespace) -> int:
+    import threading
+    import webbrowser
+
     import uvicorn
 
-    uvicorn.run("robot_bom.api:app", host=args.host, port=args.port, log_level="info")
+    port = find_free_port(args.host, args.port)
+    if port != args.port:
+        print(f"Port {args.port} is in use; using {port} instead.")
+    url = f"http://{'127.0.0.1' if args.host in ('0.0.0.0', '') else args.host}:{port}"
+    print(f"Robot BOM builder is running at {url}  (Ctrl+C to stop)")
+    if args.open:
+        threading.Timer(1.2, webbrowser.open, args=[url]).start()
+    uvicorn.run("robot_bom.api:app", host=args.host, port=port, log_level="warning")
     return 0
 
 
@@ -146,9 +170,10 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("check-api", help="verify the configured vision API key and model (no secrets printed)")
     p.set_defaults(func=_cmd_check_api)
 
-    p = sub.add_parser("serve", help="run the web UI / HTTP API")
+    p = sub.add_parser("serve", help="run the web app (upload photos, review, finalize) and HTTP API")
     p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--port", type=int, default=8000, help="preferred port; the next free one is used if busy")
+    p.add_argument("--open", action="store_true", help="open the app in your browser")
     p.set_defaults(func=_cmd_serve)
     return parser
 

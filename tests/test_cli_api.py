@@ -142,3 +142,40 @@ def test_api_rejects_non_images_and_bad_reviews(client):
     assert upload(client, name="notes.txt", data=b"hello").status_code == 400
     assert client.post("/finalize", json={"review": {"bom": {}}}).status_code == 422
     assert client.post("/finalize", json={"review": {}, "job_id": "../../etc"}).status_code == 422
+
+
+# ---- web app launch -------------------------------------------------------
+
+
+def test_index_page_is_the_upload_app(client):
+    page = client.get("/").text
+    for marker in ('id="drop"', 'id="images"', "multiple", 'id="analyze-btn"', 'id="finalize-btn"', 'id="photos"'):
+        assert marker in page, marker
+
+
+def test_serve_picks_the_next_port_when_the_preferred_one_is_busy():
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as taken:
+        taken.bind(("127.0.0.1", 0))
+        busy = taken.getsockname()[1]
+        assert cli.find_free_port("127.0.0.1", busy) != busy
+    assert cli.find_free_port("127.0.0.1", busy) == busy  # free again once released
+
+
+def test_serve_command_starts_uvicorn_and_can_open_the_browser(monkeypatch, capsys):
+    import threading
+    import webbrowser
+
+    import uvicorn
+
+    started, opened = {}, []
+    monkeypatch.setattr(uvicorn, "run", lambda app, **kwargs: started.update(app=app, **kwargs))
+    monkeypatch.setattr(webbrowser, "open", opened.append)
+    monkeypatch.setattr(threading, "Timer", lambda delay, fn, args=(): type("T", (), {"start": lambda self: fn(*args)})())
+
+    assert cli.main(["serve", "--open", "--port", "8765"]) == 0
+
+    assert started["app"] == "robot_bom.api:app" and started["host"] == "127.0.0.1"
+    assert opened == [f"http://127.0.0.1:{started['port']}"]
+    assert f"running at http://127.0.0.1:{started['port']}" in capsys.readouterr().out
