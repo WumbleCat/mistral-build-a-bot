@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 
 from .catalog import build_catalog_client
 from .config import ConfigError, load_settings
+from .design import infer_and_source
 from .export import BOMExporter, write_json
 from .extraction import VisionResponseError
 from .grounding import build_grounder, grounding_available, sam_available
@@ -131,6 +132,51 @@ def overlay_route(job_id: str, image_id: str) -> FileResponse:
     if not path.is_file():
         raise HTTPException(404, "not found")
     return FileResponse(path, media_type="image/jpeg")
+
+
+@app.post("/infer")
+def infer_route(payload: dict = Body(...)) -> dict:
+    """Let the model settle every open issue, then find where to order the parts.
+
+    Body: ``{"review": {...}, "job_id": "...", "model": "...", "mock": false}``. Two model
+    queries run in order: (1) a design choice per open issue plus a simple component list,
+    (2) parts research for that list. Shop links are search links built by the server. The
+    result is the model's assumptions; the review document and BOM are not changed.
+    """
+    review_data = payload.get("review")
+    job_id = payload.get("job_id")
+    model = payload.get("model")
+    if not isinstance(review_data, dict):
+        raise HTTPException(422, "body must contain a 'review' object")
+    if job_id is not None and not (isinstance(job_id, str) and _JOB_ID.match(job_id)):
+        raise HTTPException(422, "invalid job_id")
+    model = model.strip() if isinstance(model, str) and model.strip() else None
+    if model and not MODEL_ID.match(model):
+        raise HTTPException(400, "invalid model id")
+    try:
+        settings = load_settings()
+        bom = load_review(review_data).bom
+        use_mock = bool(payload.get("mock")) or settings.mock or bom.metadata.get("mode") == "mock"
+        vision, reasoning, model_name = clients_for_run(
+            build_vision_client(settings, mock=use_mock), settings, model
+        )
+        client = reasoning or vision  # both queries are text-only
+        result = infer_and_source(
+            client, bom, model=getattr(client, "_model", model_name), max_retries=settings.max_retries
+        )
+    except ReviewError as exc:
+        raise HTTPException(422, str(exc)) from None
+    except ConfigError as exc:
+        raise HTTPException(503, str(exc)) from None
+    except (VisionResponseError, VisionAPIError) as exc:
+        raise HTTPException(502, str(exc)) from None
+
+    out_dir = None
+    if job_id and (OUTPUT_ROOT / job_id).is_dir():
+        out_dir = OUTPUT_ROOT / job_id / "inferred"
+        for name, document in result.items():
+            write_json(out_dir / f"{name}.json", document)
+    return {**result, "output_dir": out_dir.as_posix() if out_dir else None}
 
 
 @app.post("/finalize")

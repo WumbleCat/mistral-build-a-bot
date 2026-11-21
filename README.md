@@ -41,6 +41,7 @@ photos ─► A. ingest (validate, EXIF-rotate, downscale)
 | `src/robot_bom/reconcile.py` | C – `InventoryReconciler.merge` |
 | `src/robot_bom/validation.py` | D – `RequirementsValidator.validate`, purchase-readiness rules |
 | `src/robot_bom/catalog.py` | E – `CatalogClient.search` (optional) |
+| `src/robot_bom/design.py` | optional – model's best-guess design choices, component list and shop search links (separate from the BOM) |
 | `src/robot_bom/review.py` | F – review document, `finalize`, audit trail |
 | `src/robot_bom/export.py` | G – `BOMExporter.export` |
 | `src/robot_bom/pipeline.py`, `cli.py`, `api.py` | orchestration, CLI, FastAPI + web UI |
@@ -152,10 +153,62 @@ checks and offers the exports for download.
 
 HTTP API behind the page:
 
-- `POST /analyze` – multipart `images` (1–8 files), `project_name`, `mock`, `grounding`
+- `GET /models` – models your API key can use (`usable` = can chat and read photos)
+- `POST /analyze` – multipart `images` (1–8 files), `project_name`, `mock`, `grounding`, `model`
 - `POST /finalize` – JSON `{"review": {...}, "job_id": "..."}`
+- `POST /infer` – JSON `{"review": {...}, "job_id": "...", "model": "..."}`; see "AI best guess" below
 - `GET /jobs/{job_id}/overlays/{image_id}.jpg` – photo with SAM 2 masks (grounding runs only)
 - `GET /health`, `GET /docs`
+
+### Choosing the model
+
+The web page loads the list of models your API key can use and shows it in the **Model**
+dropdown; **Search models** narrows it as you type. Models that cannot read photos
+(text-only, audio, embeddings, OCR) are listed but greyed out. Your choice is remembered
+in the browser and used for every pass of that run. On the command line:
+
+```bash
+uv run robot-bom models            # models that can read photos (* = configured default)
+uv run robot-bom models --all      # every model, including unusable ones
+uv run robot-bom analyze top.jpg --model mistral-small-latest
+```
+
+Smaller models answer faster but miss more parts. One model reply may take up to
+`VISION_TIMEOUT_S` seconds (default 300); a reply that times out is retried once.
+
+### AI best guess: infer every design choice, list the parts, find where to order
+
+The reviewed BOM only contains what was seen or what you confirmed, so it usually ends
+with open issues ("motor count unknown", "no controller identified"). If you want a
+complete answer anyway, the **Infer all design choices** button (or `robot-bom infer`)
+asks the model to guess. It runs two text-only queries, in order:
+
+1. **Design inference** – for every open issue the model picks the most likely design
+   choice, then returns one simple component list with quantities and assumed specs →
+   `inferred_components.json`.
+2. **Parts research** – the model follows the parts-research rules in
+   `src/robot_bom/design.py` (`SOURCING_RULES`: understand the product and power budget,
+   prefer breakout modules and dev boards, driver sizing and lithium safety rules) to pick
+   a search term and the best shops for each component → `order_links.json`.
+
+```bash
+uv run robot-bom infer ./output/review.json --out ./output/inferred
+```
+
+`order_links.json` has, per component, a link to the search results on LCSC, DigiKey UK,
+RS Components UK, SparkFun, Mouser UK and Amazon.com, plus which of them the model
+recommends for that part.
+
+What this is and is not:
+
+- It is the model's assumption, labelled as such in both files and in the page. It is
+  kept apart from the BOM: it never changes a component, closes an issue or makes the BOM
+  ready to purchase.
+- The links are **search** links built by the application from the model's search term.
+  The model has no web access, so it is never asked for product pages, prices, stock or
+  part numbers; any URL it wrote would be invented and is discarded.
+- Check every inferred part against the real robot (voltage, current, mounting) before
+  ordering.
 
 ### Detection mode: VLM/LLM only, or with Grounding DINO + SAM 2
 
