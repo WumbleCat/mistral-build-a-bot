@@ -7,6 +7,7 @@ import { bomToCsv, downloadCsv } from '../lib/api'
 import BomTable from './BomTable'
 import Spinner from './Spinner'
 import useMediaQuery from '../hooks/useMediaQuery'
+import LiveOffers from './LiveOffers'
 
 const ExplodedView = lazy(() => import('./ExplodedView'))
 
@@ -439,6 +440,11 @@ export default function BuildAtlas({ project }) {
                   {selectedComponent.substitutes?.length > 0 &&
                     ` · alt: ${selectedComponent.substitutes.join(', ')}`}
                 </p>
+
+                {/* Real stock and price, when the Parts API is reachable. */}
+                <div className="mt-3 max-w-xl">
+                  <LiveOffers component={selectedComponent} />
+                </div>
               </div>
               <button
                 type="button"
