@@ -1,5 +1,6 @@
 import type { AssemblyData } from '../types';
 import type { StepAudioState } from '../hooks/useNarrationEngine';
+import { ShoppingList } from './ShoppingList';
 
 /** Tiny pixel-style category icon (original, crisp rects). */
 export function PartIcon({ category, name }: { category?: string; name: string }) {
@@ -65,65 +66,38 @@ export interface SidebarProps {
   onToggleChecklist?: (partId: string) => void;
   /** Tools needed across all steps (for the checklist card). */
   allTools?: string[];
+  /** Developer-only UI (Import, Data panel, sample loaders) unless ?dev=1. */
+  dev?: boolean;
 }
 
-export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadUpstream, stepAudio, playingIndex, playingPaused, onToggleStepAudio, narrationStats, checklist, onToggleChecklist, allTools }: SidebarProps) {
+export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadUpstream, stepAudio, playingIndex, playingPaused, onToggleStepAudio, narrationStats, checklist, onToggleChecklist, dev }: SidebarProps) {
   const currentStep = data.steps[currentIndex];
   const installedSet = new Set(currentStep?.installed_components ?? []);
   const activeSet = new Set(currentStep?.component_ids ?? []);
-  const checkedCount = checklist ? data.parts.filter((p) => checklist.has(p.id)).length : 0;
-  const allChecked = checkedCount === data.parts.length;
 
   return (
     <aside className="sidebar">
+      <ShoppingList data={data} owned={checklist ?? new Set<string>()} onToggleOwned={(id) => onToggleChecklist?.(id)} />
       <details className="card collapsible" open>
         <summary>
           <h2 className="card-title">All parts</h2>
           <span className="count">({data.parts.length})</span>
-          {checklist && <span className="count" style={{ marginLeft: 'auto' }}>{checkedCount}/{data.parts.length} located</span>}
         </summary>
         <ul className="parts-list">
           {data.parts.map((p) => {
-            const checked = checklist?.has(p.id) ?? false;
             const state = activeSet.has(p.id) ? 'active' : installedSet.has(p.id) ? 'installed' : 'pending';
             return (
-              <li
-                key={p.id}
-                className={`part-row part-${state}`}
-                onClick={() => onToggleChecklist?.(p.id)}
-                title={`${p.name} — ${state}`}
-              >
-                {checklist && onToggleChecklist && (
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => onToggleChecklist(p.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={`Mark ${p.name} as located`}
-                  />
-                )}
+              <li key={p.id} className={`part-row part-${state}`} title={`${p.name} — ${state}`}>
                 <span className="part-icon"><PartIcon category={p.category} name={p.name} /></span>
                 <span className="part-status" aria-hidden>
                   {state === 'installed' ? '✓' : state === 'active' ? '●' : '○'}
                 </span>
                 <span className="part-name">{p.name}</span>
                 <span className="part-qty">×{p.quantity}</span>
-                {p.unit_price != null && <span className="part-price">£{p.unit_price.toFixed(2)}</span>}
               </li>
             );
           })}
         </ul>
-        {allChecked && <p className="checklist-ready">✓ All parts located — ready to build!</p>}
-        {allTools && allTools.length > 0 && (
-          <div className="checklist-tools">
-            <span className="parts-label">Tools needed</span>
-            <div className="chip-row" style={{ marginTop: 6 }}>
-              {allTools.map((t) => (
-                <span key={t} className="chip">{t}</span>
-              ))}
-            </div>
-          </div>
-        )}
       </details>
 
       {data.relationships && data.relationships.length > 0 && (
@@ -181,6 +155,7 @@ export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadU
         </ol>
       </section>
 
+      {dev && (
       <section className="card">
         <h2 className="card-title">Data</h2>
         <p className="card-note">
@@ -215,6 +190,7 @@ export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadU
           </ul>
         )}
       </section>
+      )}
     </aside>
   );
 }

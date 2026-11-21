@@ -10,7 +10,6 @@ import { Header, type ViewMode } from './components/Header';
 import { StageCard } from './components/StageCard';
 import { StepPanel } from './components/StepPanel';
 import { Sidebar } from './components/Sidebar';
-import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { ImportDialog } from './components/ImportDialog';
 import { AssistantPanel } from './components/AssistantPanel';
 
@@ -25,6 +24,8 @@ function initialStep(): number {
 }
 
 export default function App() {
+  // Developer-only UI (Import JSON, Data panel, sample loaders) unless ?dev=1.
+  const dev = new URLSearchParams(window.location.search).has('dev');
   // Deep links (?mode=guided, ?step=N, ?view=exploded) skip the landing screen.
   const [screen, setScreen] = useState<'landing' | 'studio'>(() =>
     new URLSearchParams(window.location.search).has('mode') || new URLSearchParams(window.location.search).has('step') ? 'studio' : 'landing',
@@ -40,7 +41,6 @@ export default function App() {
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [importNotes, setImportNotes] = useState<string[]>([]);
   const [assistantOpen, setAssistantOpen] = useState(false);
-  const [assistantMention, setAssistantMention] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<Set<string>>(new Set());
   const [images, setImages] = useState<Record<string, ImageResult>>({});
   const [imageLoading, setImageLoading] = useState(false);
@@ -201,7 +201,21 @@ export default function App() {
     setTick((t) => t + 1);
     setGuided((g) => ({ ...g, playing: true }));
   };
-  const guidedExit = () => handleModeChange('workbook');
+  // ---- keyboard-hint popover: close on outside click / Esc ----
+  useEffect(() => {
+    if (!hintOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t?.closest('.hint-fab') && !t?.closest('.hint-tip')) setHintOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setHintOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [hintOpen]);
 
   // ---- workbook controls ----
   const workbookPrev = () => {
@@ -318,7 +332,6 @@ export default function App() {
     setImportNotes(notes);
     setChecklist(new Set());
     setAssistantOpen(false);
-    setAssistantMention(null);
     clearNarrationCaches();
     clearImageCache();
   };
@@ -372,6 +385,7 @@ export default function App() {
           onLoadUpstream={() => void loadUpstreamSample()}
           onImport={openImport}
           onPhotoAnalysis={() => setPhotoDialogOpen(true)}
+          dev={dev}
         />
         {photoDialogOpen && (
           <PhotoAnalysisDialog
@@ -401,6 +415,7 @@ export default function App() {
         onImportClick={() => setImportOpen(true)}
         muted={fx.muted}
         onToggleMuted={fx.toggleMuted}
+        dev={dev}
       />
       <main className="app-main">
         <StageCard
@@ -444,9 +459,17 @@ export default function App() {
           onPauseAudio={pause}
           onResumeAudio={resume}
           onRegenerateAudio={regenerateAudio}
-          onPrev={workbookPrev}
-          onNext={workbookNext}
+          onPrev={mode === 'guided' ? guidedPrev : workbookPrev}
+          onNext={mode === 'guided' ? guidedNext : workbookNext}
           onFinish={finishBuild}
+          guided={mode === 'guided' ? {
+            playing: guided.playing,
+            paused: isCurrentAudio && isPaused,
+            auto: guided.auto,
+            onTogglePlay: guidedTogglePlay,
+            onRestart: guidedRestart,
+            onToggleAuto: () => setGuided((g) => ({ ...g, auto: !g.auto })),
+          } : undefined}
         />
         <Sidebar
           data={data}
@@ -462,38 +485,10 @@ export default function App() {
           onToggleChecklist={toggleChecklist}
           allTools={allTools}
           onLoadUpstream={() => void loadUpstreamSample()}
+          dev={dev}
         />
         </div>
       </main>
-
-      {mode === 'guided' && (
-        <WalkthroughOverlay
-          data={data}
-          index={index}
-          partsById={partsById}
-          audio={audio}
-          playing={guided.playing}
-          paused={isCurrentAudio && isPaused}
-          auto={guided.auto}
-          image={images[step.id]}
-          imageLoading={imageLoading}
-          imageAvailable={imageAvailable}
-          onGenerateImage={() => void generateImageFor(step)}
-          explodedAvailable={exploded.available}
-          explodedUrl={exploded.url}
-          explodedOn={explodedOn && exploded.available}
-          onToggleExploded={() => setExplodedOn((v) => !v)}
-          assistantOpen={assistantOpen}
-          onToggleAssistant={() => setAssistantOpen((v) => !v)}
-          assistantMention={assistantMention}
-          onTogglePlay={guidedTogglePlay}
-          onPrev={guidedPrev}
-          onNext={guidedNext}
-          onRestart={guidedRestart}
-          onToggleAuto={() => setGuided((g) => ({ ...g, auto: !g.auto }))}
-          onExit={guidedExit}
-        />
-      )}
 
       {mode === 'guided' && step && (
         <AssistantPanel
@@ -505,8 +500,7 @@ export default function App() {
           onClose={() => setAssistantOpen(false)}
           onAction={(action) => {
             if (action.type === 'highlight_component' && action.partId) {
-              setAssistantMention(action.partId);
-              window.setTimeout(() => setAssistantMention(null), 6000);
+              window.dispatchEvent(new CustomEvent('bfv:highlight', { detail: { partId: action.partId } }));
             } else if (action.type === 'navigate_to_step' && Number.isFinite(action.stepNumber)) {
               const target = Math.max(0, Math.min(data.steps.length - 1, (action.stepNumber ?? 1) - 1));
               stop();

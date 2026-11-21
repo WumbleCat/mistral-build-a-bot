@@ -9,6 +9,8 @@ export interface HeaderProps {
   onImportClick: () => void;
   muted: boolean;
   onToggleMuted: () => void;
+  /** Developer-only UI (Import) unless ?dev=1. */
+  dev?: boolean;
 }
 
 /** Small logo mascot (the only place the pixel style survives). */
@@ -27,7 +29,7 @@ function PixelCat() {
   );
 }
 
-export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, onImportClick, muted, onToggleMuted }: HeaderProps) {
+export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, onImportClick, muted, onToggleMuted, dev }: HeaderProps) {
   const progress = totalSteps > 0 ? stepNumber / totalSteps : 0;
   return (
     <>
@@ -47,11 +49,13 @@ export function Header({ robotName, stepNumber, totalSteps, mode, onModeChange, 
             className="btn btn-primary"
             onClick={() => onModeChange(mode === 'guided' ? 'workbook' : 'guided')}
           >
-            {mode === 'guided' ? 'Exit tour' : 'Guided tour'}
+            {mode === 'guided' ? '■ Stop tour' : '▶ Play guided tour'}
           </button>
-          <button type="button" className="btn btn-ghost" onClick={onImportClick}>
-            Import
-          </button>
+          {dev && (
+            <button type="button" className="btn btn-ghost" onClick={onImportClick}>
+              Import
+            </button>
+          )}
           <button
             type="button"
             className="icon-btn"

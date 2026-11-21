@@ -187,7 +187,6 @@ export function PhotoAnalysisDialog({ onGenerated, onClose }: PhotoAnalysisDialo
                       <span className="chip chip-muted">{c.quantity === null ? 'qty unknown' : `×${c.quantity}`}</span>
                       {c.evidence && <span className={`chip ${c.evidence === 'visible' ? 'chip-muted' : 'chip-accent'}`}>{c.evidence}</span>}
                       {c.review_required && <span className="chip chip-accent">review</span>}
-                      {c.source_ids?.length ? <span className="chip chip-muted">src {c.source_ids.join(',')}</span> : null}
                     </span>
                     {c.notes && <span className="analysis-notes">{c.notes}</span>}
                     <span className="analysis-prov">{provenanceLine(p)}</span>

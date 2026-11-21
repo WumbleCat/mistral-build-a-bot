@@ -19,6 +19,15 @@ export interface StepPanelProps {
   onPrev: () => void;
   onNext: () => void;
   onFinish?: () => void;
+  /** Guided-tour controls shown inside this panel while the tour is active. */
+  guided?: {
+    playing: boolean;
+    paused: boolean;
+    auto: boolean;
+    onTogglePlay: () => void;
+    onRestart: () => void;
+    onToggleAuto: () => void;
+  };
 }
 
 /** Right-hand step panel: kicker, title, instruction, parts for this step, actions. */
@@ -28,6 +37,20 @@ export function StepPanel(props: StepPanelProps) {
 
   return (
     <section className="step-panel" aria-label={`Step ${step.number}`}>
+      {props.guided && (
+        <div className="guided-controls">
+          <button type="button" className="btn btn-ghost btn-small" onClick={props.guided.onTogglePlay}>
+            {props.guided.playing ? (props.guided.paused ? '▶ Resume' : '⏸ Pause') : '▶ Play'}
+          </button>
+          <button type="button" className="btn btn-ghost btn-small" onClick={props.onPrev}>← Back</button>
+          <button type="button" className="btn btn-ghost btn-small" onClick={props.onNext}>Next →</button>
+          <button type="button" className="btn btn-ghost btn-small" onClick={props.guided.onRestart}>↺ Restart</button>
+          <label className="auto-toggle">
+            <input type="checkbox" checked={props.guided.auto} onChange={props.guided.onToggleAuto} />
+            Auto-advance
+          </label>
+        </div>
+      )}
       <span className="step-kicker">STEP {step.number} OF {data.steps.length}</span>
       <h1 className="step-title">{step.title}</h1>
       <p className="step-instruction">{step.instruction}</p>
@@ -58,7 +81,7 @@ export function StepPanel(props: StepPanelProps) {
               <span className="step-part-qty">×{p.quantity}</span>
               {p.unit_price != null && <span className="step-part-price">£{p.unit_price.toFixed(2)}</span>}
               {p.url && p.url !== 'TODO' && (
-                <a className="chip-buy" href={p.url} target="_blank" rel="noreferrer">Buy</a>
+                <a className="chip-buy" href={p.url} target="_blank" rel="noreferrer">Buy ↗</a>
               )}
             </div>
           ))}

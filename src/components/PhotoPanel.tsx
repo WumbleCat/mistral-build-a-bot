@@ -66,32 +66,35 @@ export function PhotoPanel({ data, activeIds, highlightId, onHoverPart }: PhotoP
   return (
     <div className="photo-panel">
       <div className="photo-frame">
-        <img
-          src={imgSrc}
-          alt={`Robot photo — ${data.robot_name}`}
-          draggable={false}
-          onError={() => setImgSrc(robotPhoto)}
-        />
-        {boxes.map(({ part, box }) => {
-          const [x, y, w, h] = box;
-          const hot = highlightId === part.id || active.has(part.id);
-          return (
-            <div
-              key={part.id}
-              className={`photo-box ${hot ? 'hot' : ''}`}
-              style={{ left: `${x * 100}%`, top: `${y * 100}%`, width: `${w * 100}%`, height: `${h * 100}%` }}
-              onMouseEnter={() => onHoverPart?.(part.id)}
-              onMouseLeave={() => onHoverPart?.(null)}
-              title={`${part.name}${part.quantity > 1 ? ` ×${part.quantity}` : ''}`}
-            >
-              <span className="photo-box-label">
-                {part.name.toUpperCase()}{part.quantity > 1 ? ` ×${part.quantity}` : ''}
-              </span>
-            </div>
-          );
-        })}
+        {/* shrink-wrap wrapper: % boxes always align with the rendered image,
+            regardless of object-fit letterboxing or resize */}
+        <div className="photo-canvas">
+          <img
+            src={imgSrc}
+            alt={`Robot photo — ${data.robot_name}`}
+            draggable={false}
+            onError={() => setImgSrc(robotPhoto)}
+          />
+          {boxes.map(({ part, box }) => {
+            const [x, y, w, h] = box;
+            const hot = highlightId === part.id || active.has(part.id);
+            return (
+              <div
+                key={part.id}
+                className={`photo-box ${hot ? 'hot' : ''}`}
+                style={{ left: `${x * 100}%`, top: `${y * 100}%`, width: `${w * 100}%`, height: `${h * 100}%` }}
+                onMouseEnter={() => onHoverPart?.(part.id)}
+                onMouseLeave={() => onHoverPart?.(null)}
+                title={`${part.name}${part.quantity > 1 ? ` ×${part.quantity}` : ''}`}
+              >
+                <span className="photo-box-label">
+                  {part.name.toUpperCase()}{part.quantity > 1 ? ` ×${part.quantity}` : ''}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <span className="robot3d-note">photo — parts in current step boxed (from vision analysis)</span>
     </div>
   );
 }

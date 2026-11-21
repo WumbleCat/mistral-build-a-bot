@@ -101,10 +101,9 @@ export function Illustration({ data, step, image, imageLoading, imageAvailable, 
           </button>
         )}
         <span className="illustration-mode">
-          {showExploded ? 'Teardown exploded view (BOM labels, current step highlighted)' : showImage ? 'AI illustration + SVG callouts' : 'SVG schematic diagram'}
+          {showExploded ? 'Teardown exploded view (parts list, current step highlighted)' : showImage ? 'AI illustration + SVG callouts' : 'SVG schematic diagram'}
         </span>
       </div>
-      {data.illustrative && !showImage && !showExploded && <span className="illustrative-badge">Illustrative — not verified construction guidance</span>}
     </div>
   );
 }

@@ -477,7 +477,6 @@ export function Robot3DView(props: Robot3DViewProps) {
           Reset view
         </button>
       </div>
-      <span className="robot3d-note">3D schematic — illustrative</span>
     </div>
   );
 }
