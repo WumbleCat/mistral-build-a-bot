@@ -38,8 +38,13 @@ class ValidationResult:
 
 
 def _established(component: Component) -> bool:
-    """Seen in a photo, or explicitly confirmed by a human."""
-    return component.evidence_type is EvidenceType.OBSERVED or component.status == "confirmed"
+    """Seen in a photo, confirmed by a human, or filled in by the model's best guess.
+
+    A best-guess line closes the "nothing is known" checks so the compatibility rules can run
+    on its assumed values, but it stays `needs_review`, which still blocks purchasing.
+    """
+    return (component.evidence_type is EvidenceType.OBSERVED or component.status == "confirmed"
+            or bool(component.assumed_fields))
 
 
 def ensure_critical_placeholders(components: list[Component]) -> list[Component]:
@@ -104,6 +109,7 @@ class RequirementsValidator:
         self._electrical_compatibility(inventory, active, result)
         self._mechanical(active, result)
         self._views(active, image_views or {}, result)
+        self._assumptions(active, result)
         return result
 
     # ---- helpers ----------------------------------------------------------
@@ -129,7 +135,7 @@ class RequirementsValidator:
         counted = [
             m for m in motors
             if (m.evidence_type is EvidenceType.OBSERVED and m.visible_quantity is not None)
-            or (m.status == "confirmed" and m.required_quantity is not None)
+            or ((m.status == "confirmed" or m.assumed_fields) and m.required_quantity is not None)
         ]
         if not counted:
             result.issues.append(
@@ -149,7 +155,8 @@ class RequirementsValidator:
             )
             return
         visible_motors = sum(m.visible_quantity or 0 for m in motors if m.evidence_type is EvidenceType.OBSERVED)
-        confirmed = any(m.status == "confirmed" and m.required_quantity is not None for m in motors)
+        confirmed = any((m.status == "confirmed" or m.assumed_fields) and m.required_quantity is not None
+                        for m in motors)
         if not confirmed and wheel_count and visible_motors != wheel_count:
             result.issues.append(
                 ReviewIssue(
@@ -370,6 +377,22 @@ class RequirementsValidator:
                         next_action="Confirm the motor runs acceptably at the supply voltage.",
                     )
                 )
+
+    def _assumptions(self, active, result: ValidationResult) -> None:
+        assumed = [c for c in active if c.assumed_fields and c.status != "confirmed"]
+        if assumed:
+            result.issues.append(
+                ReviewIssue(
+                    id="inference.assumptions", severity="warning",
+                    component_ids=[c.id for c in assumed],
+                    message=(
+                        f"{len(assumed)} line(s) contain values filled in by the model's best guess, not "
+                        "seen in a photo: " + "; ".join(f"{c.id} ({', '.join(c.assumed_fields)})" for c in assumed)
+                        + ". The checks above were run on these assumed values."
+                    ),
+                    next_action="Check each assumed value against the real robot, correct it if needed, then confirm the line.",
+                )
+            )
 
     def _mechanical(self, active, result: ValidationResult) -> None:
         chassis = [c for c in self._role(active, "chassis") if not c.sku]

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .catalog import build_catalog_client
 from .config import ConfigError, load_settings
-from .design import infer_and_source
+from .design import best_guess
 from .export import BOMExporter, write_json
 from .extraction import VisionResponseError
 from .grounding import build_grounder
@@ -77,13 +77,13 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
     for path in written.values():
         print(f"  {path}")
     if args.infer:
-        print("\nInferring the open design choices and shop search links "
-              "(two more model queries; --no-infer skips this)...")
+        print("\nInferring the critical parts and open design choices, then looking the parts up in "
+              "the shops (--no-infer skips this)...")
         text_client = reasoning_client or client
         try:
-            inferred = infer_and_source(
-                text_client, result.bom, model=getattr(text_client, "_model", model),
-                max_retries=settings.max_retries,
+            inferred, review = best_guess(
+                text_client, result.review, model=getattr(text_client, "_model", model),
+                max_retries=settings.max_retries, web_search=settings.web_search,
             )
         except (VisionResponseError, VisionAPIError) as exc:
             print(f"warning: the AI best guess could not be produced ({exc}). The outputs above are "
@@ -94,6 +94,10 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
                   f"{len(design['components'])} components")
             for name, document in inferred.items():
                 print(f"  {write_json(Path(args.out) / 'inferred' / f'{name}.json', document)}")
+            # the review file and draft exports now carry the guesses, marked as assumptions
+            write_json(written["review.json"], review.model_dump(mode="json"))
+            BOMExporter().export(review.bom, args.out)
+            print(_guess_summary(review.bom, inferred["order_links"]))
     print(f"\nNext: edit {written['review.json']} then run\n  robot-bom finalize {written['review.json']} --out {Path(args.out) / 'final'}")
     return 0
 
@@ -115,15 +119,32 @@ def _cmd_finalize(args: argparse.Namespace) -> int:
     return 0
 
 
+def _guess_summary(bom, links: dict) -> str:
+    assumed = [c for c in bom.components if c.assumed_fields]
+    critical = [i.id for i in bom.unresolved_issues() if i.severity == "critical"]
+    availability = links["availability"]
+    lines = [f"Written into the parts list as assumptions ({len(assumed)} line(s), still 'needs review'):"]
+    lines += [f"  - {c.id}: {c.name} x{c.required_quantity} {c.specs}" for c in assumed]
+    lines.append("Open critical issues after the guess: " + (", ".join(critical) if critical else "none"))
+    lines.append(
+        f"Shop lookup: {availability['parts_with_products']} of {availability['parts_total']} parts have product "
+        f"pages, {availability['in_stock_confirmed']} page(s) confirmed in stock ({availability['method']})"
+        + (f"; {availability['error']}" if availability["error"] else "")
+    )
+    return "\n".join(lines)
+
+
 def _cmd_infer(args: argparse.Namespace) -> int:
     settings = load_settings()
-    bom = load_review(args.review).bom
+    review = load_review(args.review)
+    bom = review.bom
     mock = args.mock or settings.mock or bom.metadata.get("mode") == "mock"
     vision, reasoning, model = clients_for_run(build_vision_client(settings, mock=mock), settings, args.model)
     client = reasoning or vision  # both queries are text-only
-    result = infer_and_source(client, bom, model=getattr(client, "_model", model), max_retries=settings.max_retries)
+    result, review = best_guess(client, review, model=getattr(client, "_model", model),
+                                max_retries=settings.max_retries, web_search=settings.web_search)
     design, links = result["inferred_components"], result["order_links"]
-    print("MODEL INFERENCE - assumptions, not verified. The reviewed BOM is unchanged.")
+    print("MODEL INFERENCE - assumptions, not verified.")
     if design["summary"]:
         print(design["summary"])
     print(f"\nDesign choices ({len(design['design_choices'])}):")
@@ -132,9 +153,14 @@ def _cmd_infer(args: argparse.Namespace) -> int:
     print(f"\nComponents ({len(design['components'])}):")
     for row in links["components"]:
         print(f"  - {row['quantity']} x {row['name']} [{row['basis']}]  search: {row['search_query']}")
+        for product in row["products"]:
+            print(f"      {product['stock']:<10} {product['url']}")
+    print("\n" + _guess_summary(review.bom, links))
     print("\nWrote:")
     for name, document in result.items():
         print(f"  {write_json(Path(args.out) / f'{name}.json', document)}")
+    path = write_json(Path(args.out) / "review.json", review.model_dump(mode="json"))
+    print(f"  {path}  (the review with the guesses written in; edit and finalize this one)")
     return 0
 
 

@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 
 CONNECT_TIMEOUT_S = 20.0
 MODEL_LIST_TIMEOUT_S = 30.0
+WEB_SEARCH_TIMEOUT_S = 120.0
 MODEL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,119}$")
 
 
@@ -184,6 +185,26 @@ class OpenAICompatVisionClient:
         if not isinstance(message, str):
             raise VisionAPIError("Vision API returned non-text content")
         return message
+
+    def web_search(self, prompt: str) -> dict:
+        """One turn of Mistral's Conversations API with its built-in web search tool.
+
+        Returns the raw response; the caller reads the search results out of it. Only the
+        Mistral API offers this endpoint - other providers answer with an error.
+        """
+        url = self._url.rsplit("/chat/completions", 1)[0] + "/conversations"
+        payload = {"model": self._model, "inputs": prompt, "tools": [{"type": "web_search"}], "store": False}
+        try:
+            response = self._client.post(url, headers=self._headers, json=payload, timeout=WEB_SEARCH_TIMEOUT_S)
+        except httpx.HTTPError as exc:
+            raise VisionAPIError(f"web search failed: {exc.__class__.__name__}") from None
+        if response.status_code != 200:
+            raise VisionAPIError(f"web search failed: HTTP {response.status_code}: {_safe_error_text(response)}")
+        try:
+            body = response.json()
+        except ValueError:
+            raise VisionAPIError("web search returned invalid JSON") from None
+        return body if isinstance(body, dict) else {}
 
     def list_models(self) -> list[dict]:
         url = self._url.rsplit("/chat/completions", 1)[0] + "/models"

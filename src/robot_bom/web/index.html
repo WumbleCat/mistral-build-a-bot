@@ -89,6 +89,8 @@
   code { background:#edf0f4; padding:1px 5px; border-radius:4px; font-size:12px; }
   .tag { display:inline-block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:1px 6px; border-radius:4px; margin-right:6px; color:#fff; vertical-align:1px; }
   .tag.critical { background:var(--bad); } .tag.warning { background:var(--warn); } .tag.info { background:var(--info); }
+  .tag.ai { background:#7c3aed; } .stock { font-size:11px; font-weight:700; padding:0 5px; border-radius:4px; margin-left:4px; }
+  .stock.in_stock { background:#e5f4ec; color:var(--ok); } .stock.unknown, .stock.backorder { background:#eef0f4; color:var(--muted); }
   .tag.observed { background:var(--ok); } .tag.inferred { background:var(--warn); } .tag.unknown { background:var(--muted); }
   .issue { border-left:4px solid var(--line); padding:7px 12px; margin:8px 0; background:#fafbfc; border-radius:0 6px 6px 0; }
   .issue.critical { border-color:var(--bad); } .issue.warning { border-color:var(--warn); } .issue.info { border-color:var(--info); }
@@ -173,7 +175,7 @@
 
     <section class="card">
       <h2>AI best guess: settle every issue and find the parts</h2>
-      <p class="hint">Runs automatically after every analysis. Asks the model to make the most likely design choice for every open issue above and return one simple component list, then runs a second parts-research query to pick search terms and shops. These are the model's assumptions &mdash; they are kept separate from the reviewed BOM and never mark it ready to purchase. After editing the tables above, use the button to run it again with your edits.</p>
+      <p class="hint">Runs automatically after every analysis. The model picks the most likely design choice for every open issue and infers the critical parts nobody could see (drive motors, motor driver, power source, controller). Those guesses are written into the tables above with an <b>AI guess</b> tag, and the checks are re-run on them, so &ldquo;unknown&rdquo; issues close. Each part is then looked up on the approved shops by web search, and the pages found are checked for stock. Guesses stay &ldquo;needs review&rdquo;: only you can confirm a line. After editing the tables, use the button to run it again.</p>
       <div class="finalize">
         <button id="infer-btn" type="button" class="ghost">Run again with my edits</button>
         <div id="infer-status" class="hidden" style="display:flex;align-items:center;gap:8px;color:var(--muted)"><div class="spinner"></div><span id="infer-status-text"></span></div>
@@ -206,6 +208,7 @@ const PALETTE = ["#f25c05", "#2b7fff", "#12a15e", "#c026d3", "#e0a800", "#0aa5b5
 let files = [];          // [{file, url}]
 let state = null;        // { job_id, review, images: {image_id: url} }
 let timer = null;
+let edits = 0;           // counts review edits, so a late AI result never overwrites newer edits
 let models = [];         // from GET /models: [{id, name, aliases, usable, ...}]
 let defaultModel = "";   // the configured VISION_MODEL
 let modelsError = "";
@@ -310,6 +313,7 @@ function field(component, key, kind) {
   else { node.placeholder = "unknown"; node.value = component[key] ?? ""; }
   node.setAttribute("aria-label", `${key} of ${component.id}`);
   node.addEventListener("change", () => {
+    edits += 1;
     if (kind === "int") component[key] = intOrNull(node.value);
     else if (kind === "specs") component.specs = textToSpecs(node.value);
     else component[key] = textOrNull(node.value);
@@ -334,11 +338,13 @@ function componentTable(components, visible) {
     status.value = c.status;
     status.setAttribute("aria-label", `review status of ${c.id}`);
     const group = el("tbody", { class: "item" + (c.status === "rejected" ? " rejected" : "") });
-    status.addEventListener("change", () => { c.status = status.value; group.classList.toggle("rejected", c.status === "rejected"); });
+    status.addEventListener("change", () => { edits += 1; c.status = status.value; group.classList.toggle("rejected", c.status === "rejected"); });
     const confidence = c.confidence == null ? "" : ` · model confidence ${c.confidence.toFixed(2)} (uncalibrated)`;
     const main = el("tr", {}, [
       el("td", { class: "part" }, [
-        el("span", { class: `tag ${c.evidence_type}`, text: c.evidence_type }), el("strong", { text: c.name }),
+        el("span", { class: `tag ${c.evidence_type}`, text: c.evidence_type }),
+        (c.assumed_fields || []).length ? el("span", { class: "tag ai", text: "AI guess", title: "Filled in by the model, not verified: " + c.assumed_fields.join(", ") }) : null,
+        el("strong", { text: c.name }),
         el("div", { class: "meta" }, [el("code", { text: c.id }), ` ${c.category}${confidence}`]),
       ]),
       el("td", {}, status),
@@ -427,8 +433,8 @@ function render(bom) {
     const box = el("input", { type: "checkbox", checked: issue.resolved });
     const note = el("input", { type: "text", placeholder: "resolution note", value: issue.resolution_note ?? "" });
     note.setAttribute("aria-label", `resolution note for ${issue.id}`);
-    box.addEventListener("change", () => { issue.resolved = box.checked; });
-    note.addEventListener("change", () => { issue.resolution_note = textOrNull(note.value); });
+    box.addEventListener("change", () => { edits += 1; issue.resolved = box.checked; });
+    note.addEventListener("change", () => { edits += 1; issue.resolution_note = textOrNull(note.value); });
     return el("div", { class: `issue ${issue.severity}` + (issue.resolved ? " resolved" : "") }, [
       el("span", { class: `tag ${issue.severity}`, text: issue.severity }), el("code", { text: issue.id }),
       el("div", { text: issue.message + (issue.component_ids.length ? `  (${issue.component_ids.join(", ")})` : "") }),
@@ -535,7 +541,13 @@ function renderInferred(result) {
         el("td", {}, el("code", { text: row.search_query })),
         links,
       ]),
-      el("tr", { class: "detail" }, el("td", { colSpan: 5 }, [part.reason ? el("div", { text: part.reason }) : null, row.note ? el("div", { class: "note", text: row.note }) : null])),
+      el("tr", { class: "detail" }, el("td", { colSpan: 5 }, [
+        ...(row.products || []).map((p) => el("div", {}, [
+          el("a", { href: p.url, target: "_blank", rel: "noopener noreferrer", text: `${order.sites[p.site].name}: ${p.title || p.url}` }),
+          el("span", { class: `stock ${p.stock}`, text: p.stock === "in_stock" ? "in stock (page checked)" : p.stock === "backorder" ? "backorder" : "stock not verifiable" }),
+        ])),
+        (row.products || []).length ? null : el("div", { text: "No product page found by web search — use the shop search links." }),
+        part.reason ? el("div", { text: part.reason }) : null, row.note ? el("div", { class: "note", text: row.note }) : null])),
     ]));
   }
   $("inferred").replaceChildren(
@@ -546,6 +558,9 @@ function renderInferred(result) {
     el("h2", { text: `Components (${order.components.length}) and where to search for them`, style: "margin-top:16px" }),
     el("p", { class: "hint", text: order.disclaimer + " Shops in bold are the ones the model recommends for that part." }),
     order.power_budget ? el("p", { class: "hint", text: "Power budget (estimate): " + order.power_budget }) : null,
+    el("p", { class: "hint", text: order.availability.checked_at
+      ? `Shop lookup at ${order.availability.checked_at}: product pages found for ${order.availability.parts_with_products} of ${order.availability.parts_total} parts, ${order.availability.in_stock_confirmed} confirmed in stock on the page.` + (order.availability.error ? ` (${order.availability.error})` : "")
+      : `Shop lookup: ${order.availability.method}.` }),
     el("div", { class: "scroll" }, table),
   );
 }
@@ -561,9 +576,18 @@ async function runInfer() {
   tick(); const ticking = setInterval(tick, 1000);
   $("infer-status").classList.remove("hidden");
   try {
+    const editsAtStart = edits;
     const result = await call("/infer", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ job_id: job, review: state.review, model: model || null, mock }) });
-    if (state && state.job_id === job) renderInferred(result);   // ignore a reply for photos that were replaced meanwhile
+    if (state && state.job_id === job) {   // ignore a reply for photos that were replaced meanwhile
+      renderInferred(result);
+      if (edits === editsAtStart) {
+        state.review = result.review;      // critical parts now carry the guess; every check was re-run
+        render(state.review.bom);
+      } else {
+        $("inferred").prepend(el("div", { class: "error", text: "You edited the tables while this was running, so the guess was not written into them. Press “Run again with my edits” to apply it to your current version." }));
+      }
+    }
   } catch (error) {
     if (state && state.job_id === job)
       $("inferred").replaceChildren(el("div", { class: "error", text: "The AI best guess could not be produced: " + error.message + " The parts list above is unaffected. Use the button to try again." }));

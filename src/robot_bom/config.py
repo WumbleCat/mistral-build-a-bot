@@ -33,6 +33,7 @@ class Settings:
     max_retries: int = 2  # extra attempts after a malformed model response
     mock: bool = False
     verify: bool = True  # visibility re-check after pass 1
+    web_search: bool = True  # look up real product pages (Mistral web search) for the order links
     grounding: bool = False  # local Grounding DINO + SAM 2 stage; off = VLM/LLM only
     dino_model: str = "IDEA-Research/grounding-dino-tiny"
     sam_model: str = "facebook/sam2.1-hiera-tiny"
@@ -95,6 +96,7 @@ def load_settings(env: Mapping[str, str] | None = None, *, dotenv: bool = True) 
         max_retries=max(0, max_retries),
         mock=(get("ROBOT_BOM_MOCK") or "").lower() in _TRUTHY,
         verify=(get("VISION_VERIFY") or "1").lower() in _TRUTHY,
+        web_search=(get("ROBOT_BOM_WEB_SEARCH") or "1").lower() in _TRUTHY,
         grounding=(get("ROBOT_BOM_GROUNDING") or "").lower() in _TRUTHY,
         dino_model=get("GROUNDING_DINO_MODEL") or "IDEA-Research/grounding-dino-tiny",
         sam_model=get("GROUNDING_SAM_MODEL") or "facebook/sam2.1-hiera-tiny",
