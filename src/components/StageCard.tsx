@@ -31,6 +31,8 @@ export interface StageCardProps {
   onResumeAudio: () => void;
   onPrev: () => void;
   onNext: () => void;
+  /** Called from the last step's primary button to trigger the build-complete screen. */
+  onFinish?: () => void;
 }
 
 export function StageCard(props: StageCardProps) {
@@ -169,9 +171,15 @@ export function StageCard(props: StageCardProps) {
           <button type="button" className="btn btn-secondary btn-nav" onClick={props.onPrev} disabled={props.isFirst}>
             ← Previous
           </button>
-          <button type="button" className="btn btn-primary btn-nav" onClick={props.onNext} disabled={props.isLast}>
-            Next →
-          </button>
+          {props.isLast && props.onFinish ? (
+            <button type="button" className="btn btn-primary btn-nav" onClick={props.onFinish}>
+              Finish build ▶
+            </button>
+          ) : (
+            <button type="button" className="btn btn-primary btn-nav" onClick={props.onNext} disabled={props.isLast}>
+              Next →
+            </button>
+          )}
         </div>
       </div>
     </section>

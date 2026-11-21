@@ -1,6 +1,45 @@
 import type { AssemblyData } from '../types';
 import type { StepAudioState } from '../hooks/useNarrationEngine';
 
+/** Tiny pixel-style category icon (original, crisp rects). */
+function PartIcon({ category, name }: { category?: string; name: string }) {
+  const c = (category || '').toLowerCase();
+  const hay = `${c} ${name}`.toLowerCase();
+  const P = '#FF8205';
+  const D = '#262C38';
+  const rects = (list: Array<[number, number, number, number, string]>) =>
+    list.map(([x, y, w, h, f], i) => <rect key={i} x={x} y={y} width={w} height={h} fill={f} />);
+  let body;
+  if (/wheel|tyre|tire/.test(hay)) {
+    body = rects([[2, 4, 12, 8, P], [5, 6, 6, 4, D], [6, 7, 4, 2, P]]);
+  } else if (/motor|servo|actuator/.test(hay)) {
+    body = rects([[3, 6, 6, 5, P], [9, 7, 5, 3, '#FFD800']]);
+  } else if (/driver|relay|h-?bridge/.test(hay)) {
+    body = rects([[3, 4, 10, 8, P], [5, 6, 3, 3, D], [9, 6, 2, 4, '#FFAF00']]);
+  } else if (/controller|mcu|arduino|esp|raspberry|board/.test(hay)) {
+    body = rects([[2, 5, 12, 7, '#2A2F3A'], [4, 7, 8, 1, P], [4, 9, 8, 1, P], [12, 6, 2, 3, '#8A90A0']]);
+  } else if (/battery|power|cell|lipo/.test(hay)) {
+    body = rects([[3, 5, 10, 7, P], [11, 7, 2, 3, '#E8E6E1'], [5, 7, 2, 3, D], [8, 7, 2, 3, D]]);
+  } else if (/sensor/.test(hay)) {
+    body = rects([[3, 6, 10, 5, P], [5, 4, 2, 3, '#8A90A0'], [9, 4, 2, 3, '#8A90A0']]);
+  } else if (/chassis|frame|deck|base/.test(hay)) {
+    body = rects([[2, 6, 12, 5, P], [4, 4, 2, 2, D], [10, 4, 2, 2, D]]);
+  } else if (/wire|cable|jumper|lead|harness/.test(hay)) {
+    body = rects([[2, 8, 4, 2, P], [6, 6, 4, 2, '#FFAF00'], [10, 8, 4, 2, '#FFD800']]);
+  } else if (/screw|bolt|nut|fastener|standoff/.test(hay)) {
+    body = rects([[6, 3, 4, 10, '#8A90A0'], [4, 3, 8, 3, P]]);
+  } else if (/breadboard/.test(hay)) {
+    body = rects([[2, 5, 12, 7, '#E8E6E1'], [4, 7, 2, 1, D], [7, 7, 2, 1, D], [10, 7, 2, 1, D], [4, 9, 2, 1, P], [7, 9, 2, 1, P]]);
+  } else {
+    body = rects([[4, 4, 8, 8, P], [6, 6, 4, 4, D]]);
+  }
+  return (
+    <svg viewBox="0 0 16 16" shapeRendering="crispEdges" aria-hidden>
+      {body}
+    </svg>
+  );
+}
+
 export interface NarrationStats {
   ready: number;
   loading: number;
@@ -71,21 +110,20 @@ export function Sidebar({ data, currentIndex, importNotes, onLoadSample, onLoadU
         </section>
       )}
       <section className="card">
-        <h2 className="card-title">Parts list</h2>
-        <ul className="parts-list">
+        <h2 className="card-title">Inventory</h2>
+        <ul className="inv-grid">
           {data.parts.map((p) => {
             const state = activeSet.has(p.id) ? 'active' : installedSet.has(p.id) ? 'installed' : 'pending';
             return (
-              <li key={p.id} className={`part-row part-${state}`}>
-                <span className="part-status" aria-hidden>
-                  {state === 'installed' ? '✓' : state === 'active' ? '●' : '○'}
-                </span>
-                <span className="part-name">{p.name}</span>
-                <span className="part-qty">×{p.quantity}</span>
+              <li key={p.id} className={`inv-slot state-${state}`} title={`${p.name} ×${p.quantity}${p.unit_price != null ? ` · £${p.unit_price.toFixed(2)}` : ''}`}>
+                <PartIcon category={p.category} name={p.name} />
+                <span className="inv-qty">×{p.quantity}</span>
+                {p.unit_price != null && <span className="inv-price">£{p.unit_price.toFixed(2)}</span>}
               </li>
             );
           })}
         </ul>
+        <p className="inv-legend">slot border: amber = installed · flame = in current step · dim = pending</p>
       </section>
 
       {data.relationships && data.relationships.length > 0 && (

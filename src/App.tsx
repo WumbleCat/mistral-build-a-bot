@@ -5,6 +5,7 @@ import { datasetKey, normalizeAssembly } from './lib/adapter';
 import { clearNarrationCaches } from './lib/narration';
 import { buildStepPrompt, clearImageCache, generateStepImage, imageGenerationAvailable, type ImageResult } from './lib/imageGen';
 import { useNarrationEngine } from './hooks/useNarrationEngine';
+import { useGameFx } from './hooks/useGameFx';
 import { Header, type ViewMode } from './components/Header';
 import { StageCard } from './components/StageCard';
 import { Sidebar } from './components/Sidebar';
@@ -43,6 +44,12 @@ export default function App() {
   const [images, setImages] = useState<Record<string, ImageResult>>({});
   const [imageLoading, setImageLoading] = useState(false);
   const [imageAvailable, setImageAvailable] = useState(false);
+  // hangar game-feel state
+  const fx = useGameFx();
+  const [toast, setToast] = useState<string | null>(null);
+  const [complete, setComplete] = useState(false);
+  const prevIndexRef = useRef(index);
+  const toastTimer = useRef<number | null>(null);
   // Exploded-view asset produced by the teardown skill (public/illustrations/manifest.json).
   const [exploded, setExploded] = useState<{ available: boolean; url?: string }>({ available: false });
   // Exploded view is the DEFAULT when available; the toggle is a persistent on/off (not per-step).
@@ -204,6 +211,69 @@ export default function App() {
     setIndex((i) => Math.min(data.steps.length - 1, i + 1));
   };
 
+  // ---- hangar game feel: toast + sounds + keyboard ----
+  useEffect(() => {
+    if (index > prevIndexRef.current && data.steps[index]) {
+      const title = data.steps[index].title.toUpperCase();
+      setToast(`✔ ${title} INSTALLED`);
+      fx.blip('step');
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+      toastTimer.current = window.setTimeout(() => setToast(null), 1500);
+    }
+    prevIndexRef.current = index;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+
+  useEffect(() => {
+    const onLand = () => fx.blip('land');
+    window.addEventListener('bfv:land', onLand);
+    return () => window.removeEventListener('bfv:land', onLand);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const finishBuild = () => {
+    setComplete(true);
+    fx.blip('complete');
+  };
+  const replayBuild = () => {
+    setComplete(false);
+    setIndex(0);
+    setTick((t) => t + 1);
+  };
+
+  useEffect(() => {
+    if (screen !== 'studio') return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (complete) return;
+      switch (e.key) {
+        case 'ArrowRight':
+        case ' ':
+          e.preventDefault();
+          if (mode === 'workbook') workbookNext();
+          else guidedNext();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (mode === 'workbook') workbookPrev();
+          else guidedPrev();
+          break;
+        case 'r':
+        case 'R':
+          window.dispatchEvent(new CustomEvent('bfv:key', { detail: { name: 'resetCam' } }));
+          break;
+        case 'e':
+        case 'E':
+          window.dispatchEvent(new CustomEvent('bfv:key', { detail: { name: 'explode' } }));
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, mode, complete, data.steps.length]);
+
   // ---- audio handlers (workbook) ----
   const playAudio = () => {
     if (step) void play(step);
@@ -327,6 +397,8 @@ export default function App() {
         mode={mode}
         onModeChange={handleModeChange}
         onImportClick={() => setImportOpen(true)}
+        muted={fx.muted}
+        onToggleMuted={fx.toggleMuted}
       />
       <main className="app-main">
         <StageCard
@@ -353,6 +425,7 @@ export default function App() {
           onResumeAudio={resume}
           onPrev={workbookPrev}
           onNext={workbookNext}
+          onFinish={finishBuild}
         />
         <Sidebar
           data={data}
@@ -428,6 +501,59 @@ export default function App() {
       )}
 
       {importOpen && <ImportDialog onLoad={handleImport} onClose={() => setImportOpen(false)} />}
+
+      {toast && (
+        <div className="toast" role="status">
+          <span className="toast-title">{toast}</span>
+          <span className="toast-sub">+100 XP</span>
+        </div>
+      )}
+
+      <div className="key-hints" aria-hidden>
+        <span><b>SPACE/→</b> next</span>
+        <span><b>←</b> prev</span>
+        <span><b>R</b> reset view</span>
+        <span><b>E</b> explode</span>
+        <span><b>{fx.muted ? 'SND OFF' : 'SND ON'}</b> header toggle</span>
+      </div>
+
+      {complete && (
+        <div className="complete-overlay" role="dialog" aria-label="Build complete">
+          <div className="confetti" aria-hidden>
+            {Array.from({ length: 48 }, (_, i) => (
+              <i
+                key={i}
+                style={{
+                  left: `${(i * 97) % 100}%`,
+                  background: ['#FFD800', '#FFAF00', '#FF8205', '#FA500F', '#E10500'][i % 5],
+                  animationDuration: `${1.6 + (i % 7) * 0.25}s`,
+                  animationDelay: `${(i % 11) * 0.08}s`,
+                }}
+              />
+            ))}
+          </div>
+          <div className="card complete-card">
+            <h2 className="complete-title">BUILD COMPLETE</h2>
+            <p className="complete-stats">
+              <span className="num">{data.parts.length}</span> parts installed ·{' '}
+              <span className="num">{data.steps.length}</span> steps ·{' '}
+              {data.bom_total != null && (
+                <>total <span className="num">£{data.bom_total.toFixed(2)}</span></>
+              )}
+              <br />
+              +{data.steps.length * 100} XP earned
+            </p>
+            <div className="card-actions" style={{ justifyContent: 'center', marginTop: 16 }}>
+              <button type="button" className="btn btn-primary" onClick={replayBuild}>
+                Replay build
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={() => setComplete(false)}>
+                Keep exploring
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
