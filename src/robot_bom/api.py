@@ -27,7 +27,8 @@ MAX_IMAGES = 8
 OUTPUT_ROOT = Path("output") / "web"
 _JOB_ID = re.compile(r"^[0-9a-f]{12}$")
 _IMAGE_ID = re.compile(r"^[a-z0-9-]{1,120}$")
-_INDEX_HTML = Path(__file__).parent / "web" / "index.html"
+_FONT_NAME = re.compile(r"^[a-z0-9-]{1,80}\.woff2$")
+_INDEX_HTML =Path(__file__).parent / "web" / "index.html"
 
 app = FastAPI(title="Robot BOM builder", version="0.1.0")
 
@@ -35,6 +36,14 @@ app = FastAPI(title="Robot BOM builder", version="0.1.0")
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def index() -> str:
     return _INDEX_HTML.read_text(encoding="utf-8")
+
+
+@app.get("/fonts/{name}", include_in_schema=False)
+def font(name: str) -> FileResponse:
+    """The page's two self-hosted fonts, so it needs no font CDN."""
+    if not _FONT_NAME.fullmatch(name) or not (path := _INDEX_HTML.parent / "fonts" / name).is_file():
+        raise HTTPException(status_code=404, detail="Unknown font.")
+    return FileResponse(path, media_type="font/woff2", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @app.get("/health")
