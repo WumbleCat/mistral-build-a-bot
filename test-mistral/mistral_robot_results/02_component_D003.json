@@ -1,0 +1,21 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D003",
+    "name": "Rubber Off-Road Wheel",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Region crop clearly shows black rubber tire with deep chevron/V-shaped tread pattern",
+      "Full robot image shows four identical wheels mounted at corners of green chassis",
+      "Thick rubber sidewall and aggressive tread blocks visible in closeup crop"
+    ],
+    "other_possibilities": [
+      "Could be foam-filled tire rather than air-filled pneumatic",
+      "Material could potentially be hard plastic molded to look like rubber"
+    ],
+    "confidence": 0.92,
+    "sku": null,
+    "needs_closeup": false
+  }
+}

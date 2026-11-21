@@ -1,0 +1,23 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D005",
+    "name": "battery_pack",
+    "category": "power_supply",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Black rectangular plastic enclosure mounted across the green frame rails at the rear/top of the chassis",
+      "Thick red and black power leads exiting from one end of the housing",
+      "Form factor and wiring consistent with a removable battery pack or holder (e.g., LiPo or NiMH)",
+      "No visible motor leads or signal connectors, ruling out ESC or receiver"
+    ],
+    "other_possibilities": [
+      "Battery eliminator circuit (BEC) module",
+      "Main power switch / distribution housing",
+      "Receiver battery pack"
+    ],
+    "confidence": 0.9,
+    "sku": null,
+    "needs_closeup": false
+  }
+}

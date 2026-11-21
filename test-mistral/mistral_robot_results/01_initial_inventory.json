@@ -1,0 +1,183 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "parts": [
+      {
+        "id": "W001",
+        "category": "wheel",
+        "description": "large black treaded wheel at top-left, partly cropped by left image edge",
+        "box_xyxy": [
+          0,
+          31,
+          91,
+          244
+        ],
+        "evidence": "visible",
+        "confidence": 0.95,
+        "exact_sku": null
+      },
+      {
+        "id": "W002",
+        "category": "wheel",
+        "description": "large black treaded wheel at top-right",
+        "box_xyxy": [
+          313,
+          31,
+          407,
+          224
+        ],
+        "evidence": "visible",
+        "confidence": 0.95,
+        "exact_sku": null
+      },
+      {
+        "id": "W003",
+        "category": "wheel",
+        "description": "large black treaded wheel at bottom-left",
+        "box_xyxy": [
+          39,
+          407,
+          153,
+          620
+        ],
+        "evidence": "visible",
+        "confidence": 0.95,
+        "exact_sku": null
+      },
+      {
+        "id": "W004",
+        "category": "wheel",
+        "description": "large black treaded wheel at bottom-right",
+        "box_xyxy": [
+          363,
+          354,
+          438,
+          535
+        ],
+        "evidence": "visible",
+        "confidence": 0.95,
+        "exact_sku": null
+      },
+      {
+        "id": "C001",
+        "category": "frame/chassis",
+        "description": "bright green tubular plastic frame/chassis holding the electronics and wheels",
+        "box_xyxy": [
+          124,
+          58,
+          365,
+          632
+        ],
+        "evidence": "visible",
+        "confidence": 0.9,
+        "exact_sku": null
+      },
+      {
+        "id": "P001",
+        "category": "battery/power enclosure",
+        "description": "black rectangular power/battery enclosure across the top with red and black leads; internal cells not visible",
+        "box_xyxy": [
+          104,
+          0,
+          318,
+          64
+        ],
+        "evidence": "visible",
+        "confidence": 0.85,
+        "exact_sku": null
+      },
+      {
+        "id": "B001",
+        "category": "breadboard",
+        "description": "white solderless breadboard in the center with red/yellow indicator LEDs and many jumpers",
+        "box_xyxy": [
+          151,
+          174,
+          263,
+          326
+        ],
+        "evidence": "visible",
+        "confidence": 0.9,
+        "exact_sku": null
+      },
+      {
+        "id": "M001",
+        "category": "module",
+        "description": "upper blue PCB module near the top with a lit red LED; exact function/SKU not legible",
+        "box_xyxy": [
+          181,
+          99,
+          303,
+          207
+        ],
+        "evidence": "visible",
+        "confidence": 0.75,
+        "exact_sku": null
+      },
+      {
+        "id": "M002",
+        "category": "module",
+        "description": "lower blue PCB module near bottom-center, partly covered by tape/wires; exact function/SKU not legible",
+        "box_xyxy": [
+          220,
+          386,
+          303,
+          493
+        ],
+        "evidence": "visible",
+        "confidence": 0.7,
+        "exact_sku": null
+      },
+      {
+        "id": "O001",
+        "category": "other",
+        "description": "gray rectangular metal-looking block beneath the breadboard; function not identifiable from the image",
+        "box_xyxy": [
+          157,
+          306,
+          291,
+          459
+        ],
+        "evidence": "visible",
+        "confidence": 0.55,
+        "exact_sku": null
+      },
+      {
+        "id": "WIR001",
+        "category": "wiring",
+        "description": "multicolored jumper wire harness routed across breadboard, modules, and frame",
+        "box_xyxy": [
+          150,
+          70,
+          360,
+          620
+        ],
+        "evidence": "visible",
+        "confidence": 0.9,
+        "exact_sku": null
+      },
+      {
+        "id": "T001",
+        "category": "tape",
+        "description": "silver duct tape wrapped on the right/front section, likely securing components",
+        "box_xyxy": [
+          318,
+          250,
+          386,
+          535
+        ],
+        "evidence": "visible",
+        "confidence": 0.8,
+        "exact_sku": null
+      }
+    ],
+    "uncertainties": [
+      "Exact functions, manufacturers, and SKUs of the blue PCB modules are not legible; they may be relay/driver/controller boards but this is not confirmed.",
+      "Individual wire endpoints are obscured by tape, the breadboard, and overlapping modules.",
+      "Wheel hubs, axles, and any motors are mostly hidden; no motor specifications, quantities, or ratings are inferred.",
+      "Contents of the black top enclosure are not visible, so battery count, chemistry, and capacity are unknown.",
+      "The gray rectangular block could be a heatsink, shield, or enclosure; its purpose is uncertain.",
+      "The silver tape appears to be holding the front/right assembly, but the exact secured part is not fully visible."
+    ]
+  }
+}

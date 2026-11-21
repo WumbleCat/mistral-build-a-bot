@@ -1,0 +1,16 @@
+name,category,quantity,evidence,source_ids,sku,product_url,review_required,notes
+"off-road rubber wheel/tire (black, chevron tread)",wheel,4.0,visible,"['W001', 'W002', 'W003', 'W004', 'D001', 'D002', 'D003', 'D006', 'D007', 'D012', 'D013', 'D014']",,,False,"Four distinct wheels at the four corners; no brand, size code, or SKU legible; rim/hub not visible; could be solid/foam-filled rather than pneumatic."
+green tubular frame / roll-cage chassis,frame/chassis,1.0,visible,"['C001', 'D008']",,,False,"Rigid neon-green open tubular frame holding electronics and wheels; structural tubing, not an enclosed body shell."
+black rectangular battery/power enclosure,battery/power enclosure,1.0,visible,"['P001', 'D004', 'D005']",,,True,"Sealed black case across the top with thick red/black leads; internal cells, chemistry, voltage, and capacity not visible."
+solderless breadboard,breadboard,1.0,visible,['B001'],,,False,White breadboard in the center with red/yellow indicator LEDs and many jumpers.
+"blue PCB module (likely single-channel relay, Songle-style)",relay_module,2.0,visible,"['M001', 'M002', 'D009', 'D010', 'D011']",,,True,"Two blue boards; upper has a lit red LED and SONGLE silkscreen with screw terminals; lower is partly covered by tape/wires. Exact model, coil voltage, and pinout not legible; needs closeup."
+gray rectangular block (function unknown),other,1.0,visible,['O001'],,,True,"Metal-looking block directly beneath the breadboard; could be a heatsink, shield, or enclosure; purpose and mounting unclear."
+multicolored jumper wire harness,wiring,1.0,visible,['WIR001'],,,False,"Grouped harness routed across breadboard, modules, and frame; individual endpoints partly obscured by tape and overlapping parts."
+silver duct tape,tape,1.0,visible,['T001'],,,False,"Wrapped on the right/front frame section, likely securing an assembly; the exact secured part is not fully visible."
+drive motor(s),motor,,inferred,['mechanical.possible_missing_parts'],,,True,"Four wheels imply drive, but no motor cans, gearboxes, or hub motors are visible; axles/hubs hidden. Motor count and ratings unknown and not inferred."
+steering servo / steering linkage,steering,,inferred,['mechanical.possible_missing_parts'],,,True,"No servo horn, tie rods, or steering knuckles visible; front wheels may be fixed or steered by a hidden mechanism."
+motor driver / ESC,motor_driver,,inferred,['mechanical.possible_missing_parts'],,,True,"Blue modules may be relays, but no motor leads or ESC are clearly visible; the link between control electronics and any drive motors is not shown."
+axles / wheel hubs,mechanical hardware,,inferred,['mechanical.possible_missing_parts'],,,True,Wheel mounting hardware is obscured by tires and the green frame.
+battery cells inside enclosure,battery cells,,inferred,"['P001', 'mechanical.possible_missing_parts']",,,True,"Black enclosure is sealed; cell count, chemistry, voltage, and capacity are not visible."
+main controller / receiver (MCU),controller,,inferred,['mechanical.possible_missing_parts'],,,True,Breadboard carries components and LEDs but no clearly identifiable microcontroller or receiver board driving the modules is visible.
+power switch,switch,,inferred,['mechanical.possible_missing_parts'],,,True,No obvious switch is visible in the wiring; power control method is unknown.

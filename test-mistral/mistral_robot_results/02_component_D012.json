@@ -1,0 +1,19 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D012",
+    "name": "treaded off-road wheel/tire",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Black rubber tire with deep chevron tread pattern clearly visible in crop",
+      "Wheel mounted to green tubular chassis frame",
+      "Silver duct tape visible on adjacent chassis component near wheel hub",
+      "Consistent with one of four wheels visible in full robot image"
+    ],
+    "other_possibilities": [],
+    "confidence": 0.98,
+    "sku": null,
+    "needs_closeup": false
+  }
+}

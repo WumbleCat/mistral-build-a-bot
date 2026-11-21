@@ -1,0 +1,24 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D004",
+    "name": "battery pack / power supply housing",
+    "category": "power",
+    "status": "incorrect_detection",
+    "visual_evidence": [
+      "Black rectangular sealed enclosure mounted on top of green structural frame",
+      "Thick red and black power cables emerging from one end",
+      "Small white icon/marking on top surface not legible",
+      "Green frame visible only at bottom edge of crop; main subject is the black box, not the frame"
+    ],
+    "other_possibilities": [
+      "Hard-case LiPo battery pack",
+      "Battery holder with cells inside",
+      "Power distribution module",
+      "ESC housing (less likely given rear mounting location)"
+    ],
+    "confidence": 0.8,
+    "sku": null,
+    "needs_closeup": true
+  }
+}

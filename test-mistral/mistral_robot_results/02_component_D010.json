@@ -1,0 +1,25 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D010",
+    "name": "Single-channel relay module (Songle), not a battery/power enclosure",
+    "category": "relay_module",
+    "status": "incorrect_detection",
+    "visual_evidence": [
+      "Blue PCB with visible 'SONGLE' silkscreen and a single blue relay cube",
+      "Illuminated red status LED on the module",
+      "Screw-terminal block on the right edge with wires attached",
+      "Mounted next to a breadboard with red/black/yellow/white jumper wires",
+      "No battery cells, battery holder, or enclosure visible anywhere in the crop",
+      "Full image shows a separate black rectangular enclosure at the top of the green chassis that is the likely battery/power enclosure, outside this crop"
+    ],
+    "other_possibilities": [
+      "Actual battery/power enclosure appears to be the black rectangular case at the top of Image 1, not the cropped region",
+      "Could be mistaken for a BMS or power distribution board, but the relay cube and SONGLE branding are definitive",
+      "Detection bounding box may be misaligned with the intended battery enclosure"
+    ],
+    "confidence": 0.92,
+    "sku": null,
+    "needs_closeup": true
+  }
+}

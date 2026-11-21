@@ -1,0 +1,21 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D008",
+    "name": "bright green tubular chassis / roll-cage frame",
+    "category": "chassis_frame",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Image 1 shows a neon-green plastic tubular frame forming the open roll-cage/body of the RC car, with four black wheels mounted to its axles",
+      "Image 2 crop clearly shows the same green frame rails wrapping around the breadboard, blue relay module, and wiring",
+      "The green structure is structural tubing, not wire insulation, and contrasts sharply with black tires, silver duct tape, and red/yellow/orange leads"
+    ],
+    "other_possibilities": [
+      "Could be confused with green wiring, but no green conductors are visible; the green is rigid frame material",
+      "Might be described as a body shell, but it is an open frame chassis rather than an enclosed body"
+    ],
+    "confidence": 0.95,
+    "sku": null,
+    "needs_closeup": false
+  }
+}

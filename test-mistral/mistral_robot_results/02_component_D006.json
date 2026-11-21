@@ -1,0 +1,21 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D006",
+    "name": "rubber wheel (knobby tire)",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Crop clearly shows a black rubber tire with deep chevron tread pattern",
+      "Wheel is mounted on the green tubular chassis of the robot",
+      "Corresponds to one of the four large off-road wheels visible in the full robot image",
+      "Silver duct tape wrapped near the wheel hub matches the front-right corner of the full assembly"
+    ],
+    "other_possibilities": [
+      "Tread pattern could superficially resemble a rubber track or bumper, but the circular profile and axle mounting confirm it is a wheel"
+    ],
+    "confidence": 0.95,
+    "sku": null,
+    "needs_closeup": false
+  }
+}

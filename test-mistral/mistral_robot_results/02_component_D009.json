@@ -1,0 +1,23 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D009",
+    "name": "Single-channel electromechanical relay module",
+    "category": "relay_module",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Blue PCB with black rectangular relay housing visible",
+      "Red LED indicator illuminated on module",
+      "Screw terminal block present on module edge",
+      "Multiple colored jumper wires (red, black, yellow, white) connected to control pins",
+      "Mounted on upper green chassis frame adjacent to breadboard"
+    ],
+    "other_possibilities": [
+      "Brand and exact model not legible (common form factor but voltage rating unconfirmed)",
+      "Could be 5V or 12V coil variant - requires closeup to verify"
+    ],
+    "confidence": 0.9,
+    "sku": null,
+    "needs_closeup": true
+  }
+}

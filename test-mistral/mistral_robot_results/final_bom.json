@@ -1,0 +1,246 @@
+{
+  "model": "mistral-large-4",
+  "visible_bom": [
+    {
+      "name": "off-road rubber wheel/tire (black, chevron tread)",
+      "category": "wheel",
+      "quantity": 4,
+      "evidence": "visible",
+      "source_ids": [
+        "W001",
+        "W002",
+        "W003",
+        "W004",
+        "D001",
+        "D002",
+        "D003",
+        "D006",
+        "D007",
+        "D012",
+        "D013",
+        "D014"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": false,
+      "notes": "Four distinct wheels at the four corners; no brand, size code, or SKU legible; rim/hub not visible; could be solid/foam-filled rather than pneumatic."
+    },
+    {
+      "name": "green tubular frame / roll-cage chassis",
+      "category": "frame/chassis",
+      "quantity": 1,
+      "evidence": "visible",
+      "source_ids": [
+        "C001",
+        "D008"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": false,
+      "notes": "Rigid neon-green open tubular frame holding electronics and wheels; structural tubing, not an enclosed body shell."
+    },
+    {
+      "name": "black rectangular battery/power enclosure",
+      "category": "battery/power enclosure",
+      "quantity": 1,
+      "evidence": "visible",
+      "source_ids": [
+        "P001",
+        "D004",
+        "D005"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "Sealed black case across the top with thick red/black leads; internal cells, chemistry, voltage, and capacity not visible."
+    },
+    {
+      "name": "solderless breadboard",
+      "category": "breadboard",
+      "quantity": 1,
+      "evidence": "visible",
+      "source_ids": [
+        "B001"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": false,
+      "notes": "White breadboard in the center with red/yellow indicator LEDs and many jumpers."
+    },
+    {
+      "name": "blue PCB module (likely single-channel relay, Songle-style)",
+      "category": "relay_module",
+      "quantity": 2,
+      "evidence": "visible",
+      "source_ids": [
+        "M001",
+        "M002",
+        "D009",
+        "D010",
+        "D011"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "Two blue boards; upper has a lit red LED and SONGLE silkscreen with screw terminals; lower is partly covered by tape/wires. Exact model, coil voltage, and pinout not legible; needs closeup."
+    },
+    {
+      "name": "gray rectangular block (function unknown)",
+      "category": "other",
+      "quantity": 1,
+      "evidence": "visible",
+      "source_ids": [
+        "O001"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "Metal-looking block directly beneath the breadboard; could be a heatsink, shield, or enclosure; purpose and mounting unclear."
+    },
+    {
+      "name": "multicolored jumper wire harness",
+      "category": "wiring",
+      "quantity": 1,
+      "evidence": "visible",
+      "source_ids": [
+        "WIR001"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": false,
+      "notes": "Grouped harness routed across breadboard, modules, and frame; individual endpoints partly obscured by tape and overlapping parts."
+    },
+    {
+      "name": "silver duct tape",
+      "category": "tape",
+      "quantity": 1,
+      "evidence": "visible",
+      "source_ids": [
+        "T001"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": false,
+      "notes": "Wrapped on the right/front frame section, likely securing an assembly; the exact secured part is not fully visible."
+    }
+  ],
+  "inferred_or_unknown": [
+    {
+      "name": "drive motor(s)",
+      "category": "motor",
+      "quantity": null,
+      "evidence": "inferred",
+      "source_ids": [
+        "mechanical.possible_missing_parts"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "Four wheels imply drive, but no motor cans, gearboxes, or hub motors are visible; axles/hubs hidden. Motor count and ratings unknown and not inferred."
+    },
+    {
+      "name": "steering servo / steering linkage",
+      "category": "steering",
+      "quantity": null,
+      "evidence": "inferred",
+      "source_ids": [
+        "mechanical.possible_missing_parts"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "No servo horn, tie rods, or steering knuckles visible; front wheels may be fixed or steered by a hidden mechanism."
+    },
+    {
+      "name": "motor driver / ESC",
+      "category": "motor_driver",
+      "quantity": null,
+      "evidence": "inferred",
+      "source_ids": [
+        "mechanical.possible_missing_parts"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "Blue modules may be relays, but no motor leads or ESC are clearly visible; the link between control electronics and any drive motors is not shown."
+    },
+    {
+      "name": "axles / wheel hubs",
+      "category": "mechanical hardware",
+      "quantity": null,
+      "evidence": "inferred",
+      "source_ids": [
+        "mechanical.possible_missing_parts"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "Wheel mounting hardware is obscured by tires and the green frame."
+    },
+    {
+      "name": "battery cells inside enclosure",
+      "category": "battery cells",
+      "quantity": null,
+      "evidence": "inferred",
+      "source_ids": [
+        "P001",
+        "mechanical.possible_missing_parts"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "Black enclosure is sealed; cell count, chemistry, voltage, and capacity are not visible."
+    },
+    {
+      "name": "main controller / receiver (MCU)",
+      "category": "controller",
+      "quantity": null,
+      "evidence": "inferred",
+      "source_ids": [
+        "mechanical.possible_missing_parts"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "Breadboard carries components and LEDs but no clearly identifiable microcontroller or receiver board driving the modules is visible."
+    },
+    {
+      "name": "power switch",
+      "category": "switch",
+      "quantity": null,
+      "evidence": "inferred",
+      "source_ids": [
+        "mechanical.possible_missing_parts"
+      ],
+      "sku": null,
+      "product_url": null,
+      "review_required": true,
+      "notes": "No obvious switch is visible in the wiring; power control method is unknown."
+    }
+  ],
+  "unresolved": [
+    "Exact functions, manufacturers, and SKUs of the blue PCB modules are not legible; they may be relay/driver/controller boards but this is not confirmed.",
+    "Individual wire endpoints are obscured by tape, the breadboard, and overlapping modules.",
+    "Wheel hubs, axles, and any motors are mostly hidden; no motor specifications, quantities, or ratings are inferred.",
+    "Contents of the black top enclosure are not visible, so battery count, chemistry, and capacity are unknown.",
+    "The gray rectangular block could be a heatsink, shield, or enclosure; its purpose is uncertain.",
+    "The silver tape appears to be holding the front/right assembly, but the exact secured part is not fully visible.",
+    "Are there drive motors inside the wheel hubs or mounted to the chassis, and how many are there?",
+    "What is the exact function of the gray rectangular block (O001) beneath the breadboard?",
+    "Are the two blue PCB modules relay modules, motor drivers, or controllers, and what are their exact pin connections?",
+    "Is there a steering servo or linkage hidden under the duct tape or frame, and are the front wheels steerable?",
+    "What is the voltage, chemistry, and capacity of the battery pack inside the black enclosure P001?",
+    "Which component acts as the main controller driving the blue modules?",
+    "What exactly is being secured by the silver duct tape on the right/front section?",
+    "Do the relay modules switch motor power directly, or do they drive another hidden stage?"
+  ],
+  "validation_issues": [
+    "Unknown source ID: drive motor(s)",
+    "Unknown source ID: steering servo / steering linkage",
+    "Unknown source ID: motor driver / ESC",
+    "Unknown source ID: axles / wheel hubs",
+    "Unknown source ID: battery cells inside enclosure",
+    "Unknown source ID: main controller / receiver (MCU)",
+    "Unknown source ID: power switch"
+  ]
+}

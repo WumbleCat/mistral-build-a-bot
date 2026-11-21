@@ -1,0 +1,20 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D007",
+    "name": "rubber wheel (off-road tire)",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Region crop shows a black rubber tire with deep chevron/V-shaped tread blocks and thick sidewall",
+      "Full robot image shows four matching knobby black wheels mounted at the corners of the green chassis",
+      "Tread pattern, color, and proportions in the crop are consistent with the wheels visible on the full robot"
+    ],
+    "other_possibilities": [
+      "Generic hobby/RC off-road tire; no brand marking, size, or SKU is legible in either image"
+    ],
+    "confidence": 0.95,
+    "sku": null,
+    "needs_closeup": false
+  }
+}

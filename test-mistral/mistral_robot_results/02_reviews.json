@@ -1,0 +1,360 @@
+[
+  {
+    "id": "D001",
+    "name": "rubber wheel",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Full robot image shows four black rubber wheels with prominent chevron/herringbone tread pattern mounted on green chassis",
+      "Region crop confirms black rubber tire construction with deep V-shaped tread grooves and thick sidewall",
+      "Tire appears to be standard off-road RC style",
+      "No legible brand markings, size codes, or SKU visible on tire surface"
+    ],
+    "other_possibilities": [
+      "Could be solid rubber or foam-filled rather than pneumatic air-filled",
+      "Rim/hub material and diameter not visible in provided crop"
+    ],
+    "confidence": 0.95,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      34.46933364868164,
+      394.20709228515625,
+      154.76898193359375,
+      591.7395629882812
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D002",
+    "name": "black rubber off-road wheel/tire",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Region crop shows a black rubber tire with deep chevron/V-shaped tread blocks and thick sidewall",
+      "Full robot image shows four matching knobby wheels mounted on the green chassis",
+      "Tread pattern is crisp and unobstructed in the crop; no cracks or damage apparent",
+      "No sidewall text, size marking, or SKU is legible"
+    ],
+    "other_possibilities": [
+      "Could be solid rubber or foam-filled rather than pneumatic; construction cannot be confirmed from image",
+      "Exact rim diameter/width not measurable from the crop"
+    ],
+    "confidence": 0.95,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      0.675884485244751,
+      27.49079704284668,
+      92.94223022460938,
+      236.52523803710938
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D003",
+    "name": "Rubber Off-Road Wheel",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Region crop clearly shows black rubber tire with deep chevron/V-shaped tread pattern",
+      "Full robot image shows four identical wheels mounted at corners of green chassis",
+      "Thick rubber sidewall and aggressive tread blocks visible in closeup crop"
+    ],
+    "other_possibilities": [
+      "Could be foam-filled tire rather than air-filled pneumatic",
+      "Material could potentially be hard plastic molded to look like rubber"
+    ],
+    "confidence": 0.92,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      307.5390319824219,
+      26.57257080078125,
+      406.26336669921875,
+      208.44488525390625
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D004",
+    "name": "battery pack / power supply housing",
+    "category": "power",
+    "status": "incorrect_detection",
+    "visual_evidence": [
+      "Black rectangular sealed enclosure mounted on top of green structural frame",
+      "Thick red and black power cables emerging from one end",
+      "Small white icon/marking on top surface not legible",
+      "Green frame visible only at bottom edge of crop; main subject is the black box, not the frame"
+    ],
+    "other_possibilities": [
+      "Hard-case LiPo battery pack",
+      "Battery holder with cells inside",
+      "Power distribution module",
+      "ESC housing (less likely given rear mounting location)"
+    ],
+    "confidence": 0.8,
+    "sku": null,
+    "needs_closeup": true,
+    "box_xyxy": [
+      101.9166030883789,
+      0.5903244018554688,
+      328.0071716308594,
+      64.61336517333984
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D005",
+    "name": "battery_pack",
+    "category": "power_supply",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Black rectangular plastic enclosure mounted across the green frame rails at the rear/top of the chassis",
+      "Thick red and black power leads exiting from one end of the housing",
+      "Form factor and wiring consistent with a removable battery pack or holder (e.g., LiPo or NiMH)",
+      "No visible motor leads or signal connectors, ruling out ESC or receiver"
+    ],
+    "other_possibilities": [
+      "Battery eliminator circuit (BEC) module",
+      "Main power switch / distribution housing",
+      "Receiver battery pack"
+    ],
+    "confidence": 0.9,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      102.12290954589844,
+      0.628809928894043,
+      328.1018371582031,
+      64.61732482910156
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D006",
+    "name": "rubber wheel (knobby tire)",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Crop clearly shows a black rubber tire with deep chevron tread pattern",
+      "Wheel is mounted on the green tubular chassis of the robot",
+      "Corresponds to one of the four large off-road wheels visible in the full robot image",
+      "Silver duct tape wrapped near the wheel hub matches the front-right corner of the full assembly"
+    ],
+    "other_possibilities": [
+      "Tread pattern could superficially resemble a rubber track or bumper, but the circular profile and axle mounting confirm it is a wheel"
+    ],
+    "confidence": 0.95,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      320.5638732910156,
+      343.0257873535156,
+      437.6979675292969,
+      507.69635009765625
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D007",
+    "name": "rubber wheel (off-road tire)",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Region crop shows a black rubber tire with deep chevron/V-shaped tread blocks and thick sidewall",
+      "Full robot image shows four matching knobby black wheels mounted at the corners of the green chassis",
+      "Tread pattern, color, and proportions in the crop are consistent with the wheels visible on the full robot"
+    ],
+    "other_possibilities": [
+      "Generic hobby/RC off-road tire; no brand marking, size, or SKU is legible in either image"
+    ],
+    "confidence": 0.95,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      34.59374237060547,
+      394.52996826171875,
+      154.81935119628906,
+      591.551513671875
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D008",
+    "name": "bright green tubular chassis / roll-cage frame",
+    "category": "chassis_frame",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Image 1 shows a neon-green plastic tubular frame forming the open roll-cage/body of the RC car, with four black wheels mounted to its axles",
+      "Image 2 crop clearly shows the same green frame rails wrapping around the breadboard, blue relay module, and wiring",
+      "The green structure is structural tubing, not wire insulation, and contrasts sharply with black tires, silver duct tape, and red/yellow/orange leads"
+    ],
+    "other_possibilities": [
+      "Could be confused with green wiring, but no green conductors are visible; the green is rigid frame material",
+      "Might be described as a body shell, but it is an open frame chassis rather than an enclosed body"
+    ],
+    "confidence": 0.95,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      124.91809844970703,
+      59.50643539428711,
+      344.03948974609375,
+      435.79168701171875
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D009",
+    "name": "Single-channel electromechanical relay module",
+    "category": "relay_module",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Blue PCB with black rectangular relay housing visible",
+      "Red LED indicator illuminated on module",
+      "Screw terminal block present on module edge",
+      "Multiple colored jumper wires (red, black, yellow, white) connected to control pins",
+      "Mounted on upper green chassis frame adjacent to breadboard"
+    ],
+    "other_possibilities": [
+      "Brand and exact model not legible (common form factor but voltage rating unconfirmed)",
+      "Could be 5V or 12V coil variant - requires closeup to verify"
+    ],
+    "confidence": 0.9,
+    "sku": null,
+    "needs_closeup": true,
+    "box_xyxy": [
+      14.316630363464355,
+      2.66876220703125,
+      443.2171936035156,
+      623.4917602539062
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D010",
+    "name": "Single-channel relay module (Songle), not a battery/power enclosure",
+    "category": "relay_module",
+    "status": "incorrect_detection",
+    "visual_evidence": [
+      "Blue PCB with visible 'SONGLE' silkscreen and a single blue relay cube",
+      "Illuminated red status LED on the module",
+      "Screw-terminal block on the right edge with wires attached",
+      "Mounted next to a breadboard with red/black/yellow/white jumper wires",
+      "No battery cells, battery holder, or enclosure visible anywhere in the crop",
+      "Full image shows a separate black rectangular enclosure at the top of the green chassis that is the likely battery/power enclosure, outside this crop"
+    ],
+    "other_possibilities": [
+      "Actual battery/power enclosure appears to be the black rectangular case at the top of Image 1, not the cropped region",
+      "Could be mistaken for a BMS or power distribution board, but the relay cube and SONGLE branding are definitive",
+      "Detection bounding box may be misaligned with the intended battery enclosure"
+    ],
+    "confidence": 0.92,
+    "sku": null,
+    "needs_closeup": true,
+    "box_xyxy": [
+      176.13510131835938,
+      84.42414855957031,
+      303.583251953125,
+      194.73446655273438
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D011",
+    "name": "single-channel relay module",
+    "category": "relay_module",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "blue PCB with screw terminal block on one edge",
+      "illuminated red status LED",
+      "SONGLE branding visible on PCB silkscreen",
+      "mounted above white breadboard within green chassis",
+      "connected with red/black power wires and yellow signal wire"
+    ],
+    "other_possibilities": [
+      "motor driver module",
+      "power distribution board"
+    ],
+    "confidence": 0.88,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      6.948909759521484,
+      2.0598220825195312,
+      442.6936340332031,
+      624.677734375
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D012",
+    "name": "treaded off-road wheel/tire",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Black rubber tire with deep chevron tread pattern clearly visible in crop",
+      "Wheel mounted to green tubular chassis frame",
+      "Silver duct tape visible on adjacent chassis component near wheel hub",
+      "Consistent with one of four wheels visible in full robot image"
+    ],
+    "other_possibilities": [],
+    "confidence": 0.98,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      308.90753173828125,
+      343.03021240234375,
+      437.85980224609375,
+      508.7082214355469
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D013",
+    "name": "rubber wheel",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Image 2 crop clearly shows black rubber tire with deep chevron/V-shaped tread pattern",
+      "Image 1 shows four matching wheels mounted on the green chassis at each corner",
+      "Tread and sidewall appear intact with no visible punctures, cuts, or embedded debris"
+    ],
+    "other_possibilities": [
+      "Could be mistaken for a segment of a continuous track, but the circular profile and axle hub mounting confirm it is an individual wheel"
+    ],
+    "confidence": 0.98,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      0.8147299289703369,
+      27.742290496826172,
+      92.84379577636719,
+      236.40151977539062
+    ],
+    "origin": "dino_sam"
+  },
+  {
+    "id": "D014",
+    "name": "rubber wheel/tire",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Black rubber tire with deep chevron/V-shaped tread pattern clearly visible in region crop",
+      "Wheel mounted on green tubular chassis, one of four wheels visible on robot",
+      "Tire appears to be standard RC-style pneumatic or foam-filled wheel with thick rubber sidewall"
+    ],
+    "other_possibilities": [],
+    "confidence": 0.98,
+    "sku": null,
+    "needs_closeup": false,
+    "box_xyxy": [
+      307.7076110839844,
+      26.61947250366211,
+      406.4024353027344,
+      208.41650390625
+    ],
+    "origin": "dino_sam"
+  }
+]

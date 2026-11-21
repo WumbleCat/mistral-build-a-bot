@@ -1,0 +1,18 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D014",
+    "name": "rubber wheel/tire",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Black rubber tire with deep chevron/V-shaped tread pattern clearly visible in region crop",
+      "Wheel mounted on green tubular chassis, one of four wheels visible on robot",
+      "Tire appears to be standard RC-style pneumatic or foam-filled wheel with thick rubber sidewall"
+    ],
+    "other_possibilities": [],
+    "confidence": 0.98,
+    "sku": null,
+    "needs_closeup": false
+  }
+}

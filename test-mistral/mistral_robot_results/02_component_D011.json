@@ -1,0 +1,23 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D011",
+    "name": "single-channel relay module",
+    "category": "relay_module",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "blue PCB with screw terminal block on one edge",
+      "illuminated red status LED",
+      "SONGLE branding visible on PCB silkscreen",
+      "mounted above white breadboard within green chassis",
+      "connected with red/black power wires and yellow signal wire"
+    ],
+    "other_possibilities": [
+      "motor driver module",
+      "power distribution board"
+    ],
+    "confidence": 0.88,
+    "sku": null,
+    "needs_closeup": false
+  }
+}

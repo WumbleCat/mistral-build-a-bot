@@ -1,0 +1,20 @@
+{
+  "model": "mistral-large-4",
+  "result": {
+    "id": "D013",
+    "name": "rubber wheel",
+    "category": "wheel",
+    "status": "visible_confirmed",
+    "visual_evidence": [
+      "Image 2 crop clearly shows black rubber tire with deep chevron/V-shaped tread pattern",
+      "Image 1 shows four matching wheels mounted on the green chassis at each corner",
+      "Tread and sidewall appear intact with no visible punctures, cuts, or embedded debris"
+    ],
+    "other_possibilities": [
+      "Could be mistaken for a segment of a continuous track, but the circular profile and axle hub mounting confirm it is an individual wheel"
+    ],
+    "confidence": 0.98,
+    "sku": null,
+    "needs_closeup": false
+  }
+}
