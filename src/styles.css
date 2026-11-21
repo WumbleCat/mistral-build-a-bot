@@ -610,3 +610,41 @@ h1, h2, h3, .stage-title, .brand-name, .card-title { font-family: var(--font-san
 .import-notes li, .card-note { color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
 a { color: var(--mistral-orange); }
 .key-hints { left: 10px; transform: none; }
+
+/* ================= 3D premium rework (hein-3d) ================= */
+.robot3d-wrap { background: #1B1F28; }
+.robot3d-wrap canvas { height: 560px; }
+.robot3d-vignette {
+  position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(10, 12, 17, 0.42) 100%);
+}
+/* slim toolbar top-right, clear of the scene */
+.robot3d-toolbar { top: 10px; bottom: auto; border-radius: var(--radius); padding: 5px 10px; }
+.robot3d-wrap .illustrative-badge { display: none; } /* old top banner removed */
+.robot3d-note {
+  position: absolute; left: 10px; bottom: 8px; z-index: 3;
+  font-family: var(--font-mono); font-size: 9px; color: var(--faint);
+  background: rgba(14, 16, 22, 0.7); padding: 2px 6px; border-radius: 2px; pointer-events: none;
+}
+/* label pill: white mono text on dark pill, orange left border */
+.part3d-label-text {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.4px;
+  color: #E8E6E1; background: rgba(14, 16, 22, 0.88);
+  border: 1px solid var(--line); border-left: 3px solid var(--mistral-flame);
+  padding: 3px 8px; border-radius: 3px; white-space: nowrap;
+}
+/* photo panel with detection boxes */
+.photo-panel { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: #1B1F28; overflow: hidden; }
+.photo-frame { position: relative; line-height: 0; }
+.photo-frame img { width: 100%; max-height: 560px; object-fit: contain; display: block; }
+.photo-box {
+  position: absolute; border: 1.5px solid var(--mistral-orange); border-radius: 2px;
+  background: rgba(255, 130, 5, 0.07); cursor: crosshair; transition: background 0.15s;
+}
+.photo-box.hot { background: rgba(250, 80, 15, 0.16); border-color: var(--mistral-flame); box-shadow: 0 0 10px rgba(250, 80, 15, 0.35); }
+.photo-box-label {
+  position: absolute; top: -18px; left: -1px; font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  color: #E8E6E1; background: rgba(14, 16, 22, 0.9); border-left: 3px solid var(--mistral-flame);
+  padding: 1px 5px; white-space: nowrap; border-radius: 2px;
+}
+.photo-panel .robot3d-note { position: absolute; }

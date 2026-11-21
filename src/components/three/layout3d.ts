@@ -2,9 +2,9 @@ import type { Part } from '../../types';
 import { classifyPart } from '../robot/layout';
 
 /**
- * Deterministic 3D slot layout for the assembly view. Mirrors the 2D anchors in
- * robot/layout.ts (chassis centre, 4 motor corners, 4 wheel positions, top-deck
- * electronics) but in 3D coordinates (y up, chassis plate centred at origin).
+ * 3D slot layout with REAL 4-wheel rover proportions (1 unit = 10 cm):
+ * chassis 20 x 12 cm, 4 big wheels at the corners at the same height,
+ * motors next to each wheel, electronics on the top deck, battery at the back.
  */
 
 export type Kind3D =
@@ -14,7 +14,7 @@ export type Kind3D =
 export function kind3d(part: Part): Kind3D {
   const c = (part.category || '').toLowerCase();
   const hay = `${part.id} ${part.name}`.toLowerCase();
-  if (/chassis|frame|deck|base/.test(c) || /chassis|frame|deck/.test(hay)) return 'chassis';
+  if (/chassis|frame|deck|base/.test(c + hay)) return 'chassis';
   if (/wheel|tyre|tire/.test(c + hay)) return 'wheel';
   if (/driver|relay|h-?bridge/.test(c + hay)) return 'driver';
   if (/motor|actuator/.test(c + hay)) return 'motor';
@@ -38,52 +38,53 @@ export interface Instance3D {
   kind: Kind3D;
   index: number;
   slot: Slot3D;
-  /** Outward direction used by the explode slider. */
   normal: [number, number, number];
 }
 
-export const CHASSIS_SIZE: [number, number, number] = [4.4, 0.12, 3.0];
+/** chassis plate: 20 x 0.8 x 12 cm */
+export const CHASSIS_SIZE: [number, number, number] = [2.0, 0.08, 1.2];
+export const WHEEL_R = 0.33; // 6.6 cm diameter wheels
 
 const MOTOR_POS: Array<[number, number, number]> = [
-  [-1.5, 0.2, -0.85], [1.5, 0.2, -0.85], [-1.5, 0.2, 0.85], [1.5, 0.2, 0.85],
+  [-0.68, 0.22, -0.5], [0.68, 0.22, -0.5], [-0.68, 0.22, 0.5], [0.68, 0.22, 0.5],
 ];
 const WHEEL_POS: Array<[number, number, number]> = [
-  [-2.0, 0.34, -0.85], [2.0, 0.34, -0.85], [-2.0, 0.34, 0.85], [2.0, 0.34, 0.85],
+  [-0.9, WHEEL_R, -0.52], [0.9, WHEEL_R, -0.52], [-0.9, WHEEL_R, 0.52], [0.9, WHEEL_R, 0.52],
 ];
 const WHEEL_ROT: [number, number, number] = [0, 0, Math.PI / 2];
 const SCREW_POS: Array<[number, number, number]> = [
-  [-1.95, 0.14, -1.25], [1.95, 0.14, -1.25], [-1.95, 0.14, 1.25], [1.95, 0.14, 1.25],
+  [-0.86, 0.1, -0.46], [0.86, 0.1, -0.46], [-0.86, 0.1, 0.46], [0.86, 0.1, 0.46],
 ];
 
 function anchorFor(kind: Kind3D, index: number): Slot3D {
   switch (kind) {
     case 'chassis':
-      return { pos: [0, 0.07, 0] };
+      return { pos: [0, 0.05, 0] };
     case 'motor':
-      return { pos: MOTOR_POS[index % 4] };
+      return { pos: MOTOR_POS[index % 4], rot: [0, Math.PI / 2, 0] };
     case 'wheel':
       return { pos: WHEEL_POS[index % 4], rot: WHEEL_ROT };
     case 'screw':
       return { pos: SCREW_POS[index % 4] };
     case 'controller':
-      return { pos: [0, 0.17, -0.5] };
+      return { pos: [0, 0.14, -0.3] };
     case 'driver':
-      return { pos: [1.0, 0.16, -0.1] };
+      return { pos: [0.45, 0.13, -0.05] };
     case 'battery':
-      return { pos: [0, 0.2, 0.6] };
+      return { pos: [0, 0.17, 0.42] };
     case 'sensor':
-      return { pos: [0, 0.2, -1.62] };
+      return { pos: [0, 0.15, -0.62] };
     case 'servo':
-      return { pos: [-1.0, 0.18, -1.62] };
+      return { pos: [-0.48, 0.13, -0.55] };
     case 'breadboard':
-      return { pos: [1.0, 0.15, 0.65] };
+      return { pos: [0.48, 0.12, 0.32] };
     case 'wire':
       return { pos: MOTOR_POS[index % 4] };
     default: {
-      const perRow = 5;
+      const perRow = 4;
       const row = Math.floor(index / perRow);
       const col = index % perRow;
-      return { pos: [-1.6 + col * 0.8, 0.15, 1.05 + row * 0.32] };
+      return { pos: [-0.6 + col * 0.4, 0.12, 0.68 + row * 0.16] };
     }
   }
 }
@@ -106,12 +107,12 @@ export function allInstances3d(parts: Part[]): Instance3D[] {
   return parts.flatMap(instances3dFor);
 }
 
-/** Wire curves: controller board to each motor corner. */
+/** Wire curves: controller board to each motor. */
 export function wirePaths3d(): Array<[number, number, number][]> {
-  const from: [number, number, number] = [0, 0.22, -0.5];
+  const from: [number, number, number] = [0, 0.2, -0.3];
   return MOTOR_POS.map((m) => [
     from,
-    [(from[0] + m[0]) / 2, 0.55, (from[2] + m[2]) / 2],
-    [m[0], m[1] + 0.1, m[2]],
+    [(from[0] + m[0]) / 2, 0.42, (from[2] + m[2]) / 2],
+    [m[0], m[1] + 0.08, m[2]],
   ]);
 }
