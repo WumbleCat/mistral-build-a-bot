@@ -1,15 +1,9 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+// Must come before ./server/api: the server modules read their settings on import.
+import './server/env';
 import { handleApi } from './server/api';
-
-// Load .env into process.env for the server-side middleware (Node 22+ built-in,
-// no dependency). Only server/*.ts reads these; nothing is exposed to the browser.
-try {
-  process.loadEnvFile();
-} catch {
-  /* no .env file — integrations stay disabled */
-}
 
 /** Mounts the server-side /api/* routes on both dev and preview servers. */
 function apiPlugin(): Plugin {

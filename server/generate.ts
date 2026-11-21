@@ -215,6 +215,10 @@ export async function handleGenerate(
     genCache.set(cacheKey, payload);
     sendJson(res, 200, payload);
   } catch (err) {
-    sendJson(res, 502, { error: `Generation failed: ${(err as Error).message}` });
+    // Node's fetch reports network errors and timeouts as "fetch failed"; the real reason is in `cause`.
+    const cause = (err as Error & { cause?: { code?: string; message?: string } }).cause;
+    const why = cause ? ` (${[cause.code, cause.message].filter(Boolean).join(': ')})` : '';
+    sendToLog(`generation failed: ${(err as Error).message}${why}`);
+    sendJson(res, 502, { error: `Generation failed: ${(err as Error).message}${why}` });
   }
 }
