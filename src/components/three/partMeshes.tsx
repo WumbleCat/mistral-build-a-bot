@@ -11,37 +11,48 @@ import { CHASSIS_SIZE, wirePaths3d } from './layout3d';
 
 export const COLORS = {
   flame: '#FA500F',
-  graphite: '#3A3D42',
-  ink: '#17181a',
+  amber: '#FFAF00',
+  orange: '#FF8205',
+  graphite: '#2A2F3A',
+  ink: '#0E1016',
   ttMotor: '#C9B458',
-  boardGreen: '#33523F',
+  boardGreen: '#2E4438',
   relayBlue: '#3E5C76',
-  breadboard: '#F2EFE9',
-  tyre: '#26272B',
-  hub: '#8A8D93',
-  wireA: '#B3543F',
-  wireB: '#5C6E91',
-  wireC: '#A98F3F',
+  breadboard: '#C9C5BC',
+  tyre: '#1E2129',
+  hub: '#8A90A0',
+  wireA: '#FF8205',
+  wireB: '#FFAF00',
+  wireC: '#FFD800',
 };
 
 interface MeshProps {
   kind: Kind3D;
-  /** 'active' = flame orange, 'installed' = graphite, 'pending' = faint ghost */
+  /** 'active' = flame orange pulse, 'installed' = graphite, 'pending' = orange wireframe ghost */
   status: 'active' | 'installed' | 'pending';
 }
 
 type MatProps = Record<string, unknown>;
 
-function matProps(status: MeshProps['status'], color: string, extra: MatProps = {}): MatProps {
-  const ghost = status === 'pending';
+function matProps(status: MeshProps['status'], _color: string, extra: MatProps = {}): MatProps {
+  if (status === 'pending') {
+    // ghost: thin orange wireframe at 25%
+    return {
+      color: COLORS.orange,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.25,
+      depthWrite: false,
+      ...extra,
+    };
+  }
   return {
-    color,
+    // installed parts are uniform matte graphite; active parts flame orange
+    color: status === 'active' ? COLORS.flame : COLORS.graphite,
     roughness: 0.8,
     metalness: 0.1,
-    transparent: ghost,
-    opacity: ghost ? 0.12 : 1,
     emissive: status === 'active' ? COLORS.flame : '#000000',
-    emissiveIntensity: status === 'active' ? 0.35 : 0,
+    emissiveIntensity: status === 'active' ? 0.55 : 0,
     ...extra,
   };
 }
