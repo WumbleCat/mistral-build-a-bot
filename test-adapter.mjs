@@ -61,7 +61,7 @@ check('robot name from "name"', r3.data?.robot_name === 'Alt Bot');
 check('qty key honoured', r3.data?.parts[0].quantity === 2);
 check('part_id/label honoured', r3.data?.parts[1].id === 'cam' && r3.data?.parts[1].name === 'Camera');
 check('steps renumbered', r3.data?.steps.map((s) => s.number).join(',') === '1,2');
-check('cumulative installed derived', JSON.stringify(r3.data?.steps[1].installed_components) === '["cam"]');
+check('cumulative installed derived', JSON.stringify(r3.data?.steps[1].installed_components) === '["cam","frame"]'); // "frame" was an orphan part — now attached to the final step
 check('instruction from description/action', r3.data?.steps[0].instruction === 'Lay the frame.' && r3.data?.steps[1].instruction === 'Screw the camera on.');
 
 // 4. Malformed inputs
@@ -120,6 +120,40 @@ check('rel source_ids preserved', JSON.stringify(r5.data?.relationships?.[0].sou
 check('unknown status preserved for unclear wiring', r5.data?.relationships?.[1].status === 'unknown');
 check('unknown part refs warned, not dropped', r5.warnings.some((w) => w.includes('ghost')));
 check('malformed rels skipped with warning', r5.warnings.some((w) => w.includes('Relationship #4') || w.includes('Relationship #5')));
+
+// 8. Orphan parts (in BOM but referenced by no step) are associated with a relevant step
+//    without changing instructions or the part's evidence/quantity/review flags.
+const orphan = {
+  robot_name: 'Orphan Bot',
+  parts: [
+    { id: 'chassis', name: 'Chassis', quantity: 1, evidence: 'visible' },
+    { id: 'enclosure', name: 'Battery enclosure', quantity: 1, evidence: 'visible' },
+    { id: 'cells', name: 'Battery cells inside enclosure', quantity: null, quantityUnknown: true, evidence: 'inferred', review_required: true, source_ids: ['P001'] },
+    { id: 'servo', name: 'Steering servo / steering linkage', quantity: null, quantityUnknown: true, evidence: 'inferred', review_required: true, source_ids: ['mechanical.possible_missing_parts'] },
+  ],
+  steps: [
+    { number: 1, title: 'Frame', instruction: 'Assemble the chassis.', component_ids: ['chassis'], installed_components: ['chassis'] },
+    { number: 2, title: 'Enclosure', instruction: 'Mount the battery enclosure.', component_ids: ['enclosure'], installed_components: ['chassis', 'enclosure'] },
+  ],
+  relationships: [
+    { from: 'cells', to: 'enclosure', type: 'contains', status: 'inferred', confidence: 'low' },
+  ],
+};
+const r6 = normalizeAssembly(orphan);
+check('orphan payload parses', r6.data !== null, JSON.stringify(r6.errors));
+const stepOf = (pid) => r6.data?.steps.find((s) => s.component_ids.includes(pid))?.number;
+check('relationship-linked orphan attached to related part step', stepOf('cells') === 2, `got ${stepOf('cells')}`);
+check('unlinked orphan falls back to final step', stepOf('servo') === 2, `got ${stepOf('servo')}`);
+check('orphan association warned', r6.warnings.filter((w) => w.includes('not referenced by any step')).length === 2, JSON.stringify(r6.warnings));
+check('orphan instruction text untouched', r6.data?.steps[1].instruction === 'Mount the battery enclosure.');
+check('orphan part keeps inferred evidence', r6.data?.parts.find((p) => p.id === 'cells')?.evidence === 'inferred');
+check('orphan part keeps null-quantity flag', r6.data?.parts.find((p) => p.id === 'cells')?.quantityUnknown === true);
+check('orphan part keeps review_required', r6.data?.parts.find((p) => p.id === 'servo')?.review_required === true);
+check('orphan part keeps source_ids', JSON.stringify(r6.data?.parts.find((p) => p.id === 'servo')?.source_ids) === '["mechanical.possible_missing_parts"]');
+check('step marked uncertain for inferred orphan', r6.data?.steps[1].uncertain === true);
+check('installed_components cumulative after association', r6.data?.steps[1].installed_components.includes('cells') && r6.data?.steps[1].installed_components.includes('servo'));
+check('earlier steps not polluted by orphan', !r6.data?.steps[0].installed_components.includes('cells'));
+check('every part referenced by >=1 step', r6.data?.parts.every((p) => r6.data.steps.some((s) => s.component_ids.includes(p.id))));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

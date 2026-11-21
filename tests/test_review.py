@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from robot_bom.export import BOMExporter
 from robot_bom.models import EvidenceType
 from robot_bom.pipeline import analyze, write_analysis_outputs
 from robot_bom.review import ReviewError, finalize, load_review
@@ -66,14 +67,51 @@ def test_corrections_persist_in_the_final_bom(review_data):
     assert bom.metadata["stage"] == "final"
 
 
-def test_unresolved_critical_issue_keeps_ready_to_purchase_false(review_data):
+def test_unknown_criticals_are_filled_with_suggestions_instead_of_blocking(review_data):
     component(review_data, "wheel-1").update(status="confirmed", purchase_quantity=4, sku="WHL-65")
 
+    bom = finalize(load_review(review_data), now="2026-01-01T00:00:00+00:00")
+
+    assert bom.unresolved_issues("critical") == [] and bom.readiness_blockers == []
+    assert bom.ready_to_purchase is True
+    by_id = {c.id: c for c in bom.components}
+    motor, controller = by_id["motor-1"], by_id["microcontroller-1"]
+    # the placeholders became concrete suggested parts, marked as assumptions and never confirmed
+    assert motor.name == "TT DC gear motor with gearbox, 3-6 V" and motor.required_quantity == 2
+    assert motor.specs == {"voltage_v": "6", "current_a": "1.5"} and "name" in motor.assumed_fields
+    assert controller.name == "Arduino Uno R3" and controller.evidence_type is EvidenceType.INFERRED
+    assert all(c.status == "needs_review" for c in (motor, controller))
+    assert any(n.startswith("Suggested by the app, not verified") for n in motor.notes)
+    # every suggested part comes with somewhere to buy it
+    links = [c for c in bom.catalog_candidates if c.component_id == "motor-1"]
+    assert {c.vendor for c in links} == {"Amazon.com", "SparkFun"}
+    assert links[0].product_url.startswith("https://www.amazon.com/s?k=TT+DC+gear+motor")
+    # the suggestions are the app's, not the reviewer's
+    assert {e.actor for e in bom.audit_trail if e.target == "motor-1"} == {"robot-bom"}
+
+
+def test_unreviewed_lines_are_included_and_tagged_not_held_back(review_data):
     bom = finalize(load_review(review_data))
 
-    assert bom.ready_to_purchase is False
-    assert {i.id for i in bom.unresolved_issues("critical")} >= {"drivetrain.unknown", "power.unknown"}
-    assert any("unresolved critical" in b for b in bom.readiness_blockers)
+    assert bom.ready_to_purchase is True
+    assert all(c.status == "needs_review" for c in bom.components)
+    markdown = BOMExporter().to_markdown(bom)
+    assert "**Ready to purchase.**" in markdown and "tagged **not reviewed**" in markdown
+    assert "**not reviewed** (suggested)" in markdown
+
+
+def test_refinalizing_does_not_credit_the_suggestions_to_the_reviewer(review_data):
+    first = finalize(load_review(review_data))
+    again = {**review_data, "bom": first.model_dump(mode="json")}
+    component(again, "motor-1")["required_quantity"] = 4  # the reviewer changes one suggested value
+
+    second = finalize(load_review(again))
+
+    reviewer = [(e.target, e.field) for e in second.audit_trail if e.actor == "reviewer"]
+    assert reviewer == [("motor-1", "required_quantity")]
+    assert len([e for e in second.audit_trail if e.action == "default_suggestion"]) == len(
+        [e for e in first.audit_trail if e.action == "default_suggestion"])
+    assert len(second.catalog_candidates) == len(first.catalog_candidates)
 
 
 def test_audit_trail_records_every_correction(review_data):
@@ -133,13 +171,18 @@ def test_missing_sku_on_an_item_to_buy_blocks_purchase(review_data):
 
 
 def test_rule_based_critical_issue_cannot_be_waved_through(review_data):
-    issue(review_data, "drivetrain.unknown").update(resolved=True, resolution_note="looks fine")
+    complete_review(review_data)
+    component(review_data, "power_supply-1")["specs"] = {"voltage_v": "24"}  # into a 12 V driver
+    review_data["bom"]["issues"].append({
+        "id": "compat.driver_overvoltage.motor_driver-1", "severity": "critical", "message": "m",
+        "next_action": "n", "resolved": True, "resolution_note": "looks fine",
+    })
 
     bom = finalize(load_review(review_data))
-    drivetrain = next(i for i in bom.issues if i.id == "drivetrain.unknown")
+    overvoltage = next(i for i in bom.issues if i.id == "compat.driver_overvoltage.motor_driver-1")
 
-    assert drivetrain.resolved is False
-    assert "check still fails" in drivetrain.resolution_note and "looks fine" in drivetrain.resolution_note
+    assert overvoltage.resolved is False and bom.ready_to_purchase is False
+    assert "check still fails" in overvoltage.resolution_note and "looks fine" in overvoltage.resolution_note
 
 
 def test_reviewer_can_resolve_warnings_and_model_raised_issues(review_data):
@@ -156,6 +199,7 @@ def test_reviewer_can_resolve_warnings_and_model_raised_issues(review_data):
 
 def test_hand_edited_ready_flag_is_ignored(review_data):
     review_data["bom"]["ready_to_purchase"] = True
+    component(review_data, "wheel-1")["status"] = "confirmed"  # confirmed, but nothing says how many to buy
     bom = finalize(load_review(review_data))
     assert bom.ready_to_purchase is False
 

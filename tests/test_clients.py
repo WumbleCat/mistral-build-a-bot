@@ -167,13 +167,39 @@ def test_model_list_is_fetched_and_trimmed_for_the_picker():
     models = describe_models(vision_client(handler).list_models())
 
     assert seen == {"url": "https://api.mistral.ai/v1/models", "auth": f"Bearer {SECRET}"}
-    assert [m["id"] for m in models] == ["big-latest", "old", "other-provider-model", "embedder", "text-only"]
+    assert [m["id"] for m in models] == ["big-latest", "other-provider-model", "old", "text-only", "embedder"]
     by_id = {m["id"]: m for m in models}
     assert by_id["big-latest"] == {"id": "big-latest", "name": "big-4", "aliases": ["big-4"], "chat": True,
-                                   "vision": True, "usable": True, "deprecated": False}
+                                   "vision": True, "usable": True, "deprecated": False, "rank": 1}
+    assert [m["rank"] for m in models] == [1, 2, 3, 4, 5]
     assert by_id["old"]["deprecated"] is True
     assert by_id["other-provider-model"]["usable"] is True and by_id["other-provider-model"]["vision"] is None
     assert not by_id["text-only"]["usable"] and not by_id["embedder"]["usable"]
+
+
+def test_models_are_ranked_best_to_worst():
+    caps = {"completion_chat": True, "vision": True}
+    raw = [
+        {"id": "mistral-small-latest", "capabilities": caps},
+        {"id": "mistral-large-2512", "capabilities": caps},
+        {"id": "ministral-8b-latest", "capabilities": caps},
+        {"id": "mistral-medium-3-5", "capabilities": caps},
+        {"id": "mistral-large-latest", "capabilities": caps},
+        {"id": "mistral-large-4", "capabilities": caps},
+        {"id": "ministral-14b-2512", "capabilities": caps},
+        {"id": "mistral-medium-3", "capabilities": caps},
+        {"id": "mistral-ocr-latest", "capabilities": {"completion_chat": False}},
+    ]
+    models = describe_models(raw)
+    assert [m["id"] for m in models] == [
+        "mistral-large-latest", "mistral-large-4", "mistral-large-2512",
+        "mistral-medium-3-5", "mistral-medium-3",
+        "mistral-small-latest",
+        "ministral-14b-2512", "ministral-8b-latest",
+        "mistral-ocr-latest",
+    ]
+    assert [m["rank"] for m in models] == list(range(1, len(models) + 1))
+    assert models[-1]["usable"] is False
 
 
 def test_model_list_failure_is_an_api_error_without_the_key():

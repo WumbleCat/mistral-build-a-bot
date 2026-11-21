@@ -47,13 +47,19 @@ def _table(headers: list[str], rows: list[list[str]]) -> list[str]:
     return lines
 
 
+def review_label(component: Component) -> str:
+    """Review status as shown to people: unreviewed lines carry a visible tag."""
+    label = "**not reviewed**" if component.status == "needs_review" else component.status
+    return label + (" (suggested)" if component.assumed_fields and component.status != "confirmed" else "")
+
+
 def _component_rows(components: list[Component], *, with_evidence: bool) -> list[list[str]]:
     rows = []
     for c in components:
         row = [
             f"`{c.id}`", _cell(c.category), _cell(c.name), _qty(c.visible_quantity),
             _qty(c.required_quantity), _qty(c.purchase_quantity),
-            _ident(c.manufacturer), _ident(c.model), _ident(c.sku), c.status,
+            _ident(c.manufacturer), _ident(c.model), _ident(c.sku), review_label(c),
             "n/a" if c.confidence is None else f"{c.confidence:.2f}",
         ]
         if with_evidence:
@@ -155,7 +161,9 @@ class BOMExporter:
 
         out += [
             "", "## Inferred/hidden possibilities", "",
-            "Plausible but **not seen and not confirmed**. Do not buy from this table.", "",
+            "**Not seen in a photo and not confirmed.** Lines marked *suggested* are the app's or "
+            "the model's proposal for a part that could not be identified; their shop links are under "
+            "*Catalog candidates*. Check them against the real robot.", "",
         ]
         if inferred:
             out += _table(_COMPONENT_HEADERS + ["Rationale"], _component_rows(inferred, with_evidence=False))
@@ -174,8 +182,8 @@ class BOMExporter:
         out += ["", "## Catalog candidates", ""]
         if project.catalog_candidates:
             out += [
-                f"Status: {project.catalog_status}. Candidates are search results, **not** confirmed "
-                "matches; verify each against the physical part.", "",
+                f"Status: {project.catalog_status}. Candidates are search results and shop links for "
+                "suggested parts, **not** confirmed matches; verify each against the physical part.", "",
             ]
             out += _table(
                 ["Component", "Vendor", "Title", "SKU", "Price", "URL", "Compatible", "Queried at", "Notes"],
@@ -200,11 +208,17 @@ class BOMExporter:
             out.append("_None._")
 
         out += ["", "## Purchase readiness", ""]
+        pending = [c for c in active if c.status == "needs_review"]
         if project.ready_to_purchase:
             out.append(
-                "**Ready to purchase**, based on the reviewer's confirmations. This reflects the "
-                "reviewed data only; it is not an independent guarantee of completeness."
+                "**Ready to purchase.** No check blocks this BOM. This reflects the data in it; it is "
+                "not an independent guarantee of completeness."
             )
+            if pending:
+                suggested = sum(1 for c in pending if c.assumed_fields)
+                out += ["", f"{len(pending)} line(s) are tagged **not reviewed**"
+                        + (f", {suggested} of them with suggested parts or values" if suggested else "")
+                        + ": " + ", ".join(f"`{c.id}`" for c in pending) + "."]
         else:
             out.append("**NOT ready to purchase.** This BOM is incomplete and must not be used as an order list.")
             out += ["", "Blocking reasons:", ""]

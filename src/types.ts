@@ -96,6 +96,8 @@ export interface AssemblyData {
   review_flags?: string[];
   /** Component relationship & connection map (physical + visually-supported electrical). */
   relationships?: Relationship[];
+  /** Schematic exploded-view SVG (server-generated, illustrative) for photo+JSON workbooks. */
+  exploded_svg?: string;
 }
 
 export interface NormalizeResult {

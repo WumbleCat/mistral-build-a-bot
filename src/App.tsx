@@ -14,7 +14,6 @@ import { AssistantPanel } from './components/AssistantPanel';
 
 import { LandingScreen } from './components/LandingScreen';
 
-import { PhotoAnalysisDialog } from './components/PhotoAnalysisDialog';
 import { Footer } from './components/Shell';
 import { Boxes, CircleDollarSign, ListChecks, ListOrdered } from 'lucide-react';
 
@@ -37,7 +36,6 @@ export default function App() {
   const [guided, setGuided] = useState({ playing: false, auto: true });
   const [tick, setTick] = useState(0); // bump to force replay (restart)
   const [importOpen, setImportOpen] = useState(false);
-  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [importNotes, setImportNotes] = useState<string[]>([]);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantMention, setAssistantMention] = useState<string | null>(null);
@@ -54,6 +52,12 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    // Photo+JSON workbooks carry a server-generated schematic exploded view.
+    if (data.exploded_svg) {
+      setExploded({ available: true, url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(data.exploded_svg) });
+      return;
+    }
+    // Otherwise fall back to the static teardown-skill asset for the sample robot.
     fetch('/illustrations/manifest.json')
       .then((r) => (r.ok ? r.json() : null))
       .then((m) => {
@@ -64,7 +68,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [data.robot_name]);
+  }, [data.robot_name, data.exploded_svg]);
 
   const prefix = useMemo(() => datasetKey(data), [data]);
   const engine = useNarrationEngine(prefix);
@@ -301,18 +305,11 @@ export default function App() {
           onLoadSample={loadSample}
           onLoadUpstream={() => void loadUpstreamSample()}
           onImport={openImport}
-          onPhotoAnalysis={() => setPhotoDialogOpen(true)}
+          onGenerated={(d, notes) => {
+            applyData(d, notes);
+            setScreen('studio');
+          }}
         />
-        {photoDialogOpen && (
-          <PhotoAnalysisDialog
-            onGenerated={(d, notes) => {
-              applyData(d, notes);
-              setPhotoDialogOpen(false);
-              setScreen('studio');
-            }}
-            onClose={() => setPhotoDialogOpen(false)}
-          />
-        )}
         {importOpen && <ImportDialog onLoad={handleImport} onClose={() => setImportOpen(false)} />}
       </>
     );

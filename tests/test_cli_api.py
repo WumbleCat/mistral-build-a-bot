@@ -72,7 +72,9 @@ def test_cli_analyze_then_finalize(photo, tmp_path, capsys):
     assert cli.main(["finalize", str(review_path), "--out", str(final), "--reviewer", "sam"]) == 0
     bom = json.loads((final / "bom.json").read_text(encoding="utf-8"))
     assert next(c for c in bom["components"] if c["id"] == "wheel-1")["sku"] == "WHL-65"
-    assert bom["ready_to_purchase"] is False
+    # the unknown criticals were filled with suggestions and the unreviewed lines do not block
+    assert bom["ready_to_purchase"] is True and bom["readiness_blockers"] == []
+    assert any(c["status"] == "needs_review" for c in bom["components"])
     audit = json.loads((final / "audit.json").read_text(encoding="utf-8"))
     assert any(e["actor"] == "sam" and e["action"] == "component_confirmed" for e in audit)
     assert "WHL-65" in (final / "bom.csv").read_text(encoding="utf-8")

@@ -1,0 +1,148 @@
+/* Self-hosted so the demo does not depend on a font CDN being reachable. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Paper-first palette. Names describe the role, not a shade number, so the
+     theme can change without every component having to. */
+  --color-canvas: #f7f6f3;
+  --color-surface: #ffffff;
+  --color-sunken: #f0eee9;
+
+  --color-line-soft: #e9e6df;
+  --color-line: #dcd8cf;
+  --color-line-strong: #bdb7a9;
+
+  --color-muted: #6f6b62;
+  --color-body: #46433c;
+  --color-strong: #1b1916;
+
+  /* Dark wash for controls that sit on top of photography or video. */
+  --color-scrim: #14120f;
+  --color-on-accent: #1b1916;
+
+  --color-flame-300: #ffb866;
+  --color-flame-400: #f9922d;
+  --color-flame-500: #ef6c0b;
+  --color-flame-600: #c6540a;
+
+  --color-mint-400: #0f9d6e;
+  --color-sky-ish: #1f6feb;
+
+  --ring: var(--color-flame-600);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-canvas text-strong font-sans antialiased;
+    background-image:
+      radial-gradient(60rem 40rem at 12% -12%, rgba(239, 108, 11, 0.07), transparent 62%),
+      radial-gradient(52rem 36rem at 96% -4%, rgba(31, 111, 235, 0.05), transparent 58%);
+    background-attachment: fixed;
+    font-feature-settings: 'cv05' 1, 'ss03' 1;
+  }
+  * {
+    scrollbar-color: var(--color-line) transparent;
+    scrollbar-width: thin;
+  }
+
+  /* Headings read better when the browser evens out the line lengths. */
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--color-flame-500);
+    color: var(--color-canvas);
+  }
+
+  /* One visible focus style everywhere, instead of the browser default hairline. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Respect the system setting rather than animating regardless. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-sm shadow-black/[0.04];
+  }
+  /* Opt-in hover for cards that are themselves links. */
+  .card-interactive {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:border-line-strong
+           hover:shadow-lg hover:shadow-black/[0.08];
+  }
+
+  /* Tailwind v4 cannot @apply a class defined in the same layer, so the shared
+     button rules live in one selector list instead of a `.btn` base class. */
+  .btn,
+  .btn-primary,
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
+           transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-flame-500 text-on-accent shadow-lg shadow-flame-600/25
+           hover:bg-flame-400 hover:shadow-flame-500/30 active:translate-y-px active:shadow-md;
+  }
+  .btn-ghost {
+    @apply border border-line bg-sunken/60 text-strong
+           hover:border-line-strong hover:bg-line-soft active:translate-y-px;
+  }
+
+  /* Translucent orange reads as muddy brown; grey out instead. */
+  .btn-primary:disabled {
+    @apply bg-line-soft text-muted opacity-100 shadow-none;
+  }
+
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-muted;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-sunken px-2.5 py-1
+           text-xs font-medium text-body;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-strong
+           transition placeholder:text-muted hover:border-line-strong
+           focus:border-flame-500 focus:ring-2 focus:ring-flame-500/20 focus:outline-none;
+  }
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+.skeleton {
+  @apply relative overflow-hidden bg-line-soft;
+}
+.skeleton::after {
+  content: '';
+  @apply absolute inset-0 -translate-x-full;
+  background-image: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.05), transparent);
+  animation: shimmer 1.6s infinite;
+}

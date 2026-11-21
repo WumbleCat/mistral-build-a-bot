@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 
 from .catalog import build_catalog_client
 from .config import ConfigError, load_settings
-from .design import best_guess
+from .design import best_guess, default_guess
 from .export import BOMExporter, write_json
 from .extraction import VisionResponseError
 from .grounding import build_grounder, grounding_available, sam_available
@@ -27,7 +27,8 @@ MAX_IMAGES = 8
 OUTPUT_ROOT = Path("output") / "web"
 _JOB_ID = re.compile(r"^[0-9a-f]{12}$")
 _IMAGE_ID = re.compile(r"^[a-z0-9-]{1,120}$")
-_INDEX_HTML = Path(__file__).parent / "web" / "index.html"
+_FONT_NAME = re.compile(r"^[a-z0-9-]{1,80}\.woff2$")
+_INDEX_HTML =Path(__file__).parent / "web" / "index.html"
 
 app = FastAPI(title="Robot BOM builder", version="0.1.0")
 
@@ -35,6 +36,14 @@ app = FastAPI(title="Robot BOM builder", version="0.1.0")
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def index() -> str:
     return _INDEX_HTML.read_text(encoding="utf-8")
+
+
+@app.get("/fonts/{name}", include_in_schema=False)
+def font(name: str) -> FileResponse:
+    """The page's two self-hosted fonts, so it needs no font CDN."""
+    if not _FONT_NAME.fullmatch(name) or not (path := _INDEX_HTML.parent / "fonts" / name).is_file():
+        raise HTTPException(status_code=404, detail="Unknown font.")
+    return FileResponse(path, media_type="font/woff2", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @app.get("/health")
@@ -143,7 +152,9 @@ def infer_route(payload: dict = Body(...)) -> dict:
     (2) parts research for that list; then each part is looked up on the approved shops by
     web search and the pages found are checked for stock. The returned ``review`` is the
     given one with the guess for the critical parts (motor, driver, power, controller)
-    written in as assumptions and every check re-run; nothing is marked confirmed.
+    written in as assumptions and every check re-run; nothing is marked confirmed. Anything
+    the model leaves unknown - or everything, if the model cannot be used - is filled with a
+    built-in default suggestion, so this step never leaves the BOM blocked on an unknown.
     """
     review_data = payload.get("review")
     job_id = payload.get("job_id")
@@ -170,10 +181,9 @@ def infer_route(payload: dict = Body(...)) -> dict:
         )
     except ReviewError as exc:
         raise HTTPException(422, str(exc)) from None
-    except ConfigError as exc:
-        raise HTTPException(503, str(exc)) from None
-    except (VisionResponseError, VisionAPIError) as exc:
-        raise HTTPException(502, str(exc)) from None
+    except (ConfigError, VisionResponseError, VisionAPIError) as exc:
+        # no usable model: fill the unknowns with the built-in suggestions rather than fail
+        result, review = default_guess(review, reason=str(exc))
 
     out_dir = None
     if job_id and (OUTPUT_ROOT / job_id).is_dir():

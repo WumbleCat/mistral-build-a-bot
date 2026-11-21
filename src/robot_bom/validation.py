@@ -41,7 +41,7 @@ def _established(component: Component) -> bool:
     """Seen in a photo, confirmed by a human, or filled in by the model's best guess.
 
     A best-guess line closes the "nothing is known" checks so the compatibility rules can run
-    on its assumed values, but it stays `needs_review`, which still blocks purchasing.
+    on its assumed values. It stays `needs_review` and is tagged "not reviewed" in every output.
     """
     return (component.evidence_type is EvidenceType.OBSERVED or component.status == "confirmed"
             or bool(component.assumed_fields))
@@ -472,18 +472,26 @@ class RequirementsValidator:
             )
 
 
+def blocks_purchase(issue: ReviewIssue) -> bool:
+    """An open critical issue raised by a check (not a question the model asked)."""
+    return issue.severity == "critical" and not issue.resolved and issue.source != "model"
+
+
 def purchase_blockers(components: list[Component], issues: list[ReviewIssue]) -> list[str]:
-    """Reasons the BOM is not purchasing-ready. Empty list means ready."""
+    """Reasons the BOM is not purchasing-ready. Empty list means ready.
+
+    Lines nobody has reviewed do not block: they are included and tagged "not reviewed".
+    Unknowns do not block either - they are filled with suggestions (``suggest.py``) before
+    this runs - and the model's own open questions are advisory. What blocks is a check
+    that fails on the data: a real incompatibility, or no parts at all.
+    """
     blockers: list[str] = []
     active = [c for c in components if c.status != "rejected"]
-    critical = [i for i in issues if i.severity == "critical" and not i.resolved]
+    critical = [i for i in issues if blocks_purchase(i)]
     if critical:
         blockers.append(f"{len(critical)} unresolved critical issue(s): " + ", ".join(i.id for i in critical))
     if not active:
         blockers.append("The BOM has no active components.")
-    pending = [c.id for c in active if c.status == "needs_review"]
-    if pending:
-        blockers.append("Not yet reviewed by a human: " + ", ".join(pending))
     no_quantity = [c.id for c in active if c.status == "confirmed" and c.purchase_quantity is None]
     if no_quantity:
         blockers.append("purchase_quantity not established for: " + ", ".join(no_quantity))

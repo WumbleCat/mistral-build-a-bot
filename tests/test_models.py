@@ -110,6 +110,7 @@ def test_ready_to_purchase_cannot_coexist_with_open_critical_issue():
         _bom(components=[confirmed], issues=[critical], ready_to_purchase=True)
 
 
-def test_ready_to_purchase_cannot_coexist_with_unreviewed_components():
-    with pytest.raises(ValidationError, match="need review"):
-        _bom(ready_to_purchase=True)
+def test_unreviewed_components_and_model_questions_do_not_block_readiness():
+    question = ReviewIssue(severity="critical", message="m", next_action="n", source="model")
+    bom = _bom(issues=[question], ready_to_purchase=True)
+    assert bom.ready_to_purchase and all(c.status == "needs_review" for c in bom.components)

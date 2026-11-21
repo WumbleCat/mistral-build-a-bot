@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .catalog import build_catalog_client
 from .config import ConfigError, load_settings
-from .design import best_guess
+from .design import best_guess, default_guess
 from .export import BOMExporter, write_json
 from .extraction import VisionResponseError
 from .grounding import build_grounder
@@ -19,6 +19,11 @@ from .review import ReviewError, finalize, load_review
 from .vision import (
     OpenAICompatVisionClient, VisionAPIError, build_vision_client, clients_for_run, list_available_models,
 )
+
+
+def _review_tag(component) -> str:
+    tag = "NOT REVIEWED" if component.status == "needs_review" else component.status
+    return tag + (", suggested" if component.assumed_fields else "")
 
 
 def _summary(bom) -> str:
@@ -32,10 +37,10 @@ def _summary(bom) -> str:
     ]
     for c in observed:
         quantity = "unknown qty" if c.visible_quantity is None else f"x{c.visible_quantity}"
-        lines.append(f"  - {c.id:<22} {c.name} ({quantity}, status: {c.status})")
+        lines.append(f"  - {c.id:<22} {c.name} ({quantity}, {_review_tag(c)})")
     lines.append(f"Unverified / likely hidden ({len(unverified)}):")
     for c in unverified:
-        lines.append(f"  - {c.id:<22} {c.name} [{c.evidence_type.value}, status: {c.status}]")
+        lines.append(f"  - {c.id:<22} {c.name} [{c.evidence_type.value}, {_review_tag(c)}]")
     open_issues = bom.unresolved_issues()
     counts = {s: sum(1 for i in open_issues if i.severity == s) for s in ("critical", "warning", "info")}
     lines.append(
@@ -86,18 +91,18 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
                 max_retries=settings.max_retries, web_search=settings.web_search,
             )
         except (VisionResponseError, VisionAPIError) as exc:
-            print(f"warning: the AI best guess could not be produced ({exc}). The outputs above are "
-                  f"unaffected; retry with: robot-bom infer {written['review.json']}", file=sys.stderr)
-        else:
-            design = inferred["inferred_components"]
-            print(f"AI best guess (assumptions, not verified): {len(design['design_choices'])} design choices, "
-                  f"{len(design['components'])} components")
-            for name, document in inferred.items():
-                print(f"  {write_json(Path(args.out) / 'inferred' / f'{name}.json', document)}")
-            # the review file and draft exports now carry the guesses, marked as assumptions
-            write_json(written["review.json"], review.model_dump(mode="json"))
-            BOMExporter().export(review.bom, args.out)
-            print(_guess_summary(review.bom, inferred["order_links"]))
+            print(f"warning: the AI best guess could not be produced ({exc}). Built-in default suggestions "
+                  f"were used instead; retry with: robot-bom infer {written['review.json']}", file=sys.stderr)
+            inferred, review = default_guess(result.review, reason=str(exc))
+        design = inferred["inferred_components"]
+        print(f"AI best guess (assumptions, not verified): {len(design['design_choices'])} design choices, "
+              f"{len(design['components'])} components")
+        for name, document in inferred.items():
+            print(f"  {write_json(Path(args.out) / 'inferred' / f'{name}.json', document)}")
+        # the review file and draft exports now carry the guesses, marked as assumptions
+        write_json(written["review.json"], review.model_dump(mode="json"))
+        BOMExporter().export(review.bom, args.out)
+        print(_guess_summary(review.bom, inferred["order_links"]))
     print(f"\nNext: edit {written['review.json']} then run\n  robot-bom finalize {written['review.json']} --out {Path(args.out) / 'final'}")
     return 0
 
@@ -123,7 +128,7 @@ def _guess_summary(bom, links: dict) -> str:
     assumed = [c for c in bom.components if c.assumed_fields]
     critical = [i.id for i in bom.unresolved_issues() if i.severity == "critical"]
     availability = links["availability"]
-    lines = [f"Written into the parts list as assumptions ({len(assumed)} line(s), still 'needs review'):"]
+    lines = [f"Written into the parts list as assumptions ({len(assumed)} line(s), tagged 'not reviewed'):"]
     lines += [f"  - {c.id}: {c.name} x{c.required_quantity} {c.specs}" for c in assumed]
     lines.append("Open critical issues after the guess: " + (", ".join(critical) if critical else "none"))
     lines.append(
@@ -187,7 +192,7 @@ def _cmd_models(args: argparse.Namespace) -> int:
     settings = load_settings()
     models = list_available_models(settings)
     usable = [m for m in models if m["usable"]]
-    print(f"Models at {settings.base_url}: {len(usable)} of {len(models)} can read photos "
+    print(f"Models at {settings.base_url}: {len(usable)} of {len(models)} can read photos, ranked best to worst "
           f"(* = configured default, {settings.vision_model})")
     for m in models if args.all else usable:
         mark = "*" if m["id"] == settings.vision_model else " "
@@ -196,7 +201,7 @@ def _cmd_models(args: argparse.Namespace) -> int:
             notes.append(f"= {m['name']}")
         if m["deprecated"]:
             notes.append("deprecated")
-        print(f"  {mark} {m['id']:<40} {'; '.join(notes)}".rstrip())
+        print(f"  {mark} #{str(m.get('rank', '?')):>3} {m['id']:<40} {'; '.join(notes)}".rstrip())
     if not args.all and len(models) > len(usable):
         print(f"({len(models) - len(usable)} models that cannot read photos are hidden; --all shows them)")
     print("\nUse one with:  robot-bom analyze <photos> --model <id>   (or set MISTRAL_MODEL in .env)")

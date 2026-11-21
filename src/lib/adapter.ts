@@ -73,18 +73,29 @@ export function normalizeAssembly(raw: unknown): NormalizeResult {
     }
     usedIds.add(id);
     const quantity = Math.max(1, Math.floor(asNumber(rec.quantity) ?? asNumber(rec.qty) ?? 1));
+    // quantity === null in the source means UNKNOWN (not zero/one) — flag it, per the
+    // image-analysis provenance convention (display falls back to 1, never 0).
+    const quantityUnknown = rec.quantity === null || (rec.quantity === undefined && rec.qty === null);
     // Enrich with shop/price data from the upstream bom array when available.
     const bomRow = bomIndex.get(id);
     parts.push({
       id,
       name,
       quantity,
+      quantityUnknown: quantityUnknown || undefined,
       description: asString(rec.description),
       category: asString(rec.category),
       shop: asString(rec.shop) ?? asString(bomRow?.shop),
       url: asString(rec.url) ?? asString(bomRow?.url),
       unit_price: asNumber(rec.unit_price_gbp) ?? asNumber(rec.unit_price) ?? asNumber(bomRow?.unit_price_gbp),
-      visible_in_photo: typeof rec.visible_in_photo === 'boolean' ? rec.visible_in_photo : undefined,
+      visible_in_photo: typeof rec.visible_in_photo === 'boolean' ? rec.visible_in_photo : rec.evidence === 'visible' ? true : undefined,
+      // Image-analysis provenance — preserved, never dropped or upgraded.
+      evidence: asString(rec.evidence),
+      source_ids: asStringArray(rec.source_ids ?? rec.sources).length > 0 ? asStringArray(rec.source_ids ?? rec.sources) : undefined,
+      sku: rec.sku === null ? null : asString(rec.sku),
+      product_url: rec.product_url === null ? null : asString(rec.product_url),
+      review_required: typeof rec.review_required === 'boolean' ? rec.review_required : undefined,
+      notes: asString(rec.notes),
     });
   });
   if (parts.length === 0) errors.push('No parts list found (expected "parts", "components" or "bom").');
@@ -185,6 +196,38 @@ export function normalizeAssembly(raw: unknown): NormalizeResult {
       source_ids: asStringArray(rec.source_ids ?? rec.sources),
     });
   });
+
+  // ---- ensure every part is referenced by at least one assembly step ----
+  // Model output occasionally omits inferred parts from every step's component_ids.
+  // Associate such parts with the most relevant step (via relationships, else the final
+  // step). This only adds a reference: instructions are untouched and the part keeps its
+  // own evidence / quantityUnknown / review_required flags.
+  const firstStepOfPart = new Map<string, number>();
+  steps.forEach((s) => {
+    for (const cid of s.component_ids) if (!firstStepOfPart.has(cid)) firstStepOfPart.set(cid, s.number);
+  });
+  for (const part of parts) {
+    if (firstStepOfPart.has(part.id)) continue;
+    const linkedStepNumbers = relationships
+      .filter((r) => r.from === part.id || r.to === part.id)
+      .map((r) => firstStepOfPart.get(r.from === part.id ? r.to : r.from))
+      .filter((n): n is number => typeof n === 'number')
+      .sort((a, b) => a - b);
+    const targetNumber = linkedStepNumbers[0] ?? steps[steps.length - 1]?.number;
+    const target = steps.find((s) => s.number === targetNumber);
+    if (!target) {
+      warnings.push(`Part "${part.id}" is not referenced by any assembly step and no step exists to attach it to.`);
+      continue;
+    }
+    target.component_ids.push(part.id);
+    steps.forEach((s) => {
+      if (s.number >= target.number && !s.installed_components.includes(part.id)) s.installed_components.push(part.id);
+    });
+    if (part.evidence === 'inferred' || part.review_required || part.quantityUnknown) target.uncertain = true;
+    warnings.push(
+      `Part "${part.id}" was not referenced by any step — associated with step ${target.number} ("${target.title}") via ${linkedStepNumbers.length > 0 ? 'a relationship to an installed part' : 'final-step fallback'}.`,
+    );
+  }
 
   if (errors.length > 0) return { data: null, warnings, errors };
   return {
