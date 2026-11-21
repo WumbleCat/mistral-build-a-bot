@@ -114,6 +114,26 @@ def test_shop_links_are_built_by_the_app_never_taken_from_the_model():
             assert url.startswith(SHOPS[key][2])
 
 
+def test_free_text_answered_as_an_object_or_list_is_accepted():
+    """Seen live: the model returned power_budget as an object and the step failed validation."""
+    sourcing = {
+        "power_budget": {"supply_voltage": "6 V (estimate)", "total_current": {"average_a": 1.0, "stall_a": 2.6},
+                         "runtime": None},
+        "searches": [{"component": "DC gear motor", "search_query": "TT gear motor 6V",
+                      "note": ["check shaft", "needs an H-bridge"]}],
+    }
+    design = {**DESIGN, "summary": ["2WD rover", "relay switched"],
+              "design_choices": [{"issue_id": "drivetrain.unknown", "choice": {"layout": "2WD"}, "reason": None}]}
+    result = infer_and_source(FakeClient(design=design, sourcing=sourcing), bom(), model="m")
+
+    order = result["order_links"]
+    assert order["power_budget"] == "supply voltage: 6 V (estimate); total current: average a: 1.0; stall a: 2.6"
+    assert order["components"][1]["note"] == "check shaft; needs an H-bridge"
+    assert result["inferred_components"]["summary"] == "2WD rover; relay switched"
+    assert result["inferred_components"]["design_choices"][0] == {
+        "issue_id": "drivetrain.unknown", "choice": "layout: 2WD", "reason": ""}
+
+
 def test_query_cleaning_and_link_encoding():
     assert clean_query("  L298N\n motor   driver\t") == "L298N motor driver"
     assert len(clean_query("x" * 500)) == 120

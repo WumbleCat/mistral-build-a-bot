@@ -57,10 +57,27 @@ MAX_QUERY_CHARS = 120
 # --------------------------------------------------------------------------
 
 
+def _as_text(value: object) -> str:
+    """Free-text fields: models sometimes answer with an object or a list instead of a sentence."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        return "; ".join(f"{str(k).replace('_', ' ')}: {_as_text(v)}" for k, v in value.items() if _as_text(v))
+    if isinstance(value, (list, tuple)):
+        return "; ".join(text for text in map(_as_text, value) if text)
+    return str(value)
+
+
+def _free_text(*fields: str):
+    return field_validator(*fields, mode="before")(_as_text)
+
+
 def _text_specs(value: object) -> dict[str, str]:
     if not isinstance(value, dict):
         return {}
-    return {str(k): str(v) for k, v in value.items() if v is not None and str(v).strip()}
+    return {str(k): _as_text(v) for k, v in value.items() if _as_text(v)}
 
 
 class DesignChoice(BaseModel):
@@ -69,6 +86,8 @@ class DesignChoice(BaseModel):
     issue_id: str
     choice: str = Field(min_length=1)
     reason: str = ""
+
+    _text = _free_text("choice", "reason")
 
 
 class InferredComponent(BaseModel):
@@ -80,6 +99,8 @@ class InferredComponent(BaseModel):
     specs: dict[str, str] = Field(default_factory=dict)
     basis: Literal["observed", "inferred"] = "inferred"
     reason: str = ""
+
+    _text = _free_text("reason")
 
     _specs = field_validator("specs", mode="before")(_text_specs)
 
@@ -95,6 +116,7 @@ class InferredDesign(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     summary: str = ""
+    _text = _free_text("summary")
     design_choices: list[DesignChoice] = Field(default_factory=list)
     components: list[InferredComponent] = Field(min_length=1)
 
@@ -106,6 +128,8 @@ class PartSearch(BaseModel):
     search_query: str = Field(min_length=1)
     recommended_sites: list[str] = Field(default_factory=list)
     note: str = ""
+
+    _text = _free_text("component", "search_query", "note")
 
     @field_validator("recommended_sites", mode="before")
     @classmethod
@@ -120,6 +144,7 @@ class SourcingPlan(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     power_budget: str = ""
+    _text = _free_text("power_budget")
     searches: list[PartSearch] = Field(default_factory=list)
 
 
