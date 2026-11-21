@@ -95,11 +95,26 @@ class InventoryReconciler:
                 continue
             category = normalize_category(part.category)
             key = (category, normalize_name(part.name))
+            # With detector boxes available, the vision model's rough box is dropped in
+            # favour of one evidence entry per located region.
             evidence = Evidence(
                 image_id=observation.image_id,
                 description=part.description,
-                bbox_xyxy_norm=part.bbox_xyxy_norm,
+                bbox_xyxy_norm=None if part.detections else part.bbox_xyxy_norm,
             )
+            located = [
+                Evidence(
+                    image_id=observation.image_id,
+                    description=(
+                        f"Located by Grounding DINO (detector score {hit.score:.2f}"
+                        + (f", SAM 2 mask score {hit.mask_score:.2f}" if hit.mask_score is not None else "")
+                        + "; not calibrated probabilities)."
+                    ),
+                    bbox_xyxy_norm=hit.bbox_xyxy_norm,
+                    source="grounding_dino",
+                )
+                for hit in part.detections
+            ]
             group = groups.get(key)
             if group is None:
                 groups[key] = _LocalGroup(
@@ -108,7 +123,7 @@ class InventoryReconciler:
                     name=part.name.strip(),
                     quantity=part.visible_quantity,
                     quantity_known=part.visible_quantity is not None,
-                    evidence=[evidence],
+                    evidence=[evidence, *located],
                     confidence=part.confidence,
                     markings=[part.visible_markings] if part.visible_markings else [],
                     notes=[],
@@ -126,7 +141,7 @@ class InventoryReconciler:
                 group.quantity = (
                     (group.quantity or 0) + part.visible_quantity if group.quantity_known else None
                 )
-                group.evidence.append(evidence)
+                group.evidence += [evidence, *located]
                 if part.confidence is not None:
                     group.confidence = max(group.confidence or 0.0, part.confidence)
                 if part.visible_markings and part.visible_markings not in group.markings:

@@ -11,6 +11,7 @@ from .catalog import build_catalog_client
 from .config import ConfigError, load_settings
 from .export import BOMExporter, write_json
 from .extraction import VisionResponseError
+from .grounding import build_grounder
 from .ingest import IngestError, load_images
 from .pipeline import analyze, write_analysis_outputs
 from .review import ReviewError, finalize, load_review
@@ -20,8 +21,10 @@ from .vision import OpenAICompatVisionClient, VisionAPIError, build_vision_clien
 def _summary(bom) -> str:
     observed = [c for c in bom.components if c.evidence_type.value == "observed"]
     unverified = [c for c in bom.components if c.evidence_type.value != "observed"]
+    detection = "VLM + Grounding DINO/SAM 2" if bom.metadata.get("detection_mode") == "vlm+grounding" else "VLM/LLM only"
     lines = [
-        f"Project: {bom.project_name}  (mode: {bom.metadata.get('mode', 'n/a')}, stage: {bom.metadata.get('stage', 'n/a')})",
+        f"Project: {bom.project_name}  (mode: {bom.metadata.get('mode', 'n/a')}, stage: {bom.metadata.get('stage', 'n/a')}, "
+        f"detection: {detection})",
         f"Observed components ({len(observed)}):",
     ]
     for c in observed:
@@ -57,6 +60,8 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
         reasoning_model = args.model or settings.reasoning_model
         if reasoning_model != model:
             reasoning_client = client.with_model(reasoning_model)
+    use_grounding = settings.grounding if args.grounding is None else args.grounding
+    grounder = build_grounder(settings) if use_grounding else None  # fails early if libraries are missing
     images = load_images(args.images)
     result = analyze(
         images,
@@ -68,6 +73,7 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
         mode="mock" if mock else "live",
         vision_model=model,
         reasoning_client=reasoning_client,
+        grounder=grounder,
     )
     written = write_analysis_outputs(result, args.out)
     print(_summary(result.bom))
@@ -159,6 +165,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--project-name", help="project name (default: first image's file name)")
     p.add_argument("--mock", action="store_true", help="offline mock mode: canned responses, no API key needed")
     p.add_argument("--model", help="override VISION_MODEL for this run")
+    p.add_argument(
+        "--grounding", action=argparse.BooleanOptionalAction, default=None,
+        help="also locate parts with local Grounding DINO + SAM 2; --no-grounding = VLM/LLM only "
+             "(default: VLM/LLM only unless ROBOT_BOM_GROUNDING=1)",
+    )
     p.set_defaults(func=_cmd_analyze)
 
     p = sub.add_parser("finalize", help="apply an edited review.json and export the final BOM")

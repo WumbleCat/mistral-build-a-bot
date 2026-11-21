@@ -150,6 +150,8 @@ def extract_observations(
         )
         observation.image_id = image.image_id  # authoritative id comes from ingestion
         observation.unconfirmed, observation.verification = [], "not_run"  # never model-supplied
+        for listed in observation.parts:
+            listed.detections = []
         if verify:
             verify_observation(client, image, observation, max_retries=max_retries)
         observations.append(observation)

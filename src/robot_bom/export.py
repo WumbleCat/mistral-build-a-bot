@@ -57,7 +57,10 @@ def _component_rows(components: list[Component], *, with_evidence: bool) -> list
             "n/a" if c.confidence is None else f"{c.confidence:.2f}",
         ]
         if with_evidence:
-            evidence = "; ".join(f"[{e.image_id}] {e.description}" for e in c.evidence)
+            evidence = "; ".join(f"[{e.image_id}] {e.description}" for e in c.evidence if e.source == "vlm")
+            boxes = sum(1 for e in c.evidence if e.source == "grounding_dino")
+            if boxes:
+                evidence += f" (+{boxes} Grounding DINO region(s); see bom.json)"
             row.append(_cell(evidence) or "none (not visible in any photo)")
         else:
             row.append(_cell(" ".join(c.notes)) or "-")
@@ -124,6 +127,10 @@ class BOMExporter:
                 "`{}` ({} view)".format(i, project.image_views.get(i, "unknown")) for i in project.image_ids
             ),
             f"- Vision model: {project.metadata.get('vision_model', 'n/a')}",
+            "- Detection mode: " + (
+                f"vision model + local Grounding DINO / SAM 2 ({project.metadata.get('grounder')})"
+                if project.metadata.get("detection_mode") == "vlm+grounding" else "vision/language model only"
+            ),
             f"- Ready to purchase: **{'YES' if project.ready_to_purchase else 'NO'}**",
             "",
             "Quantities shown as `unknown` are not established - unknown is not zero. "

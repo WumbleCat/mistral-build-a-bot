@@ -21,6 +21,8 @@ photos ─► A. ingest (validate, EXIF-rotate, downscale)
         ─► B. pass 1: observed-only extraction, one structured result per image
         ─► B. visibility re-check: each claim is re-examined against the photo;
               claims that are only implied (wheels → "motors") are demoted to inferred
+        ─► (optional) Grounding DINO + SAM 2 locate the listed parts on the photo;
+              switched off = VLM/LLM only, which is the default
         ─► C. cross-image reconciliation (same part in two photos is counted once)
         ─► B. pass 2: inference / completeness audit (proposals and questions only)
         ─► D. deterministic mechanical / electrical checks
@@ -35,6 +37,7 @@ photos ─► A. ingest (validate, EXIF-rotate, downscale)
 | `src/robot_bom/ingest.py` | A – image ingestion |
 | `src/robot_bom/vision.py` | `VisionClient` protocol, Mistral/OpenAI-compatible client, mock client |
 | `src/robot_bom/prompts.py`, `extraction.py` | B – two-pass prompts, schema validation, bounded retries |
+| `src/robot_bom/grounding.py` | optional – Grounding DINO + SAM 2 localisation (off = VLM/LLM only) |
 | `src/robot_bom/reconcile.py` | C – `InventoryReconciler.merge` |
 | `src/robot_bom/validation.py` | D – `RequirementsValidator.validate`, purchase-readiness rules |
 | `src/robot_bom/catalog.py` | E – `CatalogClient.search` (optional) |
@@ -131,18 +134,66 @@ cross-image deduplication offline. Mock mode is always explicit (`--mock` or
 A committed sample is in [`examples/mock-run/`](examples/mock-run/): the draft outputs,
 a hand-edited `review.edited.json`, and the resulting `final/` exports with `audit.json`.
 
-### Web UI and HTTP API
+### Web app
 
 ```bash
-uv run robot-bom serve            # http://127.0.0.1:8000
+python main.py                    # starts the server and opens the browser
+uv run robot-bom serve --open     # same thing from the CLI (http://127.0.0.1:8000)
 ```
 
-The page lets you upload photos, edit the component tables (status, quantities, make /
-model / SKU, specs), resolve issues, finalize, and download the exports.
+Running `main.py` (for example with PyCharm's Run button) is enough. If port 8000 is
+busy the next free port is used and printed.
 
-- `POST /analyze` – multipart `images` (1–8 files), `project_name`, `mock`
+In the page you can drop, choose or paste one to eight photos, pick the detection mode,
+and analyse. The result shows your photos with the located parts outlined, the visible
+and unverified component tables (editable: review status, quantities, make / model /
+SKU, specs), issues, the photos still needed, and a Finalize button that re-runs the
+checks and offers the exports for download.
+
+HTTP API behind the page:
+
+- `POST /analyze` – multipart `images` (1–8 files), `project_name`, `mock`, `grounding`
 - `POST /finalize` – JSON `{"review": {...}, "job_id": "..."}`
+- `GET /jobs/{job_id}/overlays/{image_id}.jpg` – photo with SAM 2 masks (grounding runs only)
 - `GET /health`, `GET /docs`
+
+### Detection mode: VLM/LLM only, or with Grounding DINO + SAM 2
+
+The app has two modes, switchable per run:
+
+| Mode | What runs | Use it when |
+| --- | --- | --- |
+| **VLM / LLM only** (default) | Only the Mistral vision/language model. No local models, no torch. | You want the fastest run, or do not have the detection libraries installed. |
+| **Mistral + Grounding DINO + SAM 2** | Mistral lists the visible parts; local Grounding DINO then locates them and SAM 2 segments them. | You want accurate outlines and masks on the photo. |
+
+How to choose:
+
+- **Web app:** the *Detection* dropdown next to the Analyze button. The choice is
+  remembered in your browser. If torch / transformers are not installed, the DINO + SAM
+  option is disabled and the page says so.
+- **CLI:** `robot-bom analyze photo.jpg --grounding` or `--no-grounding`.
+- **Default for both:** `ROBOT_BOM_GROUNDING=1` in `.env` makes DINO + SAM the default;
+  unset (or `0`) means VLM/LLM only. The dropdown and the CLI flag override it.
+
+The parts list, counts, checks and review flow are identical in both modes: the BOM
+always comes from the vision/language model and your review. The local models only add
+*where* each listed part is. A detector hit never adds a part, changes a count or
+implies a specification; a different region count is raised as an info issue instead.
+Detector and mask scores are reported as-is and are not calibrated probabilities. If
+the local models fail, the run continues in VLM-only form with a warning.
+
+DINO + SAM mode needs extra packages that are not installed by `uv sync`:
+
+```bash
+uv pip install torch torchvision "transformers==4.51.3" huggingface_hub truststore numpy
+uv pip install git+https://github.com/facebookresearch/sam2.git
+```
+
+Weights (`IDEA-Research/grounding-dino-tiny`, `facebook/sam2.1-hiera-tiny`, about
+850 MB) download on first use into `HF_HOME`; a `.hf-cache/` folder in the project is
+used automatically when it exists. Without `sam2` the mode still runs with boxes only.
+`GROUNDING_DINO_MODEL`, `GROUNDING_SAM_MODEL`, `GROUNDING_BOX_THRESHOLD` and
+`GROUNDING_TEXT_THRESHOLD` override the defaults.
 
 ## Human review
 
@@ -241,13 +292,18 @@ The tests never call the network; they use fake clients and `httpx.MockTransport
 - The view label (top / underside / …) comes from the model. A wrong label can suppress
   or add a missing-view request.
 - Bounding boxes are optional model output, kept only when well-formed, and `null`
-  otherwise. They are approximate and not produced by a detection model.
+  otherwise. In VLM-only mode they are approximate and not produced by a detection model.
 - Cross-image matching compares category and part-type name; it cannot tell two
   identical-looking physical parts apart. Count mismatches are flagged for review.
 - The electrical checks compare the numbers a reviewer enters; they are a sanity check,
   not a substitute for reading the datasheets.
-- Not implemented (optional in the spec): Grounding DINO / SAM 2 masks, OCR label
-  crops, image overlays, supplier-specific catalog integrations.
+- Grounding DINO + SAM 2 mode locates only parts the vision model already listed, by
+  matching words in the detector's label to the part name; a part it cannot match keeps
+  the vision model's rough box. The mode was run once on one photo with canned part
+  names (wheels segmented correctly, some duplicate regions for chassis and
+  breadboard); it has not been evaluated beyond that.
+- Not implemented (optional in the spec): OCR label crops, per-part crop re-inspection,
+  supplier-specific catalog integrations.
 
 ## Troubleshooting
 
