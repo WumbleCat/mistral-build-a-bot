@@ -46,9 +46,18 @@ def get_recipe(recipe_id: str) -> dict:
 
 
 @router.post("/match")
-def post_match(req: MatchRequest) -> dict:
-    """Deterministic BOM (fast, no LLM). Body: VisionResult (+owned)."""
-    return match.match_components(req.model_dump())
+def post_match(req: MatchRequest, live_offers: bool = Query(False, alias="live")) -> dict:
+    """Deterministic BOM (fast, no LLM). Body: VisionResult (+owned).
+
+    With ?live=true each BOM row also gets `live_offers` (LCSC/Mouser live search,
+    cached 1h, rate-limited, never fails — catalogue stays the fallback).
+    """
+    result = match.match_components(req.model_dump())
+    if live_offers:
+        from . import live as live_mod
+        for row in result["bom"]:
+            row["live_offers"] = live_mod.live_offers_for_part(row["name"])
+    return result
 
 
 @router.post("/match/smart")

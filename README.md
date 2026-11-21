@@ -76,3 +76,20 @@ cd backend && .venv/bin/python -m parts.check_links
 - Never invent shop URLs: catalogue URLs are `"TODO"` until a human pastes a verified link (`verified: true`).
 - Never commit `.env` or `.venv` (see `.gitignore`).
 - `mock/sample_bom.json` is the shared data contract for the frontend and workflow teams.
+
+### Live pricing (LCSC + Mouser)
+
+`backend/parts/live.py` powers the price-scout agent with two client tools:
+
+- `lcsc_search(keyword)` — free, no key: `GET https://jlcsearch.tscircuit.com/api/search?q=...&limit=5&full=true`
+- `mouser_search(keyword)` — Mouser Search API v1 keyword search; reads `MOUSER_API_KEY` from `.env` and **skips cleanly (returns []) when the key is missing or the API errors**
+
+Every BOM row can carry `live_offers` (`{shop, title, part_number, price_gbp, currency, stock, url, verified:false}`) next to the catalogue entry (the fallback):
+
+```bash
+curl -X POST "localhost:8000/api/match?live=true" -H 'Content-Type: application/json' \
+  -d '{"parts":[{"name":"tb6612 motor driver","category":"motor_driver","qty":1}]}'
+# smart match attaches live_offers automatically
+```
+
+Guarantees: 1-hour in-memory cache per (shop, keyword), max 30 Mouser calls per rolling minute, and live API failures **never** fail the BOM. The old DuckDuckGo `web_search` tool was removed.

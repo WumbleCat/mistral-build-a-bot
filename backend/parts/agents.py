@@ -7,9 +7,9 @@ Mistral Workflow:
   1. parts-coordinator      — receives components + deterministic match, returns final JSON
   2. catalog-matcher        — resolves unmatched/ambiguous components via the
                               `search_catalog` client tool (backed by match.py)
-  3. price-scout (optional) — `web_search` client tool, restricted to the allowed
-                              shop domains; anything found is marked verified=false.
-                              If web search is unavailable it skips cleanly.
+  3. price-scout (optional) — `lcsc_search`/`mouser_search` live-pricing client tools
+                              (LCSC free; Mouser needs MOUSER_API_KEY); results become live_offers
+                              with verified=false. Skips cleanly when unavailable.
   4. substitution-advisor   — up to 2 alternatives per part, catalogue first
   5. bom-auditor            — compatibility warnings (voltage, driver channels,
                               pins, missing wires/screws/switch)
@@ -40,7 +40,7 @@ from pydantic import BaseModel, Field
 import mistralai.agents as agents
 from mistralai.agents import Agent
 
-from . import match
+from . import live, match
 
 load_dotenv()
 
@@ -83,34 +83,20 @@ def _search_catalog_answer(query: str, category: str | None = None, limit: int =
 
 
 @agents.client_tool
-def web_search(query: str, max_results: int = 5) -> list[dict]:
-    """Web search restricted to the allowed UK shop domains. Used by price-scout
-    to find current product pages and prices. Results are NEVER marked verified."""
-    return _web_search_impl(query, max_results)
+def lcsc_search(keyword: str, limit: int = 5) -> list[dict]:
+    """Live LCSC (lcsc.com) component search — free, no API key. Returns live offers:
+    {shop, title, part_number, price_gbp, currency, stock, url, verified:false}."""
+    from . import live
+    return live.lcsc_search(keyword, limit=limit)
 
 
-def _web_search_impl(query: str, max_results: int = 5) -> list[dict]:
-    """Best-effort search via DuckDuckGo HTML, restricted to allowed shops.
-    Any failure returns [] so price-scout skips cleanly."""
-    try:
-        site_filter = " OR ".join(f"site:{d}" for d in ALLOWED_SHOP_DOMAINS)
-        q = f"{query} ({site_filter}) price GBP buy"
-        with httpx.Client(timeout=8, follow_redirects=True,
-                          headers={"User-Agent": "Mozilla/5.0 (buildfromvision)"}) as client:
-            r = client.get("https://html.duckduckgo.com/html/", params={"q": q})
-        if r.status_code != 200:
-            return []
-        import re
-        results = []
-        for m in re.finditer(r'class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>', r.text, re.S):
-            url, title = m.group(1), re.sub(r"<[^>]+>", "", m.group(2)).strip()
-            if any(d in url for d in ALLOWED_SHOP_DOMAINS):
-                results.append({"title": title, "url": url})
-            if len(results) >= max_results:
-                break
-        return results
-    except Exception:
-        return []
+@agents.client_tool
+def mouser_search(keyword: str, records: int = 5) -> list[dict]:
+    """Live Mouser (mouser.co.uk) keyword search via the Mouser Search API (needs
+    MOUSER_API_KEY in .env; returns [] when missing or rate-limited). Returns live
+    offers: {shop, title, part_number, price_gbp, currency, stock, url, verified:false}."""
+    from . import live
+    return live.mouser_search(keyword, records=records)
 
 
 # ---------------------------------------------------------------------------
@@ -209,14 +195,13 @@ def create_price_scout() -> Agent:
             name="price-scout",
             max_iterations=6,
             instructions=(
-                "Call the web_search tool AT MOST 4 times in total, then immediately give the final JSON answer. "
-                "You find current UK prices and product pages for parts on the allowed shops ONLY: "
-                + ", ".join(ALLOWED_SHOP_DOMAINS)
-                + ". Use the web_search tool. Return one quote per part. "
-                  "Never invent URLs: if search returns nothing, return an empty quotes list with skipped=true. "
-                  "Every quote is unverified and must be checked by a human (verified=false)."
+                "Call the lcsc_search and/or mouser_search tools AT MOST 4 times in total, then immediately give the final JSON answer. "
+                "You find current live prices and stock for parts using lcsc_search (free) and mouser_search (Mouser API key). "
+                "Return one quote per part with shop, url, price_gbp and a source_note. "
+                "Never invent URLs: if a search returns nothing, return an empty quotes list with skipped=true. "
+                "Every quote is unverified and must be checked by a human (verified=false). Catalogue entries stay the fallback."
             ),
-            tools=[web_search],
+            tools=[lcsc_search, mouser_search],
         )
     )
 
@@ -448,7 +433,8 @@ async def _stage_scout(bom_rows: list[dict]) -> PriceScoutResult | None:
         return None
     scout = create_price_scout()
     answers = agents.ClientToolAnswers(
-        web_search.answer(lambda query, max_results=5: _web_search_impl(query, max_results)),
+        lcsc_search.answer(lambda keyword, limit=5: live.lcsc_search(keyword, limit=limit)),
+        mouser_search.answer(lambda keyword, records=5: live.mouser_search(keyword, records=records)),
     )
     content = ("Find current UK price + product page for these parts (allowed shops only):\n"
                + json.dumps([{"part_id": r["part_id"], "name": r["name"]} for r in todo_parts], indent=2))
@@ -563,7 +549,7 @@ async def smart_match_async(payload: dict) -> dict:
     # assemble price-scout quotes (always unverified)
     if isinstance(scout_res, PriceScoutResult):
         if scout_res.skipped or not scout_res.quotes:
-            result["agent_trace"].append("price-scout: skipped (web_search unavailable/empty) — URLs stay TODO")
+            result["agent_trace"].append("price-scout: no live quotes — catalogue entries stay the fallback")
         else:
             contributed = True
             result["price_quotes"] = [q.model_dump() for q in scout_res.quotes]
@@ -591,6 +577,13 @@ async def smart_match_async(payload: dict) -> dict:
         result["agent_trace"].append(f"bom-auditor: {len(audit_res.warnings)} warnings")
     elif audit_res is not None:
         result["agent_trace"].append(f"bom-auditor failed ({type(audit_res).__name__}) — skipped")
+
+    # attach live_offers next to each BOM part (catalogue stays the fallback);
+    # live.py caches 1h, rate-limits Mouser to 30/min, and never raises
+    async def _attach_live(row: dict) -> None:
+        row["live_offers"] = await asyncio.to_thread(live.live_offers_for_part, row["name"])
+    await asyncio.gather(*[_attach_live(r) for r in result["bom"]])
+    result["agent_trace"].append("live-offers attached to BOM rows")
 
     # coordinator last — final verdict over everything
     try:
