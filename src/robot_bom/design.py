@@ -25,7 +25,7 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Literal
-from urllib.parse import quote_plus, urlsplit
+from urllib.parse import urlsplit
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -34,27 +34,17 @@ from .extraction import _extract_json, call_structured
 from .models import AuditEntry, Component, EvidenceType, ReviewDocument, RobotBOM
 from .prompts import CATEGORY_VOCABULARY
 from .review import _merge_issues
+from .suggest import SHOPS, clean_query, settle_unknowns, shop_links, suggestion_candidates
 from .taxonomy import ROLE_CATEGORIES, IdAllocator
 from .validation import RequirementsValidator, purchase_blockers
 from .vision import VisionAPIError, VisionClient, system_trust_context
 
 log = logging.getLogger(__name__)
 
-# key -> (display name, home page, search URL prefix). The search term is URL-encoded and
-# appended. Order is the order used in the output.
-SHOPS: dict[str, tuple[str, str, str]] = {
-    "lcsc": ("LCSC", "https://www.lcsc.com/", "https://www.lcsc.com/search?q="),
-    "digikey": ("DigiKey UK", "https://www.digikey.co.uk/", "https://www.digikey.co.uk/en/products/result?keywords="),
-    "rs": ("RS Components UK", "https://uk.rs-online.com/web/", "https://uk.rs-online.com/web/c/?searchTerm="),
-    "sparkfun": ("SparkFun", "https://www.sparkfun.com/", "https://www.sparkfun.com/catalogsearch/result/?q="),
-    "mouser": ("Mouser UK", "https://www.mouser.co.uk/", "https://www.mouser.co.uk/c/?q="),
-    "amazon": ("Amazon.com", "https://www.amazon.com/", "https://www.amazon.com/s?k="),
-}
-
 DESIGN_DISCLAIMER = (
-    "Model inference, not verified. Every design choice and every line marked 'inferred' is "
-    "the model's most likely guess from the photos and open issues - check it against the "
-    "real robot before buying anything. This list is separate from the reviewed BOM."
+    "Suggestions, not verified. Every design choice and every line marked 'inferred' is the "
+    "most likely guess from the photos and open issues - check it against the real robot. "
+    "The suggested parts are also written into the parts list, tagged as not reviewed."
 )
 LINKS_DISCLAIMER = (
     "`products` are real pages returned by a web search on the approved shops at the time "
@@ -84,8 +74,6 @@ _BROWSER_HEADERS = {
                   "Chrome/130.0 Safari/537.36",
     "Accept-Language": "en-GB,en;q=0.9",
 }
-
-MAX_QUERY_CHARS = 120
 
 
 # --------------------------------------------------------------------------
@@ -384,18 +372,6 @@ def plan_sourcing(client: VisionClient, design: InferredDesign, *, max_retries: 
     )
 
 
-def clean_query(text: str) -> str:
-    """One line of plain text, safe to put in a search URL."""
-    text = re.sub(r"https?://\S+", " ", text)
-    text = re.sub(r"[\x00-\x1f\x7f<>\"`]", " ", text)
-    return re.sub(r"\s+", " ", text).strip()[:MAX_QUERY_CHARS].strip()
-
-
-def shop_links(query: str) -> dict[str, str]:
-    """Search-result URL on every shop for ``query``. Built in code, never by the model."""
-    return {key: prefix + quote_plus(query) for key, (_, _, prefix) in SHOPS.items()}
-
-
 def components_document(bom: RobotBOM, design: InferredDesign, model: str) -> dict:
     return {
         "project_name": bom.project_name,
@@ -421,7 +397,8 @@ def _same_role(a: str, b: str) -> bool:
 
 
 def apply_design(
-    bom: RobotBOM, design: InferredDesign, *, now: str | None = None, locked: frozenset[str] = frozenset()
+    bom: RobotBOM, design: InferredDesign | None, *, now: str | None = None,
+    locked: frozenset[str] = frozenset(), order_links: dict | None = None,
 ) -> RobotBOM:
     """Return a copy of ``bom`` with the model's best guess written into it.
 
@@ -431,11 +408,17 @@ def apply_design(
       and required quantity it was missing; other observed lines are left alone.
     * A guessed critical part with no line of its own (motor, driver, power, controller) is
       added. Non-critical guesses (screws, wire) stay in ``inferred_components.json`` only.
-    * A line a human confirmed or rejected (or whose id is in ``locked``) is never touched,
-      and nothing becomes ``confirmed``.
+    * A line a human confirmed or rejected (or whose id is in ``locked``) is never overwritten
+      by the guess, and nothing becomes ``confirmed``.
+
+    Whatever is still unknown after that (the model left a part out, or ``design`` is None
+    because the model could not be reached) is filled with a default suggestion, and every
+    suggested part gets shop links: the product pages in ``order_links`` where the web search
+    found some, a shop search link otherwise.
 
     The deterministic checks are then re-run on the result, so the "unknown" criticals close
-    and real incompatibilities between the assumed values surface instead.
+    and real incompatibilities between the assumed values surface instead. Unreviewed lines
+    do not block the BOM; they stay tagged ``needs_review``.
     """
     now = now or datetime.now(timezone.utc).isoformat(timespec="seconds")
     components = [c.model_copy(deep=True) for c in bom.components]
@@ -461,7 +444,7 @@ def apply_design(
                 return candidate
         return None
 
-    for guess in design.components:
+    for guess in design.components if design else []:
         target = target_for(guess)
         if target is None:
             if guess.basis == "observed" or not _critical(guess.category):
@@ -501,35 +484,43 @@ def apply_design(
         audit.append(AuditEntry(timestamp=now, actor="ai-inference", action="ai_assumption", target=target.id,
                                 field=", ".join(fields), old=None, new=guess.name))
 
+    audit += settle_unknowns(components, now=now, locked=locked)
     checks = RequirementsValidator().validate(components, bom.connections, image_views=bom.image_views)
     issues = _merge_issues([i.model_copy(deep=True) for i in bom.issues], checks.issues, components)
-    choices = {d.issue_id: d.choice for d in design.design_choices}
+    choices = {d.issue_id: d.choice for d in design.design_choices} if design else {}
     for issue in issues:
         # rule-based issues close only when the data satisfies the rule; the model's own
         # questions are answered by the design choice it has now made
         if not issue.resolved and issue.source == "model" and issue.id in choices:
             issue.resolved = True
             issue.resolution_note = "AI best guess (not verified): " + choices[issue.id]
+    rows = {str(row.get("name", "")).strip().casefold(): row for row in (order_links or {}).get("components", [])}
+    candidates = list(bom.catalog_candidates)
+    candidates += suggestion_candidates(components, candidates, now=now, products=rows)
+    blockers = purchase_blockers(components, issues)
     data = bom.model_dump(mode="json")
     data.update(
         components=[c.model_dump(mode="json") for c in components],
         issues=[i.model_dump(mode="json") for i in issues],
+        catalog_candidates=[c.model_dump(mode="json") for c in candidates],
         audit_trail=data["audit_trail"] + [a.model_dump(mode="json") for a in audit],
-        ready_to_purchase=False,
-        readiness_blockers=purchase_blockers(components, issues),
+        ready_to_purchase=not blockers,
+        readiness_blockers=blockers,
     )
     return RobotBOM.model_validate(data)
 
 
-def apply_design_to_review(review: ReviewDocument, design: InferredDesign) -> ReviewDocument:
+def apply_design_to_review(
+    review: ReviewDocument, design: InferredDesign | None, order_links: dict | None = None
+) -> ReviewDocument:
     """Apply the guess to the edited BOM and to the baseline alike, so the audit trail keeps
     attributing the reviewer's own edits to the reviewer and the guesses to ``ai-inference``."""
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     return review.model_copy(update={
-        "bom": apply_design(review.bom, design, now=now),
+        "bom": apply_design(review.bom, design, now=now, order_links=order_links),
         # lines the reviewer already ruled on stay untouched in the baseline too, so the two
         # documents differ only by the reviewer's own edits
-        "baseline": apply_design(review.baseline, design, now=now,
+        "baseline": apply_design(review.baseline, design, now=now, order_links=order_links,
                                  locked=frozenset(c.id for c in review.bom.components if c.status != "needs_review")),
     })
 
@@ -724,7 +715,45 @@ def best_guess(
     result = infer_and_source(client, review.bom, model=model, max_retries=max_retries,
                               web_search=web_search, stock_check=stock_check)
     design = result.pop("design")
-    return result, apply_design_to_review(review, design)
+    return result, apply_design_to_review(review, design, result["order_links"])
+
+
+def default_guess(review: ReviewDocument, *, reason: str) -> tuple[dict[str, dict], ReviewDocument]:
+    """What ``best_guess`` returns when the model cannot be used: no model call at all.
+
+    The critical unknowns are filled with the built-in default suggestions and each suggested
+    part gets shop search links, so a failed model call never leaves the BOM blocked.
+    """
+    review = apply_design_to_review(review, None)
+    bom = review.bom
+    note = f"The model could not be used ({reason}), so built-in default suggestions were applied instead."
+    rows, parts = [], []
+    for c in bom.components:
+        if c.status == "rejected":
+            continue
+        basis = "observed" if c.evidence_type is EvidenceType.OBSERVED else "inferred"
+        quantity = c.purchase_quantity or c.required_quantity or c.visible_quantity or 1
+        query = clean_query(c.name)
+        parts.append({"name": c.name, "category": c.category, "quantity": quantity, "specs": c.specs,
+                      "basis": basis, "reason": "", "bom_id": c.id})
+        rows.append({"name": c.name, "quantity": quantity, "basis": basis, "search_query": query,
+                     "recommended_sites": [], "note": "", "specs": c.specs, "products": [],
+                     "links": shop_links(query)})
+    return {
+        "inferred_components": {
+            "project_name": bom.project_name, "generated_by": "built-in defaults", "disclaimer": DESIGN_DISCLAIMER,
+            "summary": note, "design_choices": [], "components": parts,
+        },
+        "order_links": {
+            "project_name": bom.project_name, "generated_by": "built-in defaults", "disclaimer": LINKS_DISCLAIMER,
+            "power_budget": "",
+            "availability": {"checked_at": None, "method": "not run (the model could not be used)",
+                             "parts_with_products": 0, "parts_total": len(rows), "in_stock_confirmed": 0,
+                             "error": None},
+            "sites": {key: {"name": name, "url": home} for key, (name, home, _) in SHOPS.items()},
+            "components": rows,
+        },
+    }, review
 
 
 def infer_and_source(

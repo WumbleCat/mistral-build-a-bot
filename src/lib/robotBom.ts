@@ -148,6 +148,7 @@ function quantityOf(c: BomComponent): number | null {
 /**
  * Turn the pipeline's BOM into the component-analysis list /api/generate takes.
  * Nothing is upgraded: only "observed" parts become "visible"; rejected parts are dropped.
+ * Unreviewed parts are kept and tagged "[Not reviewed]"; they never hold the build back.
  */
 export function bomToComponents(bom: RobotBom): ComponentAnalysis[] {
   const openIssues = new Set(
@@ -165,7 +166,9 @@ export function bomToComponents(bom: RobotBom): ComponentAnalysis[] {
       const link = bestLink.get(c.id);
       const specs = Object.entries(c.specs ?? {}).map(([k, v]) => `${k}: ${v}`);
       const made = [c.manufacturer, c.model].filter(Boolean).join(' ');
+      const notReviewed = c.status === 'needs_review';
       const notes = [
+        notReviewed && '[Not reviewed]',
         made && `Identified as ${made}.`,
         ...c.notes,
         specs.length ? `Specs: ${specs.join(', ')}.` : '',
@@ -183,6 +186,7 @@ export function bomToComponents(bom: RobotBom): ComponentAnalysis[] {
         review_required:
           c.status !== 'confirmed' && (c.evidence_type !== 'observed' || Boolean(c.assumed_fields?.length) || openIssues.has(c.id)),
         notes: notes.join(' '),
+        not_reviewed: notReviewed,
         confidence: c.confidence,
       };
     });

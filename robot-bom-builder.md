@@ -25,7 +25,7 @@ You are a senior full-stack engineer and robotics systems engineer. **Implement 
 - Deduplicate identical parts viewed from multiple camera angles. Keep all supporting image references rather than counting the same wheel twice.
 - Record uncertainty and request the *most informative missing view* (e.g., underside for motors). Use human verification for exact catalog matches.
 - A compatibility rule produces a **warning or question**, not an automatically confirmed component.
-- Never claim the final BOM is complete or purchasing-ready while unresolved critical components remain.
+- Never leave the BOM blocked on an unknown: a critical part or rating that is still unknown is filled with a suggested part/value (listed in `assumed_fields`, never confirmed) plus shop links. Lines nobody reviewed are included and tagged "not reviewed". Only a check that fails on the data (a real incompatibility, no parts at all) keeps `ready_to_purchase` false.
 
 ## Expected user experience
 
@@ -184,7 +184,7 @@ uv run robot-bom finalize ./output/review.json --out ./output/final
 
 If an existing web UI is present, integrate an upload form and review table there. If starting from scratch, a simple FastAPI endpoint for uploads/results is sufficient, with CLI as the primary interface.
 
-`finalize` must respect user corrections and retain an audit trail. `ready_to_purchase` must be `false` if critical issues remain, unknown SKUs are required for purchasing, or unresolved compatibility checks are critical.
+`finalize` must respect user corrections and retain an audit trail. `ready_to_purchase` must be `false` if a check fails on the data (a critical incompatibility) or a confirmed item to buy has no SKU or purchase quantity. Unknowns are filled with suggestions and unreviewed lines are tagged "not reviewed"; neither blocks.
 
 ## Deliverables / output files
 
@@ -225,7 +225,7 @@ Write automated tests including:
 6. No configured API key → mock mode works; normal mode fails clearly and safely.
 7. Catalog unavailable → empty candidates; output still exports.
 8. Incorrect motor-driver voltage/current pairing → unresolved critical compatibility issue.
-9. Review corrections persist in final BOM; unresolved critical issue keeps `ready_to_purchase=false`.
+9. Review corrections persist in final BOM; an unknown critical is filled with a suggestion, and a real incompatibility keeps `ready_to_purchase=false`.
 
 If ground-truth labeled robots are later available, evaluate category precision/recall/F1, visible-count error, exact SKU precision, critical-missing-parts recall and fraction of hallucinated specifications. Do not claim numerical accuracy before measuring it.
 

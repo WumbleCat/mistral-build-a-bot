@@ -343,7 +343,8 @@ function componentTable(components, visible) {
     const main = el("tr", {}, [
       el("td", { class: "part" }, [
         el("span", { class: `tag ${c.evidence_type}`, text: c.evidence_type }),
-        (c.assumed_fields || []).length ? el("span", { class: "tag ai", text: "AI guess", title: "Filled in by the model, not verified: " + c.assumed_fields.join(", ") }) : null,
+        (c.assumed_fields || []).length ? el("span", { class: "tag ai", text: "suggested", title: "Filled in by the model or the app, not verified: " + c.assumed_fields.join(", ") }) : null,
+        c.status === "needs_review" ? el("span", { class: "tag unknown", text: "not reviewed", title: "Nobody has confirmed this line. It is still included in the BOM." }) : null,
         el("strong", { text: c.name }),
         el("div", { class: "meta" }, [el("code", { text: c.id }), ` ${c.category}${confidence}`]),
       ]),
@@ -402,8 +403,11 @@ function render(bom) {
   if (bom.metadata.mode === "mock")
     banners.append(el("div", { class: "banner mock", text: "MOCK DATA — canned sample responses, not an analysis of your photos." }));
   const ready = el("div", { class: "banner " + (bom.ready_to_purchase ? "yes" : "no"),
-    text: bom.ready_to_purchase ? "Ready to purchase (based on your confirmations)." : `Not ready to purchase — this ${bom.metadata.stage} BOM is incomplete.` });
+    text: bom.ready_to_purchase ? "Ready to purchase." : `Not ready to purchase — this ${bom.metadata.stage} BOM is incomplete.` });
   if (bom.readiness_blockers.length) ready.append(el("ul", {}, bom.readiness_blockers.map((b) => el("li", { text: b }))));
+  const pending = bom.components.filter((c) => c.status === "needs_review");
+  if (bom.ready_to_purchase && pending.length)
+    ready.append(el("div", { text: `${pending.length} line(s) are tagged “not reviewed”` + (pending.some((c) => (c.assumed_fields || []).length) ? ", some with suggested parts or values" : "") + ". They are included as they are; check them when you can." }));
   banners.append(ready);
 
   const observed = bom.components.filter((c) => c.evidence_type === "observed");
@@ -444,8 +448,13 @@ function render(bom) {
   }) : [el("p", { class: "hint", text: "No issues." })]));
 
   $("views").replaceChildren(...bom.requested_views.map((v) => el("li", {}, [el("strong", { text: v.view }), ` — ${v.reason}`])));
-  const candidates = bom.catalog_candidates.length ? ` ${bom.catalog_candidates.length} candidate(s) — see bom.md.` : " No store links or prices are listed.";
-  $("catalog").textContent = `Catalog: ${bom.catalog_status}.` + candidates;
+  const candidates = bom.catalog_candidates.length ? ` ${bom.catalog_candidates.length} shop link(s):` : " No store links or prices are listed.";
+  const name = Object.fromEntries(bom.components.map((c) => [c.id, c.name]));
+  $("catalog").replaceChildren(`Catalog: ${bom.catalog_status}.` + candidates,
+    ...(bom.catalog_candidates.length ? [el("ul", {}, bom.catalog_candidates.map((c) => el("li", {}, [
+      `${name[c.component_id] || c.component_id} — `,
+      el("a", { href: c.product_url, target: "_blank", rel: "noopener noreferrer", text: `${c.vendor}: ${c.title}` }),
+    ])))] : []));
   $("results").classList.remove("hidden");
 }
 

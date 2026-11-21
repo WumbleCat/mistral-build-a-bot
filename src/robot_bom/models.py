@@ -233,10 +233,9 @@ class RobotBOM(BaseModel):
                 )
 
         if self.ready_to_purchase:
-            if any(i.severity == "critical" and not i.resolved for i in self.issues):
+            # the model's own open questions are advisory; unreviewed lines are tagged, not blocked
+            if any(i.severity == "critical" and not i.resolved and i.source != "model" for i in self.issues):
                 raise ValueError("ready_to_purchase cannot be true with unresolved critical issues")
-            if any(c.status == "needs_review" for c in self.components):
-                raise ValueError("ready_to_purchase cannot be true while components need review")
             if self.readiness_blockers:
                 raise ValueError("ready_to_purchase cannot be true while readiness blockers remain")
         return self

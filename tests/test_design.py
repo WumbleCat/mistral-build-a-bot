@@ -11,6 +11,7 @@ from robot_bom.config import Settings
 import httpx
 
 from robot_bom.design import (
+    default_guess,
     SHOPS, InferredDesign, SourcingPlan, add_products, apply_design, best_guess, clean_query, find_products,
     infer_and_source, page_stock, shop_links, shop_of,
 )
@@ -185,7 +186,8 @@ def test_the_guess_closes_the_unknown_criticals_but_confirms_nothing():
     motor = by_id["motor-1"]
     assert (motor.name, motor.required_quantity, motor.specs) == ("TT DC gear motor", 2, {"voltage_v": "6", "current_a": "1.2"})
     assert motor.evidence_type.value == "inferred" and motor.visible_quantity is None and motor.status == "needs_review"
-    assert motor.assumed_fields == ["name", "required_quantity", "specs.voltage_v", "specs.current_a"]
+    assert motor.assumed_fields == ["name", "required_quantity", "specs.voltage_v", "specs.current_a", "purchase_quantity"]
+    assert motor.purchase_quantity == 2  # a suggested part is something to buy
     assert any("AI best guess, not verified: one per driven wheel" in note for note in motor.notes)
     power = next(c for c in after.components if c.category == "battery_holder")
     assert power.specs["voltage_v"] == "6" and power.assumed_fields
@@ -193,22 +195,26 @@ def test_the_guess_closes_the_unknown_criticals_but_confirms_nothing():
     assert wheel.evidence_type.value == "observed" and wheel.visible_quantity == 2 and wheel.specs == {}
     assert wheel.assumed_fields == [] and wheel.required_quantity is None
 
-    # still not purchasable: every guessed line waits for a human, and says so
-    assert after.ready_to_purchase is False
-    assert any("Not yet reviewed by a human" in blocker for blocker in after.readiness_blockers)
+    # nothing is held back: the guessed lines are included, still unreviewed, with shop links
+    assert after.ready_to_purchase is True and after.readiness_blockers == []
+    assert all(c.status == "needs_review" for c in after.components)
+    assert {c.component_id for c in after.catalog_candidates} == {c.id for c in after.components if "name" in c.assumed_fields}
     warning = next(i for i in after.issues if i.id == "inference.assumptions")
     assert warning.severity == "warning" and "motor-1" in warning.component_ids
     answered = next(i for i in after.issues if i.id == "model.1")
     assert answered.resolved and answered.resolution_note.startswith("AI best guess (not verified): 5 V relay")
-    assert {e.actor for e in after.audit_trail} == {"ai-inference"}
+    # the guesses are the model's; the purchase quantities of the suggested parts are the app's
+    assert {e.actor for e in after.audit_trail} == {"ai-inference", "robot-bom"}
     assert before.components[2].name != "TT DC gear motor"  # the input document is not modified
 
 
 def test_assumed_values_still_go_through_the_compatibility_rules():
-    weak = GUESS.model_copy(deep=True)
-    weak.components[2].specs = {"max_voltage_v": "13.5", "max_current_a": "0.5"}  # below the 1.2 A motors
-    after = apply_design(unknown_rover(), weak)
+    reviewed = unknown_rover()
+    driver = next(c for c in reviewed.components if c.id == "motor_driver-1")
+    driver.status, driver.specs = "confirmed", {"max_voltage_v": "13.5", "max_current_a": "0.5"}  # the real board
+    after = apply_design(reviewed, GUESS)  # guesses 1.2 A motors
     assert any(i.id.startswith("compat.driver_undersized") and i.severity == "critical" for i in after.unresolved_issues())
+    assert after.ready_to_purchase is False  # a real mismatch on confirmed data still blocks
 
 
 def test_a_line_the_reviewer_ruled_on_is_never_overwritten():
@@ -217,8 +223,57 @@ def test_a_line_the_reviewer_ruled_on_is_never_overwritten():
     motor.status, motor.name, motor.required_quantity = "confirmed", "N20 micro gear motor", 4
     after = apply_design(reviewed, GUESS)
     kept = next(c for c in after.components if c.id == "motor-1")
-    assert (kept.name, kept.required_quantity, kept.specs, kept.assumed_fields) == ("N20 micro gear motor", 4, {}, [])
+    assert (kept.name, kept.required_quantity, kept.status) == ("N20 micro gear motor", 4, "confirmed")
+    # the ratings nobody entered are suggested (and marked) so the compatibility checks can run
+    assert kept.specs == {"voltage_v": "6", "current_a": "1.2"}  # within the 1.2 A driver
+    assert kept.assumed_fields == ["specs.voltage_v", "specs.current_a"]
     assert not any(c.name == "TT DC gear motor" for c in after.components)
+
+
+def test_a_suggested_driver_that_cannot_take_the_motor_is_swapped_not_left_blocking():
+    weak = GUESS.model_copy(deep=True)
+    weak.components[1].specs = {"voltage_v": "6", "current_a": "1.5"}  # above the 1.2 A the guessed driver takes
+    after = apply_design(unknown_rover(), weak)
+    driver = next(c for c in after.components if c.category == "motor_driver")
+    assert driver.name == "L298N dual H-bridge motor driver module" and driver.specs["max_current_a"] == "2"
+    assert after.unresolved_issues("critical") == [] and after.ready_to_purchase is True
+
+
+def test_whatever_the_model_leaves_unknown_gets_a_default_suggestion():
+    partial = GUESS.model_copy(deep=True)
+    partial.components = [c for c in partial.components if c.category not in ("microcontroller", "motor_driver")]
+
+    after = apply_design(unknown_rover(), partial)
+
+    assert [i.id for i in after.unresolved_issues() if i.severity == "critical"] == []
+    names = {c.category: c.name for c in after.components if c.assumed_fields}
+    assert names["microcontroller"] == "Arduino Uno R3"
+    assert {e.actor for e in after.audit_trail} == {"ai-inference", "robot-bom"}
+
+
+def test_product_pages_found_by_the_search_become_the_shop_links():
+    links = {"components": [{"name": "TT DC gear motor", "search_query": "TT gear motor 6V", "products": [
+        {"site": "sparkfun", "title": "Hobby Gearmotor", "url": "https://www.sparkfun.com/products/13302", "stock": "in_stock"},
+    ]}]}
+
+    after = apply_design(unknown_rover(), GUESS, order_links=links)
+
+    motor = [c for c in after.catalog_candidates if c.component_id == "motor-1"]
+    assert [(c.vendor, c.product_url) for c in motor] == [("SparkFun", "https://www.sparkfun.com/products/13302")]
+    assert "in stock" in motor[0].evidence_notes
+    other = [c for c in after.catalog_candidates if c.component_id != "motor-1"]
+    assert other and all(c.title.startswith("Search: ") for c in other)  # no page found: a search link
+
+
+def test_without_a_model_the_defaults_alone_settle_the_unknowns():
+    documents, updated = default_guess(build_review_document(unknown_rover()), reason="no key")
+
+    # only the model's own question stays open, and it is advisory
+    assert [i.source for i in updated.bom.unresolved_issues("critical")] == ["model"]
+    assert updated.bom.readiness_blockers == [] and updated.bom.ready_to_purchase is True
+    assert "no key" in documents["inferred_components"]["summary"]
+    assert documents["order_links"]["components"][0]["links"]["amazon"].startswith("https://www.amazon.com/s?k=")
+    assert finalize(updated).ready_to_purchase is True
 
 
 def test_best_guess_updates_the_review_and_finalize_attributes_edits_correctly():
@@ -410,8 +465,11 @@ def test_api_infer_rejects_bad_input_and_needs_a_key_for_live_data(http):
     live = analyze(make_images("top.png"), MockVisionClient(), project_name="rover", mode="live")
     review = live.review.model_dump(mode="json")
     assert http.post("/infer", json={"review": review, "model": "bad id!"}).status_code == 400
+    # no key for live data: the built-in suggestions are used instead of failing
     no_key = http.post("/infer", json={"review": review})
-    assert no_key.status_code == 503 and "No vision API key is configured" in no_key.json()["detail"]
+    assert no_key.status_code == 200
+    assert "No vision API key is configured" in no_key.json()["inferred_components"]["summary"]
+    assert no_key.json()["review"]["bom"]["ready_to_purchase"] is True
 
 
 def test_cli_analyze_infers_automatically_and_survives_a_failed_inference(http, tmp_path, capsys, monkeypatch):
@@ -430,7 +488,10 @@ def test_cli_analyze_infers_automatically_and_survives_a_failed_inference(http, 
     assert cli.main(["analyze", str(photo), "--mock", "--out", str(failed)]) == 0  # the BOM is still delivered
     captured = capsys.readouterr()
     assert "could not be produced" in captured.err and "robot-bom infer" in captured.err
-    assert (failed / "review.json").is_file() and not (failed / "inferred").exists()
+    assert "Ready to purchase: NO" in captured.out  # the draft, before anything is suggested
+    # the built-in suggestions stand in for the model
+    review = json.loads((failed / "review.json").read_text(encoding="utf-8"))
+    assert review["bom"]["ready_to_purchase"] is True and (failed / "inferred" / "order_links.json").is_file()
 
 
 def test_cli_infer_writes_both_files(http, tmp_path, capsys):
