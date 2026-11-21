@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { validateAnalysis, provenanceLine, type ComponentAnalysis } from '../lib/analysisAdapter';
 
@@ -23,6 +23,19 @@ export function PhotoAnalysisDialog({ onGenerated, onClose }: PhotoAnalysisDialo
   const [warnings, setWarnings] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+  const [genElapsed, setGenElapsed] = useState(0);
+
+  // Honest progress feedback: the whole generation is one blocking vision-model
+  // request, so show a live elapsed timer rather than fake stage percentages.
+  useEffect(() => {
+    if (!generating) {
+      setGenElapsed(0);
+      return;
+    }
+    const t0 = Date.now();
+    const iv = window.setInterval(() => setGenElapsed(Math.floor((Date.now() - t0) / 1000)), 1000);
+    return () => window.clearInterval(iv);
+  }, [generating]);
   const fileRef = useRef<HTMLInputElement>(null);
   const jsonFileRef = useRef<HTMLInputElement>(null);
 
@@ -200,6 +213,13 @@ export function PhotoAnalysisDialog({ onGenerated, onClose }: PhotoAnalysisDialo
 
         {genError && <p className="modal-error">{genError}</p>}
 
+        {generating && (
+          <p className="card-note" aria-live="polite">
+            Analysing the photograph and {components?.length ?? 0} component entries with the Mistral vision
+            model — a single request, typically under a minute. Elapsed: {genElapsed}s.
+          </p>
+        )}
+
         <div className="modal-actions">
           <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
           <span className="modal-spacer" />
@@ -209,7 +229,7 @@ export function PhotoAnalysisDialog({ onGenerated, onClose }: PhotoAnalysisDialo
             disabled={!canGenerate}
             onClick={() => void generate()}
           >
-            {generating ? <><span className="spinner spinner-small" aria-hidden /> Generating workbook…</> : '✨ Generate workbook'}
+            {generating ? <><span className="spinner spinner-small" aria-hidden /> Generating… {genElapsed}s</> : '✨ Generate workbook'}
           </button>
         </div>
       </div>

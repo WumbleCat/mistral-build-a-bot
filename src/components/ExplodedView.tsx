@@ -10,6 +10,10 @@ import { useEffect, useRef, useState } from 'react';
 
 const svgCache = new Map<string, Promise<string>>();
 function loadSvg(url: string): Promise<string> {
+  // Server-generated schematic views arrive as data: URLs — decode directly.
+  if (url.startsWith('data:image/svg+xml')) {
+    return Promise.resolve(decodeURIComponent(url.slice(url.indexOf(',') + 1)));
+  }
   let p = svgCache.get(url);
   if (!p) {
     p = fetch(url).then((r) => {
