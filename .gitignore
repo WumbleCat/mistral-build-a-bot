@@ -24,3 +24,6 @@ output/
 # node
 node_modules/
 *.tsbuildinfo
+
+# Hugging Face model cache (downloaded weights)
+.hf-cache/
