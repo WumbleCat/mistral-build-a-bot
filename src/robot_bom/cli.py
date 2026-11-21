@@ -1,4 +1,4 @@
-"""Command line interface: ``robot-bom analyze | finalize | models | check-api | serve``."""
+"""Command line interface: ``robot-bom analyze | finalize | infer | models | check-api | serve``."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .catalog import build_catalog_client
 from .config import ConfigError, load_settings
+from .design import infer_and_source
 from .export import BOMExporter, write_json
 from .extraction import VisionResponseError
 from .grounding import build_grounder
@@ -93,6 +94,29 @@ def _cmd_finalize(args: argparse.Namespace) -> int:
     print("\nWrote:")
     for path in written.values():
         print(f"  {path}")
+    return 0
+
+
+def _cmd_infer(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    bom = load_review(args.review).bom
+    mock = args.mock or settings.mock or bom.metadata.get("mode") == "mock"
+    vision, reasoning, model = clients_for_run(build_vision_client(settings, mock=mock), settings, args.model)
+    client = reasoning or vision  # both queries are text-only
+    result = infer_and_source(client, bom, model=getattr(client, "_model", model), max_retries=settings.max_retries)
+    design, links = result["inferred_components"], result["order_links"]
+    print("MODEL INFERENCE - assumptions, not verified. The reviewed BOM is unchanged.")
+    if design["summary"]:
+        print(design["summary"])
+    print(f"\nDesign choices ({len(design['design_choices'])}):")
+    for choice in design["design_choices"]:
+        print(f"  - {choice['issue_id']}: {choice['choice']}")
+    print(f"\nComponents ({len(design['components'])}):")
+    for row in links["components"]:
+        print(f"  - {row['quantity']} x {row['name']} [{row['basis']}]  search: {row['search_query']}")
+    print("\nWrote:")
+    for name, document in result.items():
+        print(f"  {write_json(Path(args.out) / f'{name}.json', document)}")
     return 0
 
 
@@ -192,6 +216,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", default="output/final", help="output directory (default: output/final)")
     p.add_argument("--reviewer", help="reviewer name recorded in the audit trail")
     p.set_defaults(func=_cmd_finalize)
+
+    p = sub.add_parser(
+        "infer",
+        help="let the model settle every open issue, list the components and build shop search links "
+             "(assumptions; does not change the BOM)",
+    )
+    p.add_argument("review", help="path to review.json from `analyze` (your edits are taken into account)")
+    p.add_argument("--out", default="output/inferred", help="output directory (default: output/inferred)")
+    p.add_argument("--model", help="model for this step (see `robot-bom models`)")
+    p.add_argument("--mock", action="store_true", help="canned responses, no API call")
+    p.set_defaults(func=_cmd_infer)
 
     p = sub.add_parser("models", help="list the models your API key can use")
     p.add_argument("--all", action="store_true", help="also list models that cannot read photos")

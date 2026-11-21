@@ -172,6 +172,17 @@
     </section>
 
     <section class="card">
+      <h2>AI best guess: settle every issue and find the parts</h2>
+      <p class="hint">Asks the model to make the most likely design choice for every open issue above and return one simple component list, then runs a second parts-research query to pick search terms and shops. These are the model's assumptions &mdash; they are kept separate from the reviewed BOM and never mark it ready to purchase. Your edits above are taken into account.</p>
+      <div class="finalize">
+        <button id="infer-btn" type="button">Infer all design choices</button>
+        <div id="infer-status" class="hidden" style="display:flex;align-items:center;gap:8px;color:var(--muted)"><div class="spinner"></div><span id="infer-status-text"></span></div>
+        <span class="downloads" id="infer-downloads"></span>
+      </div>
+      <div id="inferred"></div>
+    </section>
+
+    <section class="card">
       <h2>5. Photos / measurements still needed</h2>
       <ol id="views"></ol>
       <p class="hint" id="catalog" style="margin:10px 0 0"></p>
@@ -474,6 +485,7 @@ $("analyze-btn").addEventListener("click", async () => {
     }
     state = { job_id: result.job_id, review: result.review, images, overlays: result.overlays || {} };
     $("downloads").replaceChildren();
+    $("inferred").replaceChildren(); $("infer-downloads").replaceChildren();
     $("clear-btn").classList.remove("hidden");
     render(state.review.bom);
     $("results").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -497,7 +509,64 @@ $("finalize-btn").addEventListener("click", async () => {
   finally { $("finalize-btn").disabled = false; }
 });
 
+/* ---------- AI best guess: design choices, component list, shop search links ---------- */
+function renderInferred(result) {
+  const design = result.inferred_components, order = result.order_links;
+  const jsonLink = (name, doc) => el("a", { download: name, text: "⤓ " + name,
+    href: URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" })) });
+  $("infer-downloads").replaceChildren(jsonLink("inferred_components.json", design), jsonLink("order_links.json", order));
+  const table = el("table", {}, el("thead", {}, el("tr", {}, ["Qty", "Component", "Assumed specs", "Search for", "Order from"].map((h) => el("th", { text: h })))));
+  for (const row of order.components) {
+    const part = design.components.find((c) => c.name === row.name) || {};
+    const keys = [...row.recommended_sites, ...Object.keys(row.links).filter((k) => !row.recommended_sites.includes(k))];
+    const links = el("td", {});
+    keys.forEach((key, i) => {
+      if (i) links.append(" · ");
+      const a = el("a", { href: row.links[key], target: "_blank", rel: "noopener noreferrer", text: order.sites[key].name });
+      if (row.recommended_sites.includes(key)) a.style.fontWeight = "700";
+      links.append(a);
+    });
+    table.append(el("tbody", { class: "item" }, [
+      el("tr", {}, [
+        el("td", { text: String(row.quantity) }),
+        el("td", { class: "part" }, [el("span", { class: `tag ${row.basis}`, text: row.basis }), el("strong", { text: row.name })]),
+        el("td", { text: specsToText(part.specs) || "—" }),
+        el("td", {}, el("code", { text: row.search_query })),
+        links,
+      ]),
+      el("tr", { class: "detail" }, el("td", { colSpan: 5 }, [part.reason ? el("div", { text: part.reason }) : null, row.note ? el("div", { class: "note", text: row.note }) : null])),
+    ]));
+  }
+  $("inferred").replaceChildren(
+    el("div", { class: "banner mock", text: design.disclaimer }),
+    design.summary ? el("p", { text: design.summary }) : null,
+    el("h2", { text: `Design choices (${design.design_choices.length})` }),
+    ...design.design_choices.map((d) => el("div", { class: "issue info" }, [el("code", { text: d.issue_id }), el("div", { text: d.choice }), d.reason ? el("div", { class: "next", text: d.reason }) : null])),
+    el("h2", { text: `Components (${order.components.length}) and where to search for them`, style: "margin-top:16px" }),
+    el("p", { class: "hint", text: order.disclaimer + " Shops in bold are the ones the model recommends for that part." }),
+    order.power_budget ? el("p", { class: "hint", text: "Power budget (estimate): " + order.power_budget }) : null,
+    el("div", { class: "scroll" }, table),
+  );
+}
+$("infer-btn").addEventListener("click", async () => {
+  if (!state) return;
+  showError("");
+  $("infer-btn").disabled = true;
+  const mock = state.review.bom.metadata.mode === "mock";
+  const model = mock ? "" : $("model").value;
+  const started = Date.now();
+  const tick = () => { $("infer-status-text").textContent = `Asking ${mock ? "the mock client" : model || defaultModel} (two queries)… ${Math.round((Date.now() - started) / 1000)}s`; };
+  tick(); const ticking = setInterval(tick, 1000);
+  $("infer-status").classList.remove("hidden");
+  try {
+    renderInferred(await call("/infer", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: state.job_id, review: state.review, model: model || null, mock }) }));
+  } catch (error) { showError(error.message); $("error").scrollIntoView({ behavior: "smooth", block: "center" }); }
+  finally { clearInterval(ticking); $("infer-status").classList.add("hidden"); $("infer-btn").disabled = false; }
+});
+
 $("clear-btn").addEventListener("click", () => {
+  $("inferred").replaceChildren(); $("infer-downloads").replaceChildren();
   for (const entry of files) URL.revokeObjectURL(entry.url);
   files = []; state = null;
   renderThumbs(); showError("");
