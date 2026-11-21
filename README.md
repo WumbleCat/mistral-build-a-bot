@@ -1,381 +1,249 @@
-# Robot BOM builder
+# mistral-build-a-bot (BuildFromVision)
 
-Turn one or more photos of a robot (for example a DIY four-wheel rover) into an
-**evidence-grounded, human-verified bill of materials** using the Mistral vision API.
+Snap a photo of a robot → get a real parts list with UK shop links and prices → build it step by step in 3D with a voice coach.
 
-The app is built around one rule: **it never states more than the photos and a human
-reviewer support.**
+## Parts service (Person 3: Parts & Shop)
 
-- `observed` – visible in a photo, with the image ID and a visual justification.
-- `inferred` – mechanically/electrically plausible, but not seen.
-- `unknown` – not determined.
+Lives in `backend/parts/`:
 
-A part can be recognised by *type* ("relay module") without its make/model being known.
-SKUs, voltages, prices, shops and URLs are never guessed: they stay `null` until a person
-enters them in review or a configured catalog API returns them.
-
-## Pipeline
-
-```text
-photos ─► A. ingest (validate, EXIF-rotate, downscale)
-        ─► B. pass 1: observed-only extraction, one structured result per image
-        ─► B. visibility re-check: each claim is re-examined against the photo;
-              claims that are only implied (wheels → "motors") are demoted to inferred
-        ─► (optional) Grounding DINO + SAM 2 locate the listed parts on the photo;
-              switched off = VLM/LLM only, which is the default
-        ─► C. cross-image reconciliation (same part in two photos is counted once)
-        ─► B. pass 2: inference / completeness audit (proposals and questions only)
-        ─► D. deterministic mechanical / electrical checks
-        ─► E. optional catalog search
-        ─► F. human review (review.json or the web UI)
-        ─► G. bom.json / bom.csv / bom.md / issues.md
+```
+backend/parts/
+├── catalog.json      40 parts, 10 categories, real shops — URLs are "TODO" until a human verifies them
+├── recipes.json      line_follower_car, obstacle_avoider_car, robot_arm
+├── match.py          deterministic matcher (rapidfuzz) — the reliable baseline
+├── agents.py         Mistral multi-agent parts team (mistralai-agents SDK, mistral-large-4)
+├── routes.py         FastAPI routes
+└── check_links.py    link checker for the catalogue
 ```
 
-| Module | Role |
-| --- | --- |
-| `src/robot_bom/models.py` | Pydantic contracts and invariants |
-| `src/robot_bom/ingest.py` | A – image ingestion |
-| `src/robot_bom/vision.py` | `VisionClient` protocol, Mistral/OpenAI-compatible client, mock client |
-| `src/robot_bom/prompts.py`, `extraction.py` | B – two-pass prompts, schema validation, bounded retries |
-| `src/robot_bom/grounding.py` | optional – Grounding DINO + SAM 2 localisation (off = VLM/LLM only) |
-| `src/robot_bom/reconcile.py` | C – `InventoryReconciler.merge` |
-| `src/robot_bom/validation.py` | D – `RequirementsValidator.validate`, purchase-readiness rules |
-| `src/robot_bom/catalog.py` | E – `CatalogClient.search` (optional) |
-| `src/robot_bom/design.py` | optional – model's best-guess design choices, component list and shop search links (separate from the BOM) |
-| `src/robot_bom/review.py` | F – review document, `finalize`, audit trail |
-| `src/robot_bom/export.py` | G – `BOMExporter.export` |
-| `src/robot_bom/pipeline.py`, `cli.py`, `api.py` | orchestration, CLI, FastAPI + web UI |
-
-## Setup
-
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
+### Run
 
 ```bash
-uv sync --inexact      # --inexact keeps packages you installed by hand (torch, notebooks, ...)
-cp .env.example .env      # then put your key in .env
+cd backend
+uv venv .venv --python 3.13            # first time only
+uv pip install --python .venv/bin/python fastapi 'uvicorn[standard]' python-multipart \
+    httpx pydantic rapidfuzz python-dotenv mistralai mistralai-agents
+cp ../.env.example ../.env              # add your MISTRAL_API_KEY (never commit .env)
+.venv/bin/uvicorn main:app --reload --port 8000
 ```
 
-`.env`:
+### API
 
-```dotenv
-MISTRAL_API_KEY=...                    # required for live runs
-# MISTRAL_MODEL=mistral-large-latest   # optional; any vision-capable Mistral chat model
-```
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/health` | liveness |
+| GET | `/api/catalog` | full catalogue |
+| GET | `/api/recipes` | all recipes |
+| GET | `/api/recipes/{id}` | one recipe |
+| POST | `/api/match` | deterministic BOM (fast) |
+| POST | `/api/match/smart` | multi-agent BOM + warnings + substitutions (falls back to `/api/match`) |
+| POST | `/api/alternatives` | substitutions for one part |
 
-All settings are listed in [`.env.example`](.env.example).
-
-**Model choice.** The default is `mistral-large-latest`. In a single live test on a
-top-view photo of a DIY rover, `mistral-large-latest` labelled the view correctly and
-stated that motors were not visible, while `mistral-medium-latest` mislabelled the view
-as "underside" (which suppresses the underside-photo request) and, before the prompt
-and re-check were tightened, listed four motors as visible. That is one photo, not a
-benchmark – but it is why the larger model is the default. Each image costs two
-vision calls (extraction + re-check) plus one text call per run; set `VISION_VERIFY=0`
-to skip the re-check.
-
-Check the configuration without printing the key:
+### Examples
 
 ```bash
-uv run robot-bom check-api
+# deterministic match
+curl -s localhost:8000/api/match -H 'Content-Type: application/json' -d '{
+  "components": [
+    {"name": "Arduino Uno", "category": "controller", "qty": 1},
+    {"name": "L298N motor driver", "category": "motor_driver", "qty": 1},
+    {"name": "yellow motor", "category": "motor", "qty": 2},
+    {"name": "ultrasonic sensor", "category": "sensor", "qty": 1}
+  ],
+  "owned": ["arduino_uno"]
+}'
+
+# multi-agent smart match (needs MISTRAL_API_KEY; BFV_MOCK=1 skips agents cleanly)
+curl -s localhost:8000/api/match/smart -H 'Content-Type: application/json' -d '{
+  "components": [{"name": "MG996R servo", "category": "servo", "qty": 4},
+                 {"name": "robot arm kit", "category": "chassis", "qty": 1}]
+}'
+
+# alternatives for one part
+curl -s localhost:8000/api/alternatives -H 'Content-Type: application/json' -d '{"part_id": "l298n"}'
 ```
 
-`.env` is git-ignored. The key is never logged, printed, or written to any output file.
-
-### Other providers
-
-The client speaks the OpenAI-compatible `/chat/completions` format, so another provider
-only needs environment variables: `VISION_API_BASE_URL`, `VISION_API_KEY`,
-`VISION_MODEL`. Provider-specific notes:
-
-- Images are sent as `{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}`.
-- JSON mode is requested with `response_format: {"type": "json_object"}`. Set
-  `VISION_JSON_MODE=none` for providers that reject it; replies are still schema-validated.
-- `temperature` is 0 with `top_p` 1 (Mistral's large model rejects greedy sampling
-  unless `top_p` is sent explicitly).
-- `MISTRAL_API_KEY` / `MISTRAL_MODEL` are the fallbacks for `VISION_API_KEY` /
-  `VISION_MODEL`.
-
-## Usage
-
-### CLI
+### Tests & link checker
 
 ```bash
-# 1. analyse (several views are better: top, underside, close-ups of board labels)
-uv run robot-bom analyze ./photos/top.jpg ./photos/underside.jpg --out ./output
-
-# 2. review: edit ./output/review.json (see "Human review" below)
-
-# 3. finalize
-uv run robot-bom finalize ./output/review.json --out ./output/final --reviewer "your name"
+cd <repo root>
+backend/.venv/bin/python -m unittest tests.test_match -v
+cd backend && .venv/bin/python -m parts.check_links
 ```
 
-`analyze` writes:
+### Rules
 
-| File | Content |
-| --- | --- |
-| `observations.json` | raw pass 1 result per image and the pass 2 audit |
-| `review.json` | the human-editable review document |
-| `bom.json` / `bom.csv` / `bom.md` | the **draft** BOM (never purchasing-ready) |
-| `issues.md` | open issues and requested photos/measurements |
+- Never invent shop URLs: catalogue URLs are `"TODO"` until a human pastes a verified link (`verified: true`).
+- Never commit `.env` or `.venv` (see `.gitignore`).
+- `mock/sample_bom.json` is the shared data contract for the frontend and workflow teams.
 
-`finalize` writes `bom.json`, `bom.csv`, `bom.md`, `issues.md` and `audit.json` (every
-reviewer change, with old and new values).
+### Live pricing (LCSC + Mouser)
 
-### Mock mode (no API key)
+`backend/parts/live.py` powers the price-scout agent with two client tools:
+
+- `lcsc_search(keyword)` — free, no key: `GET https://jlcsearch.tscircuit.com/api/search?q=...&limit=5&full=true`
+- `mouser_search(keyword)` — Mouser Search API v1 keyword search; reads `MOUSER_API_KEY` from `.env` and **skips cleanly (returns []) when the key is missing or the API errors**
+
+Every BOM row can carry `live_offers` (`{shop, title, part_number, price_gbp, currency, stock, url, verified:false}`) next to the catalogue entry (the fallback):
 
 ```bash
-uv run python scripts/make_sample_image.py            # synthetic placeholder drawing
-uv run robot-bom analyze samples/rover_top_synthetic.png --mock --out output
+curl -X POST "localhost:8000/api/match?live=true" -H 'Content-Type: application/json' \
+  -d '{"parts":[{"name":"tb6612 motor driver","category":"motor_driver","qty":1}]}'
+# smart match attaches live_offers automatically
 ```
 
-Mock mode returns canned responses and labels every output as `MOCK DATA`. A file whose
-name contains `underside` or `bottom` gets the canned underside view, which lets you try
-cross-image deduplication offline. Mock mode is always explicit (`--mock` or
-`ROBOT_BOM_MOCK=1`): a missing key produces a clear error, never a silent fallback.
-A committed sample is in [`examples/mock-run/`](examples/mock-run/): the draft outputs,
-a hand-edited `review.edited.json`, and the resulting `final/` exports with `audit.json`.
+Guarantees: 1-hour in-memory cache per (shop, keyword), max 30 Mouser calls per rolling minute, and live API failures **never** fail the BOM. The old DuckDuckGo `web_search` tool was removed.
 
-### Web app
+---
+
+# Assembly Studio (React frontend, this branch)
+
+# BuildFromVision — Assembly Studio (MVP)
+
+Turns structured assembly JSON (robot parts + assembly steps, produced by the other
+BuildFromVision modules) into an illustrated, narrated assembly walkthrough — an
+interactive LEGO / IKEA-style manual with a voice guiding each stage.
+
+## Run
 
 ```bash
-python main.py                    # starts the server and opens the browser
-uv run robot-bom serve --open     # same thing from the CLI (http://127.0.0.1:8000)
+npm install
+npm run dev        # http://localhost:5173
 ```
 
-Running `main.py` (for example with PyCharm's Run button) is enough. If port 8000 is
-busy the next free port is used and printed.
-
-In the page you can drop, choose or paste one to eight photos, pick the detection mode,
-and analyse. The result shows your photos with the located parts outlined, the visible
-and unverified component tables (editable: review status, quantities, make / model /
-SKU, specs), issues, the photos still needed, and a Finalize button that re-runs the
-checks and offers the exports for download.
-
-HTTP API behind the page:
-
-- `GET /models` – models your API key can use (`usable` = can chat and read photos)
-- `POST /analyze` – multipart `images` (1–8 files), `project_name`, `mock`, `grounding`, `model`
-- `POST /finalize` – JSON `{"review": {...}, "job_id": "..."}`
-- `POST /infer` – JSON `{"review": {...}, "job_id": "...", "model": "..."}`; see "AI best guess" below
-- `GET /jobs/{job_id}/overlays/{image_id}.jpg` – photo with SAM 2 masks (grounding runs only)
-- `GET /health`, `GET /docs`
-
-### Choosing the model
-
-The web page loads the list of models your API key can use and shows it in the **Model**
-dropdown; **Search models** narrows it as you type. Models that cannot read photos
-(text-only, audio, embeddings, OCR) are listed but greyed out. Your choice is remembered
-in the browser and used for every pass of that run. On the command line:
+Production build + serve (API routes included):
 
 ```bash
-uv run robot-bom models            # models that can read photos (* = configured default)
-uv run robot-bom models --all      # every model, including unusable ones
-uv run robot-bom analyze top.jpg --model mistral-small-latest
+npm run build
+npm run preview
 ```
 
-Smaller models answer faster but miss more parts. One model reply may take up to
-`VISION_TIMEOUT_S` seconds (default 300); a reply that times out is retried once.
+Other scripts: `npm run typecheck`, `npm run test:adapter` (JSON adapter unit tests).
 
-### AI best guess: infer every design choice, list the parts, find where to order
+## Features
 
-The reviewed BOM only contains what was seen or what you confirmed, so it usually starts
-with open critical issues ("motor count unknown", "power source not identified"). The app
-therefore also asks the model for its best guess. This runs automatically after every
-analysis (web page and `robot-bom analyze`; `--no-infer` skips it), and **Run again with
-my edits** or `robot-bom infer` repeats it on your edited review. In order:
+- **Workbook mode** — manually navigate illustrated steps (prev/next), each stage shows
+  a large illustration, verbatim written instructions, parts added / already installed,
+  and audio controls.
+- **Guided walkthrough mode** — press *Guided walkthrough*: narration plays per step and
+  the app advances automatically only when the audio ends. Controls: play / pause /
+  resume, previous, next, restart, exit, auto-advance toggle, step progress.
+  If no audio can be produced at all, a timed (video-like) fallback advances steps.
+- **Visuals** — reusable SVG schematic diagrams (chassis, DC motors, wheels, Arduino,
+  battery, wires, screws; unknown part types get generic boxes). One canonical layout;
+  per step, installed parts are grey, newly added parts are highlighted in the accent
+  colour with pulsing dashed outlines, arrows and label callouts. A persistent banner
+  marks the diagram as *schematic / illustrative, not an engineering drawing*.
+- **Optional AI illustrations** — when `MISTRAL_API_KEY` + `MISTRAL_IMAGE_AGENT_ID`
+  (or `MISTRAL_IMAGE_MODEL`) are set, each stage can generate a style-consistent
+  technical illustration (light background, isometric, no embedded text); the SVG
+  callouts are overlaid on top. Results are cached per session.
+- **Audio** — Mistral Voxtral TTS (`voxtral-mini-tts-3-0`) via a server-side route
+  `POST /api/tts` (the API key never reaches the browser). Narration for **all steps is
+  generated automatically when the workbook loads** (never auto-played); each step has
+  a play/pause player in the stage card and a mini player in the steps list, the
+  narration text stays visible next to the illustration, and a ↻ Regenerate control
+  recreates a step's audio. Session caching avoids repeat API calls; if the API is
+  unavailable the app falls back to browser `speechSynthesis`, shows loading/error
+  states, and the written instructions always remain visible.
+- **JSON import** — *Import JSON* accepts a file or pasted JSON. The adapter
+  (`src/lib/adapter.ts`) normalises alternate key names, fills missing narration from
+  the written instruction, derives cumulative `installed_components`, renumbers steps
+  and reports warnings — upstream instruction text is never modified.
+- **Deep links** — `?step=3`, `?mode=guided&step=6`.
 
-1. **Design inference** – for every open issue the model picks the most likely design
-   choice and infers the critical parts nobody could see (drive motors, motor driver,
-   power source, controller), with quantities and specs → `inferred_components.json`.
-2. **The guess is written into the parts list** – placeholder lines take the guessed name,
-   quantity and specs; observed lines only gain specs they were missing. Each such line
-   lists what was guessed in `assumed_fields` and shows an **AI guess** tag. The
-   deterministic checks are re-run on these values, so the "unknown" criticals close and
-   real mismatches (for example a driver too small for the assumed motor) show up instead.
-3. **Parts research** – the model follows the rules in `src/robot_bom/design.py`
-   (`SOURCING_RULES`: power budget, breakout modules and dev boards, driver sizing,
-   lithium safety) to pick a search term and the best shops per part.
-4. **Shop lookup** – each part is searched on the approved shops (LCSC, DigiKey, RS,
-   SparkFun, Mouser, Amazon.com) with Mistral's web search tool, and every product page
-   found is fetched to read its stock status → `order_links.json`.
+## Input schema
 
-```bash
-uv run robot-bom infer ./output/review.json --out ./output/inferred
+See `public/sample-robot.json` (downloadable from the sidebar). Minimal shape:
+
+```json
+{
+  "robot_name": "Four-Wheel Robot Car",
+  "description": "…",
+  "parts": [{ "id": "chassis", "name": "Robot chassis", "quantity": 1 }],
+  "steps": [
+    {
+      "id": "step-1", "number": 1, "title": "Prepare the chassis",
+      "instruction": "Position the chassis on a flat surface.",
+      "narration": "First, prepare the robot chassis.",
+      "component_ids": ["chassis"],
+      "installed_components": ["chassis"],
+      "visual_prompt": "Show the chassis on its own."
+    }
+  ]
+}
 ```
 
-What this is and is not:
+`narration`, `installed_components`, `visual_prompt` and `description` are optional;
+`component_ids` may also be `components`/`parts`, parts may be `components`/`bom`, etc.
 
-- A guessed line is an assumption. It stays `needs review`, the BOM is never
-  ready to purchase until you confirm the lines, and a warning lists every assumed value.
-  A line you already confirmed or rejected is never overwritten.
-- `products` in `order_links.json` are only URLs the web search returned, on the approved
-  shops; a URL the model writes itself is discarded. A page whose own data says "out of
-  stock" is dropped. `stock` is `in_stock` only when the product page said so when
-  fetched; DigiKey, RS, Mouser and Amazon block automated page checks, so their products
-  are listed with `stock: unknown`. Prices are not read.
-- `links` are search links for every shop, kept as a fallback.
-- The shop lookup makes one billed Mistral web-search conversation per part. Set
-  `ROBOT_BOM_WEB_SEARCH=0` to skip it and keep only the search links. It needs the
-  Mistral API; other providers and mock mode skip it.
-- Check every guessed part against the real robot (voltage, current, mounting) before
-  ordering.
+## Configuration (server-side only)
 
-### Detection mode: VLM/LLM only, or with Grounding DINO + SAM 2
+Copy `.env.example` to `.env`:
 
-The app has two modes, switchable per run:
+| Variable | Purpose |
+|---|---|
+| `MISTRAL_API_KEY` | Enables Voxtral TTS (`/api/tts`) and image generation (`/api/image`) |
+| `MISTRAL_IMAGE_AGENT_ID` | Mistral agent id used for per-step illustrations (agents API) |
+| `MISTRAL_IMAGE_MODEL` | Alternative: direct image model via `/v1/images/generations` |
+| `MISTRAL_BASE_URL` | Optional API base override (default `https://api.mistral.ai/v1`) |
 
-| Mode | What runs | Use it when |
-| --- | --- | --- |
-| **VLM / LLM only** (default) | Only the Mistral vision/language model. No local models, no torch. | You want the fastest run, or do not have the detection libraries installed. |
-| **Mistral + Grounding DINO + SAM 2** | Mistral lists the visible parts; local Grounding DINO then locates them and SAM 2 segments them. | You want accurate outlines and masks on the photo. |
+Without any key the app runs fully on SVG diagrams + browser speech.
 
-How to choose:
+## API routes (mounted on dev and preview servers)
 
-- **Web app:** the *Detection* dropdown next to the Analyze button. The choice is
-  remembered in your browser. If torch / transformers are not installed, the DINO + SAM
-  option is disabled and the page says so.
-- **CLI:** `robot-bom analyze photo.jpg --grounding` or `--no-grounding`.
-- **Default for both:** `ROBOT_BOM_GROUNDING=1` in `.env` makes DINO + SAM the default;
-  unset (or `0`) means VLM/LLM only. The dropdown and the CLI flag override it.
+- `GET /api/health` — which integrations are configured
+- `POST /api/tts` — `{ "text": "…", "voice"?: "…" }` → audio bytes (`voxtral-mini-tts-3-0`), server-cached
+- `POST /api/image` — `{ "prompt": "…" }` → `{ "url" }` or `{ "dataUrl" }`, server-cached
 
-The parts list, counts, checks and review flow are identical in both modes: the BOM
-always comes from the vision/language model and your review. The local models only add
-*where* each listed part is. A detector hit never adds a part, changes a count or
-implies a specification; a different region count is raised as an info issue instead.
-Detector and mask scores are reported as-is and are not calibrated probabilities. If
-the local models fail, the run continues in VLM-only form with a warning.
+## Structure
 
-DINO + SAM mode needs extra packages that are not installed by `uv sync`:
-
-```bash
-uv pip install torch torchvision "transformers==4.51.3" huggingface_hub truststore numpy
-uv pip install git+https://github.com/facebookresearch/sam2.git
+```
+src/
+  types.ts                  canonical schema
+  lib/adapter.ts            input normaliser (integration boundary)
+  lib/narration.ts          TTS client + session cache + player (audio element / speechSynthesis)
+  lib/imageGen.ts           image-generation client + prompt builder + cache
+  data/mockRobot.ts         four-wheel robot car sample data
+  hooks/useNarrationEngine.ts
+  components/               Header, StageCard, Illustration, AudioControls, Sidebar,
+                            WalkthroughOverlay, ImportDialog
+  components/robot/         SVG diagram: layout.ts (canonical coordinates) + RobotDiagram.tsx
+server/api.ts               Vite middleware for /api/* (keeps MISTRAL_API_KEY server-side)
+vite.config.ts              mounts the API on dev + preview servers
 ```
 
-Weights (`IDEA-Research/grounding-dino-tiny`, `facebook/sam2.1-hiera-tiny`, about
-850 MB) download on first use into `HF_HOME`; a `.hf-cache/` folder in the project is
-used automatically when it exists. Without `sam2` the mode still runs with boxes only.
-`GROUNDING_DINO_MODEL`, `GROUNDING_SAM_MODEL`, `GROUNDING_BOX_THRESHOLD` and
-`GROUNDING_TEXT_THRESHOLD` override the defaults.
+Video export is intentionally out of scope for the MVP; the walkthrough is a
+narrated slideshow structured so a video-generation step can be added later.
 
-## Human review
+## `teardown` skill — technical illustrations & exploded views
 
-`review.json` has two copies of the BOM: edit **`bom`**, leave **`baseline`** alone (it is
-what your edits are diffed against for the audit trail). The file starts with the same
-instructions:
+Installed at `.vibe/skills/teardown/`, retrieved from
+`github.com/jakubkrehel/skills` at commit `031c5bf` (the parent of `37744ed8`,
+which removed the skill). All 30 files verified byte-identical (git blob SHA-1)
+against that commit; nothing else from the repo was installed. The project
+folder was added to `~/.vibe/trusted_folders.toml` so project skills load.
 
-- Set each component's `status` to `confirmed` or `rejected`.
-- Correct `visible_quantity`; set `required_quantity` and `purchase_quantity`
-  (`0` = nothing to buy, e.g. a custom chassis or a part you already own).
-- Enter `manufacturer` / `model` / `sku` only when verified on the physical part.
-  Leaving them `null` is correct; placeholder text such as `"unknown"` is stored as `null`.
-- Electrical specs are strings in `specs`:
+**Invoke it:** type `/teardown <request>` in the chat (e.g. `/teardown an exploded
+view of the robot car`), or ask the agent to load the `teardown` skill by name.
+A fresh session in this project loads it via the `skill` tool — verified.
 
-  | Component | Keys |
-  | --- | --- |
-  | power source | `voltage_v` |
-  | motor | `voltage_v` (rated), `current_a` (stall/peak) |
-  | motor driver / relay board | `max_voltage_v`, `max_current_a` (per channel), optional `min_voltage_v` |
+Working area: `teardown-work/` (standalone `package.json` with
+`jspdf` / `svg2pdf.js` / `@fontsource-variable/inter` — the app's own
+dependencies are untouched):
 
-- Close a warning or a model-raised issue with `"resolved": true` plus a `resolution_note`.
-  Rule-based **critical** issues close only when the data they check is corrected.
-
-### Three quantities
-
-| Field | Meaning |
-| --- | --- |
-| `visible_quantity` | counted in the photos (only for `observed` parts) |
-| `required_quantity` | how many the robot needs – `null` until established |
-| `purchase_quantity` | how many to buy – `null` until established |
-
-`null` means unknown, not zero. Exports show it as an empty CSV cell or the word `unknown`.
-
-### Confidence vs. verification
-
-`confidence` is the vision model's own estimate that it identified the part type
-correctly. It is **not a calibrated probability** and has not been validated against
-ground truth. `status` is the human verification state. A high confidence never
-confirms a part; only a reviewer does.
-
-### Purchase readiness
-
-`ready_to_purchase` is recomputed on every `finalize` and is `true` only when all hold:
-
-- no unresolved critical issue,
-- every non-rejected component has been reviewed (`confirmed`),
-- every confirmed component has a `purchase_quantity`,
-- every component with `purchase_quantity > 0` has a verified `sku`.
-
-Otherwise `readiness_blockers` lists why. Hand-editing the flag has no effect.
-
-## Deterministic checks
-
-Each rule raises a warning or a question; none of them confirms a part.
-
-- Wheels visible but no motor count established → drivetrain unknown (four wheels do not
-  mean four motors).
-- Relay board without a motor driver → relays are not interchangeable with motor drivers.
-- Power source / voltage unknown; controller unknown or unidentified.
-- Supply voltage, motor current and driver capacity must be entered before purchase;
-  once entered, over/under-voltage and undersized-driver pairings are flagged as critical.
-- Chassis may be custom fabricated → no SKU assumed.
-- No underside photo → motors, axles, couplers and fasteners are not established.
-- Same part type across photos → counted once; uncertain matches are flagged, not merged.
-- Assembly vs. subcomponent (relay module vs. relay blocks) → subcomponents are folded
-  into the parent's notes.
-
-## Catalog matching (optional)
-
-Without a catalog the BOM reports `Catalog lookup not configured` and contains no store
-links or prices. To enable the generic adapter set `CATALOG_API_URL` (and optionally
-`CATALOG_API_KEY`); it calls `GET {CATALOG_API_URL}?q=<query>` and expects a list (or
-`{"results": [...]}`) of objects with `title`, `product_url`, and optionally `vendor`,
-`sku`, `price`, `currency`. URLs are stored exactly as returned, candidates are ranked
-and listed separately from the inventory, and `compatible` stays `null` – nothing is
-auto-confirmed. Adapt `HttpCatalogClient` in `src/robot_bom/catalog.py` for a specific
-supplier API.
-
-## Tests
-
-```bash
-uv run pytest
-```
-
-The tests never call the network; they use fake clients and `httpx.MockTransport`.
-
-## Limitations
-
-- A photo shows only what is visible. Hidden motors, gearboxes, batteries and
-  fasteners are listed as `inferred`/`unknown`, never as confirmed parts.
-- Part *type* recognition depends on the vision model and photo quality. No accuracy
-  figures are claimed: nothing has been measured against labelled ground truth.
-- The visibility re-check is the same model auditing its own claims. It removes some
-  implied-but-unseen parts; it does not guarantee that every observed line is real, and
-  it cannot add parts the first pass missed. Human review remains the verification step.
-- The view label (top / underside / …) comes from the model. A wrong label can suppress
-  or add a missing-view request.
-- Bounding boxes are optional model output, kept only when well-formed, and `null`
-  otherwise. In VLM-only mode they are approximate and not produced by a detection model.
-- Cross-image matching compares category and part-type name; it cannot tell two
-  identical-looking physical parts apart. Count mismatches are flagged for review.
-- The electrical checks compare the numbers a reviewer enters; they are a sanity check,
-  not a substitute for reading the datasheets.
-- Grounding DINO + SAM 2 mode locates only parts the vision model already listed, by
-  matching words in the detector's label to the part name; a part it cannot match keeps
-  the vision model's rough box. The mode was run once on one photo with canned part
-  names (wheels segmented correctly, some duplicate regions for chassis and
-  breadboard); it has not been evaluated beyond that.
-- Not implemented (optional in the spec): OCR label crops, per-part crop re-inspection,
-  supplier-specific catalog integrations.
-
-## Troubleshooting
-
-- **`CERTIFICATE_VERIFY_FAILED` / `UnknownIssuer`** – antivirus or corporate TLS
-  inspection. The app already trusts the operating-system certificate store. For `uv`
-  itself, run `uv sync --inexact --system-certs`.
-- **`uv sync` removed packages** – plain `uv sync` uninstalls everything that is not in
-  `pyproject.toml` (for example a hand-installed torch). Use `uv sync --inexact`.
-- **`No vision API key is configured`** – set `MISTRAL_API_KEY` in `.env`, or use `--mock`.
-- **`did not return schema-valid JSON`** – the model's reply failed validation after the
-  retry budget (`VISION_MAX_RETRIES`). No BOM is produced from a malformed reply; rerun,
-  or try another `VISION_MODEL`.
+- `drawing.json` + `model-robot.js` — two models: `dc-motor` (component test)
+  and `robot-car` (exploded assembly whose part ids/names match the sample BOM).
+- Commands (Windows wrappers patch Chrome discovery; skill files unmodified):
+  - `teardown-work\run.cmd run-proof.cjs drawing.json proof --quick` — proof sheets + PNG previews
+  - `teardown-work\run.cmd run-proof.cjs drawing.json proof-full` — full proof incl. occlusion check
+  - `teardown-work\run.cmd tools\teardown\scripts\build-viewer.cjs drawing.json dist\index.html` — standalone interactive viewer (assembled/exploded, annotations, colors, SVG/PNG/PDF download)
+  - `teardown-work\run.cmd run-check.cjs dist\index.html check` — headless-Chrome verification
+  - `teardown-work\run.cmd export-svgs.cjs drawing.json svgs` — standalone SVGs
+- Generated SVGs are copied to `public/illustrations/` with a `manifest.json`.
+  When the loaded robot matches the manifest, the stage shows a
+  **💥 Exploded view** toggle; each SVG part group carries `data-item="<BOM part
+  id>"`, so the app highlights the current step's components in the accent
+  colour (installed = ink, pending = faded). Deep link: `?view=exploded&step=2`.
+- The skill's drawings are **illustrative concepts** — dimensions are invented
+  and nothing is toleranced; the UI badges say so. Not manufacturing drawings.
