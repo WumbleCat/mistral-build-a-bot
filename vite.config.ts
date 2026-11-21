@@ -45,6 +45,20 @@ const bomProxy = {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), apiPlugin()],
+  // The 3D view is loaded lazily, so name its libraries here: otherwise the dev server
+  // only discovers them on first use and the view fails to load until the page reloads.
+  optimizeDeps: {
+    include: [
+      'three',
+      '@react-three/fiber',
+      '@react-three/drei/core/ContactShadows',
+      '@react-three/drei/core/Environment',
+      '@react-three/drei/core/Line',
+      '@react-three/drei/core/OrbitControls',
+      '@react-three/drei/core/RoundedBox',
+      '@react-three/drei/web/Html',
+    ],
+  },
   server: {
     port: 5173,
     host: true,
