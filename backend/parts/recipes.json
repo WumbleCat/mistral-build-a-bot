@@ -1,0 +1,64 @@
+{
+  "recipes": [
+    {
+      "id": "line_follower_car",
+      "name": "Line-following car",
+      "difficulty": "beginner",
+      "description": "A 2-wheel car that follows a black line on the floor using a 3-channel IR array. Powered by 2x18650 (7.4V) into the Arduino Nano VIN and the L298N motor supply; TT motors run fine at 7.4V through the driver.",
+      "parts": [
+        { "id": "arduino_nano", "qty": 1 },
+        { "id": "l298n", "qty": 1 },
+        { "id": "motor_tt", "qty": 2 },
+        { "id": "wheel_65mm", "qty": 2 },
+        { "id": "caster_ball", "qty": 1 },
+        { "id": "chassis_2wd", "qty": 1 },
+        { "id": "ir_array_qre1113", "qty": 1 },
+        { "id": "batt_holder_18650", "qty": 1 },
+        { "id": "breadboard_mini", "qty": 1 },
+        { "id": "jumpers_mf", "qty": 1 },
+        { "id": "screws_m3_kit", "qty": 1 },
+        { "id": "switch_spst", "qty": 1 },
+        { "id": "usb_cable", "qty": 1 }
+      ]
+    },
+    {
+      "id": "obstacle_avoider_car",
+      "name": "Obstacle-avoiding car",
+      "difficulty": "beginner",
+      "description": "A 2-wheel car with an HC-SR04 ultrasonic 'eyes' that steers away from obstacles. 2x18650 (7.4V) feeds the Uno VIN (7-12V OK) and the L298N motor inputs; TT motors are happy at 3-6V via the driver's regulated outputs.",
+      "parts": [
+        { "id": "arduino_uno", "qty": 1 },
+        { "id": "l298n", "qty": 1 },
+        { "id": "motor_tt", "qty": 2 },
+        { "id": "wheel_65mm", "qty": 2 },
+        { "id": "caster_ball", "qty": 1 },
+        { "id": "chassis_2wd", "qty": 1 },
+        { "id": "hcsr04", "qty": 1 },
+        { "id": "batt_holder_18650", "qty": 1 },
+        { "id": "breadboard_mini", "qty": 1 },
+        { "id": "jumpers_mm", "qty": 1 },
+        { "id": "screws_m3_kit", "qty": 1 },
+        { "id": "switch_spst", "qty": 1 },
+        { "id": "usb_cable", "qty": 1 }
+      ]
+    },
+    {
+      "id": "robot_arm",
+      "name": "4DOF robot arm with claw",
+      "difficulty": "intermediate",
+      "description": "A 4-servo robot arm. 2x18650 (7.4V) feeds the Uno VIN; an LM2596 buck converter steps 7.4V down to 5V for the four MG996R servos (4.8-7.2V). Arm brackets come in the 4DOF kit.",
+      "parts": [
+        { "id": "arduino_uno", "qty": 1 },
+        { "id": "arm_kit_4dof", "qty": 1 },
+        { "id": "servo_mg996r", "qty": 4 },
+        { "id": "batt_holder_18650", "qty": 1 },
+        { "id": "buck_lm2596", "qty": 1 },
+        { "id": "breadboard_mini", "qty": 1 },
+        { "id": "jumpers_mm", "qty": 1 },
+        { "id": "screws_m3_kit", "qty": 1 },
+        { "id": "switch_spst", "qty": 1 },
+        { "id": "usb_cable", "qty": 1 }
+      ]
+    }
+  ]
+}
