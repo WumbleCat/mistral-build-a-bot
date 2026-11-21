@@ -227,7 +227,7 @@ def test_vision_variables_override_the_mistral_defaults():
 
 
 def test_existing_mistral_model_variable_is_honoured():
-    assert load_settings({}, dotenv=False).vision_model == "mistral-large-latest"
+    assert load_settings({}, dotenv=False).vision_model == "mistral-medium-3.5"
     assert load_settings({"MISTRAL_MODEL": "mistral-large-4"}, dotenv=False).vision_model == "mistral-large-4"
     both = load_settings({"MISTRAL_MODEL": "a", "VISION_MODEL": "b"}, dotenv=False)
     assert both.vision_model == "b"

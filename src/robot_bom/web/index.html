@@ -281,7 +281,7 @@ function renderModels() {
   const known = models.length ? models : (defaultModel ? [{ id: defaultModel, name: null, aliases: [], usable: true }] : []);
   const matches = known.filter((m) => !query || [m.id, m.name, ...m.aliases].some((t) => (t || "").toLowerCase().includes(query)));
   const option = (m) => el("option", { value: m.id, disabled: !m.usable,
-    text: m.id + (m.id === defaultModel ? "  (default)" : "") + (m.name ? `  = ${m.name}` : "") + (m.deprecated ? "  [deprecated]" : "") });
+    text: (m.rank ? `#${m.rank} ` : "") + m.id + (m.id === defaultModel ? "  (default)" : "") + (m.name ? `  = ${m.name}` : "") + (m.deprecated ? "  [deprecated]" : "") });
   const usable = matches.filter((m) => m.usable), other = matches.filter((m) => !m.usable);
   const wanted = select.value || localStorage.getItem("robot-bom-model") || defaultModel;
   select.replaceChildren(
@@ -296,7 +296,7 @@ function renderModels() {
     ? `Could not load the model list (${modelsError}) Using the configured model ${defaultModel}.`
     : !models.length ? ""
     : `${total} of ${models.length} models available to your API key can read photos` + (query ? `; ${usable.length} match “${query}”.` : "; the others are greyed out.")
-      + " Smaller models are faster but miss more parts.";
+      + " Ranked best → worst (#1 = flagship, last = smallest): bigger/newer models catch more parts, smaller ones are faster and cheaper.";
   syncMock();
 }
 function syncMock() {

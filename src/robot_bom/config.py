@@ -10,7 +10,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 DEFAULT_BASE_URL = "https://api.mistral.ai/v1"
-DEFAULT_MODEL = "mistral-large-latest"
+DEFAULT_MODEL = "mistral-medium-3.5"
 # Seconds to wait for one model reply. A large vision model writing a full parts list for a
 # photo has been seen to take longer than two minutes, so the limit is generous.
 DEFAULT_TIMEOUT_S = 300.0

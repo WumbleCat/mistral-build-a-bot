@@ -222,12 +222,55 @@ class OpenAICompatVisionClient:
         return [entry for entry in entries if isinstance(entry, dict)] if isinstance(entries, list) else []
 
 
+# Family tiers for ranking a provider's model list best -> worst for photo analysis:
+# flagships first, tiny models later, specialised non-chat models last. Unknown
+# (third-party) families sit between the small models and the specialised ones.
+_FAMILY_TIERS = [
+    ("large", 0),
+    ("magistral", 1),
+    ("medium", 2),
+    ("pixtral", 2),
+    ("small", 3),
+    ("ministral", 4),
+]
+_SPECIALISED_TOKENS = ("codestral", "ocr", "embed", "moderation", "voxtral", "transcribe", "tts", "fim")
+
+
+def _rank_key(model: dict) -> tuple:
+    """Sort key ranking one described model against the others (smaller = better)."""
+    model_id = model["id"].lower()
+    tier, params = 5, 0
+    for token, t in _FAMILY_TIERS:
+        if token in model_id:
+            tier = t
+            size = re.search(r"(\d+)b", model_id)
+            params = int(size.group(1)) if size else 0
+            break
+    else:
+        if any(token in model_id for token in _SPECIALISED_TOKENS):
+            tier = 9
+    # Recency within a family: "-latest" wins, then version numbers (3.5 > 3) and date
+    # codes (2604 = Apr 2026 > 2512 = Dec 2025). Parameter counts (14b) are not versions.
+    recency = 999.0 if "latest" in model_id else 0.0
+    if recency < 999.0:
+        for number in (int(n) for n in re.findall(r"\d+", model_id)):
+            if re.search(rf"{number}b", model_id):
+                continue
+            if 2000 <= number <= 2999:
+                recency = max(recency, (number - 2400) / 100.0)
+            elif number < 100:
+                recency = max(recency, float(number))
+    return tier, -params, model["deprecated"], -recency, model_id
+
+
 def describe_models(raw: list[dict]) -> list[dict]:
     """Trim a provider's ``/models`` listing to what a model picker needs.
 
     ``usable`` is False only when the provider says the model cannot chat or cannot read
     images; providers that report no capabilities leave it True (unknown, so not ruled out).
-    Models that can read photos come first.
+    The list is ranked best -> worst — models that can read photos first, then flagship
+    families before small ones, newer versions before older, non-deprecated first — and
+    each entry gets a 1-based ``rank``.
     """
     described: dict[str, dict] = {}
     for entry in raw:
@@ -248,7 +291,10 @@ def describe_models(raw: list[dict]) -> list[dict]:
             "usable": chat is not False and vision is not False,
             "deprecated": bool(entry.get("deprecation")),
         }
-    return sorted(described.values(), key=lambda m: (not m["usable"], m["id"]))
+    ranked = sorted(described.values(), key=lambda m: (not m["usable"], *_rank_key(m)))
+    for position, model in enumerate(ranked, start=1):
+        model["rank"] = position
+    return ranked
 
 
 def list_available_models(settings: Settings) -> list[dict]:

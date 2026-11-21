@@ -19,7 +19,7 @@ import { normalizeAssembly } from '../src/lib/adapter';
 import { validateAnalysis, type ComponentAnalysis } from '../src/lib/analysisAdapter';
 import type { AssemblyData } from '../src/types';
 
-const VISION_MODEL = process.env.MISTRAL_VISION_MODEL || 'mistral-large-latest';
+const VISION_MODEL = process.env.MISTRAL_VISION_MODEL || 'mistral-medium-3.5';
 
 const SYSTEM_PROMPT = `You are the BuildFromVision assembly-generation model. You receive (1) a photograph of a robot and (2) a JSON array of components detected/inferred by an image-analysis model. Produce a BuildFromVision workbook as STRICT JSON only (no markdown fences, no commentary).
 

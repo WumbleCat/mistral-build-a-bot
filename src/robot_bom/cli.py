@@ -187,7 +187,7 @@ def _cmd_models(args: argparse.Namespace) -> int:
     settings = load_settings()
     models = list_available_models(settings)
     usable = [m for m in models if m["usable"]]
-    print(f"Models at {settings.base_url}: {len(usable)} of {len(models)} can read photos "
+    print(f"Models at {settings.base_url}: {len(usable)} of {len(models)} can read photos, ranked best to worst "
           f"(* = configured default, {settings.vision_model})")
     for m in models if args.all else usable:
         mark = "*" if m["id"] == settings.vision_model else " "
@@ -196,7 +196,7 @@ def _cmd_models(args: argparse.Namespace) -> int:
             notes.append(f"= {m['name']}")
         if m["deprecated"]:
             notes.append("deprecated")
-        print(f"  {mark} {m['id']:<40} {'; '.join(notes)}".rstrip())
+        print(f"  {mark} #{str(m.get('rank', '?')):>3} {m['id']:<40} {'; '.join(notes)}".rstrip())
     if not args.all and len(models) > len(usable):
         print(f"({len(models) - len(usable)} models that cannot read photos are hidden; --all shows them)")
     print("\nUse one with:  robot-bom analyze <photos> --model <id>   (or set MISTRAL_MODEL in .env)")
