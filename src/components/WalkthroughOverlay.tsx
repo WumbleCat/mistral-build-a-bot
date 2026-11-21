@@ -17,6 +17,11 @@ export interface WalkthroughOverlayProps {
   onGenerateImage?: () => void;
   explodedAvailable?: boolean;
   explodedUrl?: string;
+  explodedOn?: boolean;
+  onToggleExploded?: () => void;
+  assistantOpen?: boolean;
+  onToggleAssistant?: () => void;
+  assistantMention?: string | null;
   onTogglePlay: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -44,6 +49,14 @@ export function WalkthroughOverlay(props: WalkthroughOverlayProps) {
           <div className="progress-track walkthrough-progress">
             <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
           </div>
+          <button
+            type="button"
+            className={`btn btn-small ${props.assistantOpen ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={props.onToggleAssistant}
+            title="Ask the AI assembly assistant"
+          >
+            🤖 Assistant
+          </button>
           <button type="button" className="btn btn-ghost btn-small" onClick={props.onExit}>
             ✕ Exit walkthrough
           </button>
@@ -61,6 +74,9 @@ export function WalkthroughOverlay(props: WalkthroughOverlayProps) {
               onGenerateImage={props.onGenerateImage}
               explodedAvailable={props.explodedAvailable}
               explodedUrl={props.explodedUrl}
+              explodedOn={props.explodedOn}
+              onToggleExploded={props.onToggleExploded}
+              extraHighlight={props.assistantMention ?? null}
             />
             <p className="stage-instruction stage-instruction-large">{step.instruction}</p>
             <div className="chip-row">

@@ -45,13 +45,10 @@ export function useNarrationEngine(prefix: string) {
     [keyFor, setState],
   );
 
-  /** Generate narration for every step (sequentially). Never plays audio. */
+  /** Generate narration for every step (in parallel). Never plays audio. */
   const ensureAll = useCallback(
     async (steps: AssemblyStep[], isCancelled?: () => boolean): Promise<void> => {
-      for (const s of steps) {
-        if (isCancelled?.()) return;
-        await ensure(s);
-      }
+      await Promise.all(steps.map((s) => (isCancelled?.() ? Promise.resolve() : ensure(s))));
     },
     [ensure],
   );
@@ -64,14 +61,14 @@ export function useNarrationEngine(prefix: string) {
     setIsPaused(false);
   }, []);
 
-  /** Generate (if needed) and play the narration for a step. */
+  /** Generate (if needed) and play the narration for a step. onEnd receives the audio source. */
   const play = useCallback(
-    async (step: AssemblyStep, onEnd?: () => void): Promise<NarrationResult> => {
+    async (step: AssemblyStep, onEnd?: (source: NarrationSource) => void): Promise<NarrationResult> => {
       stop();
       const r = await ensure(step);
       if (!step.narration.trim() || (r.source !== 'tts' && !('speechSynthesis' in window))) {
         setState(keyFor(step), { status: 'error', error: r.source === 'tts' ? undefined : r.error ?? 'No audio available for this step.' });
-        onEnd?.();
+        onEnd?.('none');
         return { ...r, source: 'none' };
       }
       const key = keyFor(step);
@@ -83,12 +80,12 @@ export function useNarrationEngine(prefix: string) {
       player.on('end', () => {
         setIsPlaying(false);
         setPlayingKey(null);
-        onEnd?.();
+        onEnd?.(r.source);
       });
       player.on('error', () => {
         setIsPlaying(false);
         setPlayingKey(null);
-        onEnd?.();
+        onEnd?.(r.source);
       });
       player.on('play', () => {
         setIsPlaying(true);

@@ -1,4 +1,4 @@
-import type { AssemblyData, AssemblyStep, NormalizeResult, Part } from '../types';
+import type { AssemblyData, AssemblyStep, NormalizeResult, Part, Relationship } from '../types';
 
 /**
  * Input adapter: normalises JSON coming from the other BuildFromVision modules
@@ -44,6 +44,19 @@ export function normalizeAssembly(raw: unknown): NormalizeResult {
   // ---- parts ----
   const rawParts = Array.isArray(input.parts) ? input.parts : Array.isArray(input.components) ? input.components : Array.isArray(input.bom) ? input.bom : [];
   if (!Array.isArray(input.parts) && rawParts.length > 0) warnings.push('Parts found under a non-standard key — normalised.');
+
+  // Upstream (hein-parts) keeps shop/price data in a separate "bom" array keyed by part_id.
+  // Index it so we can enrich the parts list without losing anything.
+  const bomIndex = new Map<string, Record<string, unknown>>();
+  if (Array.isArray(input.bom)) {
+    for (const row of input.bom) {
+      if (row && typeof row === 'object') {
+        const rid = asString((row as Record<string, unknown>).part_id) ?? asString((row as Record<string, unknown>).id);
+        if (rid) bomIndex.set(rid, row as Record<string, unknown>);
+      }
+    }
+  }
+
   const parts: Part[] = [];
   const usedIds = new Set<string>();
   rawParts.forEach((p, i) => {
@@ -60,7 +73,19 @@ export function normalizeAssembly(raw: unknown): NormalizeResult {
     }
     usedIds.add(id);
     const quantity = Math.max(1, Math.floor(asNumber(rec.quantity) ?? asNumber(rec.qty) ?? 1));
-    parts.push({ id, name, quantity, description: asString(rec.description) });
+    // Enrich with shop/price data from the upstream bom array when available.
+    const bomRow = bomIndex.get(id);
+    parts.push({
+      id,
+      name,
+      quantity,
+      description: asString(rec.description),
+      category: asString(rec.category),
+      shop: asString(rec.shop) ?? asString(bomRow?.shop),
+      url: asString(rec.url) ?? asString(bomRow?.url),
+      unit_price: asNumber(rec.unit_price_gbp) ?? asNumber(rec.unit_price) ?? asNumber(bomRow?.unit_price_gbp),
+      visible_in_photo: typeof rec.visible_in_photo === 'boolean' ? rec.visible_in_photo : undefined,
+    });
   });
   if (parts.length === 0) errors.push('No parts list found (expected "parts", "components" or "bom").');
 
@@ -83,14 +108,25 @@ export function normalizeAssembly(raw: unknown): NormalizeResult {
     if (!instruction) warnings.push(`Step "${title}" has no instruction text.`);
     const narration = asString(rec.narration) ?? asString(rec.voiceover) ?? instruction ?? title;
     if (!asString(rec.narration) && instruction) warnings.push(`Step "${title}" has no narration — using the written instruction as fallback.`);
-    let id = asString(rec.id) ?? `${slugify(title, `step-${i + 1}`)}`;
+    // Upstream (hein-parts) uses "n" for the step number and has no explicit id.
+    const number = asNumber(rec.number) ?? asNumber(rec.step) ?? asNumber(rec.n) ?? i + 1;
+    let id = asString(rec.id) ?? `step-${number}`;
     if (usedStepIds.has(id)) id = `${id}-${i + 1}`;
     usedStepIds.add(id);
-    const number = asNumber(rec.number) ?? asNumber(rec.step) ?? i + 1;
-    const componentIds = asStringArray(rec.component_ids ?? rec.components ?? rec.parts);
+    // Upstream uses "parts_used"; classic schema uses "component_ids".
+    const componentIds = asStringArray(rec.component_ids ?? rec.components ?? rec.parts ?? rec.parts_used);
     for (const cid of componentIds) {
       if (!partIds.has(cid)) warnings.push(`Step "${title}" references unknown part id "${cid}".`);
     }
+    // Preserve upstream tip / tools / anim metadata.
+    const tip = asString(rec.tip) ?? asString(rec.warning);
+    const tools = asStringArray(rec.tools);
+    const animRaw = Array.isArray(rec.anim) ? rec.anim : undefined;
+    const anim = animRaw
+      ?.filter((a): a is { part_id: string; slot: string } =>
+        Boolean(a && typeof a === 'object' && asString((a as Record<string, unknown>).part_id) && asString((a as Record<string, unknown>).slot)),
+      )
+      .map((a) => ({ part_id: asString((a as Record<string, unknown>).part_id) as string, slot: asString((a as Record<string, unknown>).slot) as string }));
     let installed = asStringArray(rec.installed_components ?? rec.installed);
     if (installed.length === 0) {
       // Fallback: cumulatively install every component mentioned so far.
@@ -109,6 +145,9 @@ export function normalizeAssembly(raw: unknown): NormalizeResult {
       component_ids: componentIds,
       installed_components: installed,
       visual_prompt: asString(rec.visual_prompt) ?? asString(rec.visualPrompt),
+      tip,
+      tools: tools.length > 0 ? tools : undefined,
+      anim: anim && anim.length > 0 ? anim : undefined,
     });
   });
 
@@ -118,6 +157,35 @@ export function normalizeAssembly(raw: unknown): NormalizeResult {
     s.number = i + 1;
   });
 
+  // ---- relationships (component connection map) — optional, validated against part ids ----
+  const rawRels = Array.isArray(input.relationships) ? input.relationships : Array.isArray(input.connections) ? input.connections : [];
+  const relationships: Relationship[] = [];
+  rawRels.forEach((r, i) => {
+    if (!r || typeof r !== 'object') {
+      warnings.push(`Relationship #${i + 1} is not an object and was skipped.`);
+      return;
+    }
+    const rec = r as Record<string, unknown>;
+    const from = asString(rec.from) ?? asString(rec.source) ?? asString(rec.source_id) ?? asString(rec.source_part_id);
+    const to = asString(rec.to) ?? asString(rec.target) ?? asString(rec.target_id) ?? asString(rec.target_part_id) ?? asString(rec.destination);
+    if (!from || !to) {
+      warnings.push(`Relationship #${i + 1} has no from/to and was skipped.`);
+      return;
+    }
+    if (!partIds.has(from)) warnings.push(`Relationship #${i + 1} references unknown part "${from}" — kept but flagged.`);
+    if (!partIds.has(to)) warnings.push(`Relationship #${i + 1} references unknown part "${to}" — kept but flagged.`);
+    relationships.push({
+      id: asString(rec.id) ?? `rel-${i + 1}`,
+      from,
+      to,
+      type: asString(rec.type) ?? asString(rec.relationship) ?? 'related',
+      evidence: asString(rec.evidence),
+      confidence: (['high', 'medium', 'low'].includes(String(rec.confidence)) ? String(rec.confidence) : undefined) as Relationship['confidence'],
+      status: (['visually-confirmed', 'inferred', 'unknown'].includes(String(rec.status)) ? String(rec.status) : 'unknown') as Relationship['status'],
+      source_ids: asStringArray(rec.source_ids ?? rec.sources),
+    });
+  });
+
   if (errors.length > 0) return { data: null, warnings, errors };
   return {
     data: {
@@ -125,7 +193,19 @@ export function normalizeAssembly(raw: unknown): NormalizeResult {
       description,
       parts,
       steps,
+      relationships: relationships.length > 0 ? relationships : undefined,
       illustrative: true,
+      recipe_id: asString(input.recipe_id),
+      confidence: asNumber(input.confidence),
+      bom_total: asNumber(input.bom_total_gbp) ?? asNumber(input.bom_total),
+      unmatched: Array.isArray(input.unmatched)
+        ? input.unmatched.filter((u): u is Record<string, unknown> => Boolean(u && typeof u === 'object')).map((u) => ({
+            name: asString(u.name),
+            category: asString(u.category),
+            qty: asNumber(u.qty),
+          }))
+        : undefined,
+      warnings: asStringArray(input.warnings),
     },
     warnings,
     errors,

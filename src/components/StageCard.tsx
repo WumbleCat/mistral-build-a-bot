@@ -20,6 +20,8 @@ export interface StageCardProps {
   onGenerateImage?: () => void;
   explodedAvailable?: boolean;
   explodedUrl?: string;
+  explodedOn?: boolean;
+  onToggleExploded?: () => void;
   onRegenerateAudio: () => void;
   onPlayAudio: () => void;
   onPauseAudio: () => void;
@@ -52,9 +54,26 @@ export function StageCard(props: StageCardProps) {
           onGenerateImage={props.onGenerateImage}
           explodedAvailable={props.explodedAvailable}
           explodedUrl={props.explodedUrl}
+          explodedOn={props.explodedOn}
+          onToggleExploded={props.onToggleExploded}
         />
 
         <p className="stage-instruction">{step.instruction}</p>
+
+        {step.tip && (
+          <div className="stage-tip">
+            <span className="stage-tip-icon" aria-hidden>💡</span>
+            <span>{step.tip}</span>
+          </div>
+        )}
+        {step.tools && step.tools.length > 0 && (
+          <div className="stage-tools">
+            <span className="stage-tools-label">Tools</span>
+            {step.tools.map((t) => (
+              <span key={t} className="chip chip-muted">🔧 {t}</span>
+            ))}
+          </div>
+        )}
 
         <div className="stage-parts">
           <div className="parts-group">

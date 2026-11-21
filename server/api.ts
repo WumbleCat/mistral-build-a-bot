@@ -3,15 +3,22 @@
  * middleware so that secrets (MISTRAL_API_KEY) never reach the browser bundle.
  *
  * Routes:
- *   GET  /api/health   -> which optional integrations are configured
- *   POST /api/tts      -> Mistral Voxtral TTS (POST /v1/audio/speech, voxtral-mini-tts-3-0)
- *   POST /api/image    -> optional Mistral image-generation agent / image model
+ *   GET  /api/health          -> which optional integrations are configured
+ *   POST /api/tts             -> Mistral Voxtral TTS (POST /v1/audio/speech, voxtral-mini-tts-3-0)
+ *   POST /api/image           -> optional Mistral image-generation agent / image model
+ *   POST /api/chat            -> context-aware assembly assistant (Mistral chat completions)
+ *   POST /api/upstream/bom    -> proxy to the hein-parts FastAPI service (avoids CORS, keeps URL server-side)
  */
 import { createHash } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { handleAgent } from './agent';
+import { handleVoice, voiceConfigured, voiceModel } from './voiceWs';
+import { handleGenerate } from './generate';
 
 const BASE_URL = (process.env.MISTRAL_BASE_URL || 'https://api.mistral.ai/v1').replace(/\/$/, '');
 const TTS_MODEL = 'voxtral-mini-tts-3-0';
+// Voxtral TTS requires a voice; default preset, overridable via env.
+const TTS_VOICE = process.env.MISTRAL_TTS_VOICE || 'gb_jane_neutral';
 
 // In-memory caches for the lifetime of the dev server (avoid repeat API calls).
 const ttsCache = new Map<string, { contentType: string; bytes: Buffer }>();
@@ -64,8 +71,8 @@ async function handleTts(req: IncomingMessage, res: ServerResponse) {
     sendJson(res, 400, { error: 'Missing "text" field.' });
     return;
   }
-  const voice = typeof body.voice === 'string' && body.voice ? body.voice : undefined;
-  const cacheKey = createHash('sha256').update(`${TTS_MODEL}|${voice ?? ''}|${text}`).digest('hex');
+  const voice = typeof body.voice === 'string' && body.voice.trim() ? body.voice.trim() : TTS_VOICE;
+  const cacheKey = createHash('sha256').update(`${TTS_MODEL}|${voice}|${text}`).digest('hex');
   const cached = ttsCache.get(cacheKey);
   if (cached) {
     res.writeHead(200, { 'Content-Type': cached.contentType, 'X-Cache': 'hit' });
@@ -79,7 +86,7 @@ async function handleTts(req: IncomingMessage, res: ServerResponse) {
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(voice ? { model: TTS_MODEL, input: text, voice } : { model: TTS_MODEL, input: text }),
+      body: JSON.stringify({ model: TTS_MODEL, input: text, voice, response_format: 'mp3' }),
     });
     if (!upstream.ok) {
       const detail = await upstream.text().catch(() => '');
@@ -89,10 +96,20 @@ async function handleTts(req: IncomingMessage, res: ServerResponse) {
       });
       return;
     }
-    const contentType = upstream.headers.get('content-type') || 'audio/mpeg';
-    const bytes = Buffer.from(await upstream.arrayBuffer());
-    ttsCache.set(cacheKey, { contentType, bytes });
-    res.writeHead(200, { 'Content-Type': contentType, 'X-Cache': 'miss' });
+    // The REST endpoint returns JSON {"audio_data": "<base64 mp3>"}; decode it to raw bytes.
+    const raw = Buffer.from(await upstream.arrayBuffer());
+    let bytes = raw;
+    const contentType = upstream.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      try {
+        const parsed = JSON.parse(raw.toString('utf8')) as { audio_data?: string };
+        if (parsed.audio_data) bytes = Buffer.from(parsed.audio_data, 'base64');
+      } catch {
+        /* fall through with raw bytes */
+      }
+    }
+    ttsCache.set(cacheKey, { contentType: 'audio/mpeg', bytes });
+    res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'X-Cache': 'miss' });
     res.end(bytes);
   } catch (err) {
     sendJson(res, 502, { error: `Could not reach Mistral TTS: ${(err as Error).message}` });
@@ -197,10 +214,123 @@ async function handleImage(req: IncomingMessage, res: ServerResponse) {
   }
 }
 
+const CHAT_MODEL = process.env.MISTRAL_CHAT_MODEL || 'mistral-medium-latest';
+
+const chatCache = new Map<string, string>();
+
+/** Context-aware assembly assistant: grounded chat over the current workbook state. */
+async function handleChat(req: IncomingMessage, res: ServerResponse) {
+  const key = process.env.MISTRAL_API_KEY;
+  if (!key) {
+    sendJson(res, 503, {
+      error: 'Assistant unavailable: MISTRAL_API_KEY is not configured on the server.',
+      code: 'NO_API_KEY',
+    });
+    return;
+  }
+  let body: Record<string, unknown>;
+  try {
+    body = await readJson(req);
+  } catch {
+    sendJson(res, 400, { error: 'Invalid JSON body.' });
+    return;
+  }
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  const lastUser = [...messages].reverse().find((m) => m && (m as { role?: string }).role === 'user') as
+    | { content?: unknown }
+    | undefined;
+  const question = typeof lastUser?.content === 'string' ? lastUser.content.trim() : '';
+  if (!question) {
+    sendJson(res, 400, { error: 'Missing user question.' });
+    return;
+  }
+  const cacheKey = createHash('sha256').update(JSON.stringify(messages)).digest('hex');
+  const cached = chatCache.get(cacheKey);
+  if (cached) {
+    sendJson(res, 200, { answer: cached, model: CHAT_MODEL, cached: true });
+    return;
+  }
+  const systemPrompt = [
+    'You are the BuildFromVision assembly assistant — a practical, safety-conscious helper inside an interactive assembly manual.',
+    'Ground every answer in the supplied robot data, BOM, current step instructions, tips and conversation history below.',
+    'Rules:',
+    '- Refer to actual component names and ids from the data when relevant.',
+    '- Never invent dimensions, positions, orientations, screw sizes, electrical specifications or mechanical requirements.',
+    '- If the supplied information does not establish something, say so clearly ("The instructions do not specify…").',
+    '- Distinguish between what the instructions confirm and general suggestions.',
+    '- Never claim an assembly is mechanically or electrically safe based on incomplete information.',
+    '- Keep answers concise (2-5 sentences), practical and easy to follow.',
+    '- The current step and installed components are given in the context; adapt to them.',
+  ].join('\n');
+  const apiMessages = [{ role: 'system', content: systemPrompt }, ...messages.slice(-12).map((m) => ({
+    role: (m as { role?: string }).role === 'assistant' ? 'assistant' : 'user',
+    content: String((m as { content?: unknown }).content ?? ''),
+  }))];
+  try {
+    const upstream = await fetch(`${BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: CHAT_MODEL, messages: apiMessages, temperature: 0.3, max_tokens: 400 }),
+    });
+    if (!upstream.ok) {
+      const detail = await upstream.text().catch(() => '');
+      sendJson(res, upstream.status === 401 ? 502 : upstream.status, {
+        error: `Assistant request failed (${upstream.status}).`,
+        detail: detail.slice(0, 500),
+      });
+      return;
+    }
+    const json = (await upstream.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const answer = json.choices?.[0]?.message?.content?.trim() || '';
+    if (!answer) {
+      sendJson(res, 502, { error: 'The assistant returned an empty answer.' });
+      return;
+    }
+    chatCache.set(cacheKey, answer);
+    sendJson(res, 200, { answer, model: CHAT_MODEL });
+  } catch (err) {
+    sendJson(res, 502, { error: `Could not reach the assistant service: ${(err as Error).message}` });
+  }
+}
+
+/** Proxy to the hein-parts FastAPI service so the browser never talks to it directly (no CORS, URL stays server-side). */
+async function handleUpstreamBom(req: IncomingMessage, res: ServerResponse) {
+  const base = (process.env.HEIN_PARTS_URL || 'http://localhost:8000').replace(/\/$/, '');
+  let body: Record<string, unknown> = {};
+  try {
+    body = await readJson(req);
+  } catch {
+    sendJson(res, 400, { error: 'Invalid JSON body.' });
+    return;
+  }
+  const smart = body.smart === true;
+  const path = smart ? '/api/match/smart' : '/api/match';
+  try {
+    const upstream = await fetch(`${base}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ components: body.components ?? [], owned: body.owned ?? [] }),
+    });
+    const text = await upstream.text();
+    if (!upstream.ok) {
+      sendJson(res, upstream.status, { error: `Parts service returned ${upstream.status}.`, detail: text.slice(0, 500) });
+      return;
+    }
+    // Pass through the raw JSON so the frontend adapter normalises it.
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(text);
+  } catch (err) {
+    sendJson(res, 502, {
+      error: `Could not reach the parts service at ${base}. Start it with: cd backend && uvicorn main:app --port 8000`,
+      detail: (err as Error).message,
+    });
+  }
+}
+
 /** Route handler for /api/* — returns true if the request was handled. */
 export async function handleApi(req: IncomingMessage, res: ServerResponse, pathname: string): Promise<boolean> {
   if (pathname === '/api/health' && req.method === 'GET') {
-    sendJson(res, 200, apiConfigured());
+    sendJson(res, 200, { ...apiConfigured(), chat: Boolean(process.env.MISTRAL_API_KEY), agent: Boolean(process.env.MISTRAL_API_KEY), voice: voiceConfigured(), voiceModel: voiceModel() });
     return true;
   }
   if (pathname === '/api/tts' && req.method === 'POST') {
@@ -209,6 +339,25 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, pathn
   }
   if (pathname === '/api/image' && req.method === 'POST') {
     await handleImage(req, res);
+    return true;
+  }
+  if (pathname === '/api/chat' && req.method === 'POST') {
+    await handleChat(req, res);
+    return true;
+  }
+  if (pathname === '/api/agent' && req.method === 'POST') {
+    await handleAgent(req, res, readJson, sendJson);
+    return true;
+  }
+  if (pathname === '/api/generate' && req.method === 'POST') {
+    await handleGenerate(req, res, readJson, sendJson);
+    return true;
+  }
+  if (pathname.startsWith('/api/voice/')) {
+    return await handleVoice(req, res, pathname, readJson, sendJson);
+  }
+  if (pathname === '/api/upstream/bom' && req.method === 'POST') {
+    await handleUpstreamBom(req, res);
     return true;
   }
   if (pathname.startsWith('/api/')) {

@@ -75,5 +75,51 @@ const k1 = datasetKey(r1.data), k2 = datasetKey(r2.data), k3 = datasetKey(r3.dat
 check('datasetKey stable', k1 === datasetKey(normalizeAssembly(brief).data));
 check('datasetKey distinct', new Set([k1, k2, k3]).size === 3);
 
+// 6. Real hein-parts upstream JSON (origin/hein-parts:mock/sample_bom.json)
+const upstream = JSON.parse(readFileSync('public/upstream-sample.json', 'utf8'));
+const r4 = normalizeAssembly(upstream);
+check('hein-parts payload parses', r4.data !== null && r4.errors.length === 0, JSON.stringify(r4.errors));
+check('hein-parts robot name', r4.data?.robot_name === 'Obstacle-avoiding car');
+check('hein-parts recipe_id preserved', r4.data?.recipe_id === 'obstacle_avoider_car');
+check('hein-parts confidence preserved', r4.data?.confidence === 0.82);
+check('hein-parts bom_total preserved', r4.data?.bom_total === 53.6);
+check('hein-parts 7 parts', r4.data?.parts.length === 7);
+check('hein-parts 6 steps', r4.data?.steps.length === 6);
+check('hein-parts "n" mapped to number', r4.data?.steps.map((s) => s.number).join(',') === '1,2,3,4,5,6');
+check('hein-parts step ids generated', r4.data?.steps.every((s) => s.id.startsWith('step-')));
+check('hein-parts "parts_used" mapped to component_ids', JSON.stringify(r4.data?.steps[0].component_ids) === '["motor_tt","chassis_2wd","screws_m3_kit"]');
+check('hein-parts tip preserved', r4.data?.steps[0].tip === 'Make sure both motor shafts point outward.');
+check('hein-parts tools preserved', JSON.stringify(r4.data?.steps[0].tools) === '["screwdriver"]');
+check('hein-parts anim preserved', Array.isArray(r4.data?.steps[0].anim) && r4.data.steps[0].anim.length === 3 && r4.data.steps[0].anim[0].part_id === 'chassis_2wd');
+check('hein-parts qty mapped to quantity', r4.data?.parts.find((p) => p.id === 'motor_tt')?.quantity === 2);
+check('hein-parts shop data merged from bom array', r4.data?.parts.find((p) => p.id === 'arduino_uno')?.shop === 'RS Components UK');
+check('hein-parts unit price merged', r4.data?.parts.find((p) => p.id === 'arduino_uno')?.unit_price === 18.5);
+check('hein-parts category preserved', r4.data?.parts.find((p) => p.id === 'motor_tt')?.category === 'motor');
+check('hein-parts narration falls back to instruction', r4.data?.steps[0].narration === r4.data?.steps[0].instruction);
+check('hein-parts installed_components derived cumulatively', JSON.stringify(r4.data?.steps[5].installed_components) === JSON.stringify(['motor_tt','chassis_2wd','screws_m3_kit','wheel_65mm','caster_ball','batt_holder_18650','switch_spst','arduino_uno','l298n','hcsr04','breadboard_mini','jumpers_mm','usb_cable']));
+check('hein-parts visible_in_photo preserved', r4.data?.parts[0].visible_in_photo === true);
+
+// 7. Relationships (connection map) pass through and validate
+const withRels = {
+  robot_name: 'Rel Bot',
+  parts: [{ id: 'a', name: 'Chassis', quantity: 1 }, { id: 'b', name: 'Motor', quantity: 2 }, { id: 'w', name: 'Wire', quantity: 4 }],
+  steps: [{ number: 1, title: 'Mount', instruction: 'Attach motor to chassis.', component_ids: ['a', 'b'] }],
+  relationships: [
+    { from: 'b', to: 'a', type: 'mounted-on', status: 'visually-confirmed', confidence: 'high', evidence: 'motors bolted to chassis corners', source_ids: ['M001'] },
+    { from: 'w', to: 'b', type: 'wired-to', status: 'unknown', confidence: 'low', evidence: 'wires visible but routing unclear' },
+    { from: 'ghost', to: 'a', type: 'adjacent', status: 'inferred' },
+    'not-an-object',
+    { type: 'mounted-on' },
+  ],
+};
+const r5 = normalizeAssembly(withRels);
+check('relationships parse', r5.data !== null && r5.data.relationships?.length === 3, JSON.stringify(r5.data?.relationships?.length));
+check('rel type preserved', r5.data?.relationships?.[0].type === 'mounted-on');
+check('rel status preserved', r5.data?.relationships?.[0].status === 'visually-confirmed');
+check('rel source_ids preserved', JSON.stringify(r5.data?.relationships?.[0].source_ids) === '["M001"]');
+check('unknown status preserved for unclear wiring', r5.data?.relationships?.[1].status === 'unknown');
+check('unknown part refs warned, not dropped', r5.warnings.some((w) => w.includes('ghost')));
+check('malformed rels skipped with warning', r5.warnings.some((w) => w.includes('Relationship #4') || w.includes('Relationship #5')));
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
