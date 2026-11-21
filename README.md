@@ -108,10 +108,19 @@ interactive LEGO / IKEA-style manual with a voice guiding each stage.
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+uv sync            # Python deps for the robot_bom photo pipeline (first time)
+npm run dev        # web app on http://localhost:5173 + robot_bom pipeline on :8001
 ```
 
-Production build + serve (API routes included):
+`npm run dev` starts both servers. Upload a photo on the landing page and the app runs
+the robot_bom pipeline's own flow: `/analyze` (photo → BOM), then `/infer` (best guess
+and shop lookup), then `/api/generate` (BOM + photo → build guide). The pipeline is
+reached through the Vite proxy at `/bom/*`; set `ROBOT_BOM_URL` if it runs elsewhere.
+`npm run dev:web` and `npm run bom-api` start either one on its own. Put
+`MISTRAL_API_KEY` in `.env` for real results; without it the pipeline returns its mock
+analysis and the build-guide step cannot run.
+
+Production build + serve (API routes included; run `npm run bom-api` alongside):
 
 ```bash
 npm run build
