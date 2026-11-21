@@ -144,12 +144,71 @@ def test_api_rejects_non_images_and_bad_reviews(client):
     assert client.post("/finalize", json={"review": {}, "job_id": "../../etc"}).status_code == 422
 
 
+# ---- model list -----------------------------------------------------------
+
+MODELS = [
+    {"id": "big-latest", "name": "big-4", "aliases": [], "chat": True, "vision": True, "usable": True, "deprecated": False},
+    {"id": "text-only", "name": None, "aliases": [], "chat": True, "vision": False, "usable": False, "deprecated": False},
+]
+
+
+def test_api_lists_models_and_names_the_default(client, monkeypatch):
+    monkeypatch.setattr(api, "list_available_models", lambda settings: MODELS)
+    body = client.get("/models").json()
+    assert body["models"] == MODELS and body["error"] is None
+    assert body["default"] == Settings().vision_model
+
+
+def test_api_model_list_without_a_key_explains_instead_of_failing(client):
+    response = client.get("/models")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["models"] == [] and "No vision API key is configured" in body["error"]
+
+
+def test_api_passes_the_chosen_model_to_the_run(client, monkeypatch):
+    from robot_bom.vision import MockVisionClient
+
+    seen = {}
+
+    def fake_clients_for_run(vision_client, settings, model=None):
+        seen["model"] = model
+        return MockVisionClient(), None, model or "default"
+
+    monkeypatch.setattr(api, "clients_for_run", fake_clients_for_run)
+    response = client.post("/analyze", files=[("images", ("top.png", png_bytes(), "image/png"))],
+                           data={"mock": "true", "model": " big-latest "})
+    assert response.status_code == 200, response.text
+    assert seen["model"] == "big-latest"
+    assert response.json()["bom"]["metadata"]["vision_model"] == "big-latest"
+
+    bad = client.post("/analyze", files=[("images", ("top.png", png_bytes(), "image/png"))],
+                      data={"mock": "true", "model": "x; rm -rf"})
+    assert bad.status_code == 400 and "invalid model id" in bad.json()["detail"]
+
+
+def test_cli_lists_models(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "list_available_models", lambda settings: MODELS)
+    assert cli.main(["models"]) == 0
+    printed = capsys.readouterr().out
+    assert "1 of 2 can read photos" in printed and "big-latest" in printed and "= big-4" in printed
+    assert "text-only" not in printed and "--all" in printed
+
+    assert cli.main(["models", "--all"]) == 0
+    assert "text-only" in capsys.readouterr().out
+
+
+def test_cli_model_list_without_key_fails_clearly(capsys):
+    assert cli.main(["models"]) == 2
+    assert "No vision API key is configured" in capsys.readouterr().err
+
+
 # ---- web app launch -------------------------------------------------------
 
 
 def test_index_page_is_the_upload_app(client):
     page = client.get("/").text
-    for marker in ('id="drop"', 'id="images"', "multiple", 'id="analyze-btn"', 'id="finalize-btn"', 'id="photos"'):
+    for marker in ('id="model"', 'id="model-filter"', 'id="drop"', 'id="images"', "multiple", 'id="analyze-btn"', 'id="finalize-btn"', 'id="photos"'):
         assert marker in page, marker
 
 

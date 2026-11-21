@@ -1,4 +1,4 @@
-"""Command line interface: ``robot-bom analyze | finalize | check-api | serve``."""
+"""Command line interface: ``robot-bom analyze | finalize | models | check-api | serve``."""
 
 from __future__ import annotations
 
@@ -15,7 +15,9 @@ from .grounding import build_grounder
 from .ingest import IngestError, load_images
 from .pipeline import analyze, write_analysis_outputs
 from .review import ReviewError, finalize, load_review
-from .vision import OpenAICompatVisionClient, VisionAPIError, build_vision_client
+from .vision import (
+    OpenAICompatVisionClient, VisionAPIError, build_vision_client, clients_for_run, list_available_models,
+)
 
 
 def _summary(bom) -> str:
@@ -50,16 +52,9 @@ def _summary(bom) -> str:
 def _cmd_analyze(args: argparse.Namespace) -> int:
     settings = load_settings()
     mock = args.mock or settings.mock
-    client = build_vision_client(settings, mock=mock)
-    reasoning_client = None
-    model = "mock"
-    if isinstance(client, OpenAICompatVisionClient):
-        if args.model:
-            client = client.with_model(args.model)
-        model = args.model or settings.vision_model
-        reasoning_model = args.model or settings.reasoning_model
-        if reasoning_model != model:
-            reasoning_client = client.with_model(reasoning_model)
+    client, reasoning_client, model = clients_for_run(
+        build_vision_client(settings, mock=mock), settings, args.model
+    )
     use_grounding = settings.grounding if args.grounding is None else args.grounding
     grounder = build_grounder(settings) if use_grounding else None  # fails early if libraries are missing
     images = load_images(args.images)
@@ -120,6 +115,26 @@ def _cmd_check_api(args: argparse.Namespace) -> int:
     return 0 if vision is not False else 1
 
 
+def _cmd_models(args: argparse.Namespace) -> int:
+    settings = load_settings()
+    models = list_available_models(settings)
+    usable = [m for m in models if m["usable"]]
+    print(f"Models at {settings.base_url}: {len(usable)} of {len(models)} can read photos "
+          f"(* = configured default, {settings.vision_model})")
+    for m in models if args.all else usable:
+        mark = "*" if m["id"] == settings.vision_model else " "
+        notes = [] if m["usable"] else ["cannot read photos" if m["chat"] else "not a chat model"]
+        if m["name"]:
+            notes.append(f"= {m['name']}")
+        if m["deprecated"]:
+            notes.append("deprecated")
+        print(f"  {mark} {m['id']:<40} {'; '.join(notes)}".rstrip())
+    if not args.all and len(models) > len(usable):
+        print(f"({len(models) - len(usable)} models that cannot read photos are hidden; --all shows them)")
+    print("\nUse one with:  robot-bom analyze <photos> --model <id>   (or set MISTRAL_MODEL in .env)")
+    return 0
+
+
 def find_free_port(host: str, preferred: int, attempts: int = 20) -> int:
     """Return ``preferred`` if it can be bound, else the next free port after it."""
     import socket
@@ -164,7 +179,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", default="output", help="output directory (default: output)")
     p.add_argument("--project-name", help="project name (default: first image's file name)")
     p.add_argument("--mock", action="store_true", help="offline mock mode: canned responses, no API key needed")
-    p.add_argument("--model", help="override VISION_MODEL for this run")
+    p.add_argument("--model", help="model for this run (see `robot-bom models`); default: VISION_MODEL / MISTRAL_MODEL")
     p.add_argument(
         "--grounding", action=argparse.BooleanOptionalAction, default=None,
         help="also locate parts with local Grounding DINO + SAM 2; --no-grounding = VLM/LLM only "
@@ -177,6 +192,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--out", default="output/final", help="output directory (default: output/final)")
     p.add_argument("--reviewer", help="reviewer name recorded in the audit trail")
     p.set_defaults(func=_cmd_finalize)
+
+    p = sub.add_parser("models", help="list the models your API key can use")
+    p.add_argument("--all", action="store_true", help="also list models that cannot read photos")
+    p.set_defaults(func=_cmd_models)
 
     p = sub.add_parser("check-api", help="verify the configured vision API key and model (no secrets printed)")
     p.set_defaults(func=_cmd_check_api)

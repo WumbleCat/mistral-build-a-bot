@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import re
 import ssl
 import time
 from typing import Protocol
@@ -26,6 +27,8 @@ from .models import ImageObservation, InferenceAudit, VisibilityAudit
 log = logging.getLogger(__name__)
 
 CONNECT_TIMEOUT_S = 20.0
+MODEL_LIST_TIMEOUT_S = 30.0
+MODEL_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,119}$")
 
 
 class VisionAPIError(RuntimeError):
@@ -185,12 +188,72 @@ class OpenAICompatVisionClient:
     def list_models(self) -> list[dict]:
         url = self._url.rsplit("/chat/completions", 1)[0] + "/models"
         try:
-            response = self._client.get(url, headers=self._headers)
+            response = self._client.get(url, headers=self._headers, timeout=MODEL_LIST_TIMEOUT_S)
         except httpx.HTTPError as exc:
             raise VisionAPIError(f"network error: {exc.__class__.__name__}: {exc}") from None
         if response.status_code != 200:
             raise VisionAPIError(f"HTTP {response.status_code}: {_safe_error_text(response)}")
-        return response.json().get("data", [])
+        try:
+            body = response.json()
+        except ValueError:
+            raise VisionAPIError("The model list was not valid JSON") from None
+        entries = body.get("data", []) if isinstance(body, dict) else body
+        return [entry for entry in entries if isinstance(entry, dict)] if isinstance(entries, list) else []
+
+
+def describe_models(raw: list[dict]) -> list[dict]:
+    """Trim a provider's ``/models`` listing to what a model picker needs.
+
+    ``usable`` is False only when the provider says the model cannot chat or cannot read
+    images; providers that report no capabilities leave it True (unknown, so not ruled out).
+    Models that can read photos come first.
+    """
+    described: dict[str, dict] = {}
+    for entry in raw:
+        model_id = entry.get("id")
+        if not isinstance(model_id, str) or not MODEL_ID.match(model_id) or model_id in described:
+            continue
+        capabilities = entry.get("capabilities") if isinstance(entry.get("capabilities"), dict) else {}
+        chat = capabilities.get("completion_chat") if isinstance(capabilities.get("completion_chat"), bool) else None
+        vision = capabilities.get("vision") if isinstance(capabilities.get("vision"), bool) else None
+        name = entry.get("name")
+        aliases = entry.get("aliases")
+        described[model_id] = {
+            "id": model_id,
+            "name": name if isinstance(name, str) and name != model_id else None,
+            "aliases": [a for a in aliases if isinstance(a, str)] if isinstance(aliases, list) else [],
+            "chat": chat,
+            "vision": vision,
+            "usable": chat is not False and vision is not False,
+            "deprecated": bool(entry.get("deprecation")),
+        }
+    return sorted(described.values(), key=lambda m: (not m["usable"], m["id"]))
+
+
+def list_available_models(settings: Settings) -> list[dict]:
+    """Ask the configured provider which models this API key can use."""
+    client = OpenAICompatVisionClient(
+        api_key=settings.require_api_key(), model=settings.vision_model, base_url=settings.base_url,
+    )
+    return describe_models(client.list_models())
+
+
+def clients_for_run(
+    client: VisionClient, settings: Settings, model: str | None = None
+) -> tuple[VisionClient, VisionClient | None, str]:
+    """``(vision client, reasoning client or None, vision model name)`` for one analysis.
+
+    ``model`` is a per-run choice and is used for every pass; without it the configured
+    VISION_MODEL / REASONING_MODEL apply.
+    """
+    if not isinstance(client, OpenAICompatVisionClient):
+        return client, None, "mock"
+    vision_model = model or settings.vision_model
+    reasoning_model = model or settings.reasoning_model
+    if model:
+        client = client.with_model(model)
+    reasoning = client.with_model(reasoning_model) if reasoning_model != vision_model else None
+    return client, reasoning, vision_model
 
 
 def _safe_error_text(response: httpx.Response) -> str:

@@ -99,6 +99,8 @@
   ol#views { margin:0; padding-left:20px; } ol#views li { margin:3px 0; }
   .finalize { display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
   .downloads a { margin-right:14px; font-weight:600; color:var(--info); }
+  #model { min-width:230px; max-width:340px; }
+  #model-filter { width:150px; }
 </style>
 </head>
 <body>
@@ -125,12 +127,17 @@
           <option value="grounding">Mistral + Grounding DINO + SAM 2 (local, slower)</option>
         </select>
       </label>
+      <label>Search models <input type="search" id="model-filter" placeholder="e.g. large, small, 8b" autocomplete="off"></label>
+      <label>Model
+        <select id="model"><option value="">loading…</option></select>
+      </label>
       <label class="inline" title="Canned sample responses; no API call is made"><input type="checkbox" id="mock"> Mock mode (no API call)</label>
       <button id="analyze-btn" type="button" disabled>Analyze photos</button>
       <button id="clear-btn" type="button" class="ghost hidden">Start over</button>
       <div id="status" class="hidden"><div class="spinner"></div><span id="status-text"></span></div>
     </div>
     <p class="hint" id="detection-hint" style="margin:10px 0 0"></p>
+    <p class="hint" id="model-hint" style="margin:4px 0 0"></p>
   </section>
 
   <div id="error" class="error hidden"></div>
@@ -188,6 +195,9 @@ const PALETTE = ["#f25c05", "#2b7fff", "#12a15e", "#c026d3", "#e0a800", "#0aa5b5
 let files = [];          // [{file, url}]
 let state = null;        // { job_id, review, images: {image_id: url} }
 let timer = null;
+let models = [];         // from GET /models: [{id, name, aliases, usable, ...}]
+let defaultModel = "";   // the configured VISION_MODEL
+let modelsError = "";
 
 const $ = (id) => document.getElementById(id);
 function el(tag, props = {}, children = []) {
@@ -233,7 +243,7 @@ function renderThumbs() {
     return el("div", { class: "thumb" }, [el("img", { src: entry.url, alt: entry.file.name }), remove,
                                           el("div", { class: "name", text: entry.file.name, title: entry.file.name })]);
   }));
-  $("analyze-btn").disabled = files.length === 0;
+  syncMock();
   $("analyze-btn").textContent = files.length > 1 ? `Analyze ${files.length} photos` : "Analyze photo" + (files.length ? "" : "s");
 }
 const drop = $("drop");
@@ -249,6 +259,37 @@ document.addEventListener("paste", (e) => {
   const pasted = [...(e.clipboardData?.files || [])].filter((f) => f.type.startsWith("image/"));
   if (pasted.length) addFiles(pasted);
 });
+
+/* ---------- model picker ---------- */
+function renderModels() {
+  const select = $("model");
+  const query = $("model-filter").value.trim().toLowerCase();
+  const known = models.length ? models : (defaultModel ? [{ id: defaultModel, name: null, aliases: [], usable: true }] : []);
+  const matches = known.filter((m) => !query || [m.id, m.name, ...m.aliases].some((t) => (t || "").toLowerCase().includes(query)));
+  const option = (m) => el("option", { value: m.id, disabled: !m.usable,
+    text: m.id + (m.id === defaultModel ? "  (default)" : "") + (m.name ? `  = ${m.name}` : "") + (m.deprecated ? "  [deprecated]" : "") });
+  const usable = matches.filter((m) => m.usable), other = matches.filter((m) => !m.usable);
+  const wanted = select.value || localStorage.getItem("robot-bom-model") || defaultModel;
+  select.replaceChildren(
+    ...(usable.length ? [el("optgroup", { label: `Can read photos (${usable.length})` }, usable.map(option))] : []),
+    ...(other.length ? [el("optgroup", { label: `Cannot read photos (${other.length})` }, other.map(option))] : []),
+    ...(matches.length ? [] : [el("option", { value: "", text: "no model matches", disabled: true })]),
+  );
+  const pick = usable.find((m) => m.id === wanted) || usable.find((m) => m.id === defaultModel) || usable[0];
+  select.value = pick ? pick.id : "";
+  const total = models.filter((m) => m.usable).length;
+  $("model-hint").textContent = modelsError
+    ? `Could not load the model list (${modelsError}) Using the configured model ${defaultModel}.`
+    : !models.length ? ""
+    : `${total} of ${models.length} models available to your API key can read photos` + (query ? `; ${usable.length} match “${query}”.` : "; the others are greyed out.")
+      + " Smaller models are faster but miss more parts.";
+  syncMock();
+}
+function syncMock() {
+  const mock = $("mock").checked;
+  $("model").disabled = mock; $("model-filter").disabled = mock;
+  $("analyze-btn").disabled = files.length === 0 || (!mock && !$("model").value && models.length > 0);
+}
 
 /* ---------- review tables ---------- */
 function field(component, key, kind) {
@@ -362,8 +403,8 @@ function render(bom) {
 
   const grounded = bom.metadata.detection_mode === "vlm+grounding";
   $("photos-hint").textContent = grounded
-    ? `Outlines come from Grounding DINO for the parts the vision model listed (${bom.metadata.grounder}); parts it could not locate keep the vision model's rough box. Detector hits never add parts or change counts. Hover a row below to highlight it.`
-    : "VLM-only mode: outlines are the vision model's approximate locations and exist only where it could localise a part. Hover a row below to highlight it.";
+    ? `Analysed with ${bom.metadata.vision_model}. ` + `Outlines come from Grounding DINO for the parts the vision model listed (${bom.metadata.grounder}); parts it could not locate keep the vision model's rough box. Detector hits never add parts or change counts. Hover a row below to highlight it.`
+    : `Analysed with ${bom.metadata.vision_model}. ` + "VLM-only mode: outlines are the vision model's approximate locations and exist only where it could localise a part. Hover a row below to highlight it.";
   $("masks-toggle").classList.toggle("hidden", Object.keys(state.overlays).length === 0);
   renderPhotos(bom);
   $("observed").replaceChildren(componentTable(observed, true));
@@ -419,8 +460,10 @@ $("analyze-btn").addEventListener("click", async () => {
   const grounding = $("detection").value === "grounding";
   data.append("grounding", grounding ? "true" : "false");
   localStorage.setItem("robot-bom-detection", $("detection").value);
+  const model = $("mock").checked ? "" : $("model").value;
+  if (model) { data.append("model", model); localStorage.setItem("robot-bom-model", model); }
   $("analyze-btn").disabled = true;
-  busy(($("mock").checked ? "Loading mock result" : `Analyzing ${submitted.length} photo(s) with Mistral — this can take a few minutes`)
+  busy(($("mock").checked ? "Loading mock result" : `Analyzing ${submitted.length} photo(s) with ${model || defaultModel || "the configured model"} — this can take a few minutes`)
     + (grounding ? ", then locating parts with Grounding DINO + SAM 2…" : "…"));
   try {
     const result = await call("/analyze", { method: "POST", body: data });
@@ -435,7 +478,7 @@ $("analyze-btn").addEventListener("click", async () => {
     render(state.review.bom);
     $("results").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) { showError(error.message); }
-  finally { busy(""); $("analyze-btn").disabled = files.length === 0; }
+  finally { busy(""); syncMock(); }
 });
 
 $("finalize-btn").addEventListener("click", async () => {
@@ -464,8 +507,10 @@ $("clear-btn").addEventListener("click", () => {
 
 fetch("/health").then((r) => r.json()).then((h) => {
   const key = h.api_key_configured ? el("b", { text: "API key configured" }) : el("b", { class: "off", text: "no API key — mock mode only" });
-  $("env").replaceChildren("Model: ", el("b", { text: h.vision_model }), " · ", key);
+  $("env").replaceChildren(key);
   if (!h.api_key_configured || h.mock_default) $("mock").checked = true;
+  if (!defaultModel) defaultModel = h.vision_model;
+  renderModels();
   const select = $("detection"), option = select.querySelector('option[value="grounding"]');
   if (!h.grounding_available) {
     option.disabled = true; select.value = "vlm";
@@ -482,6 +527,13 @@ function describeDetection() {
     : "Only the Mistral vision/language model is used — no local detection models. Fastest; outlines are approximate.";
 }
 $("detection").addEventListener("change", describeDetection);
+fetch("/models").then((r) => r.json()).then((m) => {
+  models = m.models || []; defaultModel = m.default || defaultModel; modelsError = m.error || "";
+  renderModels();
+}).catch(() => { modelsError = "server not reachable."; renderModels(); });
+$("model-filter").addEventListener("input", renderModels);
+$("model").addEventListener("change", () => localStorage.setItem("robot-bom-model", $("model").value));
+$("mock").addEventListener("change", syncMock);
 $("masks").addEventListener("change", () => { if (state) renderPhotos(state.review.bom); });
 renderThumbs();
 </script>

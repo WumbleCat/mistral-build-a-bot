@@ -8,7 +8,7 @@ import pytest
 from robot_bom.catalog import HttpCatalogClient, NOT_CONFIGURED, NullCatalogClient, build_catalog_client, find_candidates
 from robot_bom.config import Settings
 from robot_bom.models import ImageObservation
-from robot_bom.vision import OpenAICompatVisionClient, VisionAPIError
+from robot_bom.vision import MockVisionClient, OpenAICompatVisionClient, VisionAPIError, clients_for_run, describe_models
 
 from conftest import hidden, make_images, observed
 
@@ -142,6 +142,59 @@ def test_default_wait_for_a_reply_is_long_and_connecting_is_not():
 def test_unexpected_response_shape_is_an_api_error():
     with pytest.raises(VisionAPIError, match="unexpected response shape"):
         vision_client(lambda request: httpx.Response(200, json={"oops": True})).analyze([], "s", ImageObservation, "u")
+
+
+# ---- model list -----------------------------------------------------------
+
+MODEL_LISTING = {"object": "list", "data": [
+    {"id": "text-only", "capabilities": {"completion_chat": True, "vision": False}},
+    {"id": "embedder", "capabilities": {"completion_chat": False, "vision": False}},
+    {"id": "big-latest", "name": "big-4", "aliases": ["big-4"], "capabilities": {"completion_chat": True, "vision": True}},
+    {"id": "big-latest", "capabilities": {"completion_chat": True, "vision": True}},  # duplicate id
+    {"id": "old", "deprecation": "2027-01-01", "capabilities": {"completion_chat": True, "vision": True}},
+    {"id": "other-provider-model"},  # no capabilities reported
+    {"id": "bad id <script>"}, "junk",
+]}
+
+
+def test_model_list_is_fetched_and_trimmed_for_the_picker():
+    seen = {}
+
+    def handler(request):
+        seen["url"], seen["auth"] = str(request.url), request.headers["authorization"]
+        return httpx.Response(200, json=MODEL_LISTING)
+
+    models = describe_models(vision_client(handler).list_models())
+
+    assert seen == {"url": "https://api.mistral.ai/v1/models", "auth": f"Bearer {SECRET}"}
+    assert [m["id"] for m in models] == ["big-latest", "old", "other-provider-model", "embedder", "text-only"]
+    by_id = {m["id"]: m for m in models}
+    assert by_id["big-latest"] == {"id": "big-latest", "name": "big-4", "aliases": ["big-4"], "chat": True,
+                                   "vision": True, "usable": True, "deprecated": False}
+    assert by_id["old"]["deprecated"] is True
+    assert by_id["other-provider-model"]["usable"] is True and by_id["other-provider-model"]["vision"] is None
+    assert not by_id["text-only"]["usable"] and not by_id["embedder"]["usable"]
+
+
+def test_model_list_failure_is_an_api_error_without_the_key():
+    with pytest.raises(VisionAPIError) as excinfo:
+        vision_client(lambda request: httpx.Response(401, json={"message": "Unauthorized"})).list_models()
+    assert "401" in str(excinfo.value) and SECRET not in str(excinfo.value)
+
+
+def test_a_chosen_model_is_used_for_every_pass():
+    client = vision_client(lambda request: chat_reply("{}"))
+    settings = Settings(vision_model="vision-model", reasoning_model="text-model")
+
+    vision, reasoning, name = clients_for_run(client, settings)
+    assert (vision._model, reasoning._model, name) == ("vision-model", "text-model", "vision-model")
+
+    vision, reasoning, name = clients_for_run(client, settings, "picked")
+    assert (vision._model, reasoning, name) == ("picked", None, "picked") and "(picked)" in vision.name
+    assert client._model == "vision-model"  # the shared client is not modified
+
+    mock = MockVisionClient()
+    assert clients_for_run(mock, settings, "picked") == (mock, None, "mock")
 
 
 # ---- catalog --------------------------------------------------------------
