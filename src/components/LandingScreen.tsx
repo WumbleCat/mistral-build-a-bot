@@ -8,6 +8,8 @@ export interface LandingScreenProps {
   onLoadUpstream: () => void;
   onImport: () => void;
   onGenerated: (data: AssemblyData, notes: string[]) => void;
+  /** Developer-only UI (samples, JSON import) is shown only with ?dev=1. */
+  dev?: boolean;
 }
 
 const PIPELINE = [
@@ -21,7 +23,7 @@ const PIPELINE = [
  * Entry screen. Main entry point: upload a photo (analysed by the robot_bom
  * pipeline). Also: assembly JSON import, or the bundled samples.
  */
-export function LandingScreen({ onLoadSample, onLoadUpstream, onImport, onGenerated }: LandingScreenProps) {
+export function LandingScreen({ onLoadSample, onLoadUpstream, onImport, onGenerated, dev }: LandingScreenProps) {
   return (
     <div className="flex min-h-dvh flex-col">
       <TopBar />
@@ -51,11 +53,12 @@ export function LandingScreen({ onLoadSample, onLoadUpstream, onImport, onGenera
           <div className="card space-y-5 p-5 sm:p-6">
             <div>
               <h2 className="text-base font-semibold">Start a build</h2>
-              <p className="mt-0.5 text-xs text-muted">Upload a photo. The parts list and build guide are generated for you.</p>
+              <p className="mt-0.5 text-xs text-muted">Upload one photo. You get a shopping list and a step-by-step build guide with 3D and exploded views.</p>
             </div>
 
             <PhotoBuild onGenerated={onGenerated} />
 
+            {dev && (
             <div className="border-t border-line-soft pt-4">
               <p className="label mb-2">Or open existing data</p>
               <div className="flex flex-wrap gap-2">
@@ -73,6 +76,7 @@ export function LandingScreen({ onLoadSample, onLoadUpstream, onImport, onGenera
                 </button>
               </div>
             </div>
+            )}
           </div>
         </section>
 
