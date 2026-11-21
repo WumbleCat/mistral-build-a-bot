@@ -54,6 +54,12 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    // Photo+JSON workbooks carry a server-generated schematic exploded view.
+    if (data.exploded_svg) {
+      setExploded({ available: true, url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(data.exploded_svg) });
+      return;
+    }
+    // Otherwise fall back to the static teardown-skill asset for the sample robot.
     fetch('/illustrations/manifest.json')
       .then((r) => (r.ok ? r.json() : null))
       .then((m) => {
@@ -64,7 +70,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [data.robot_name]);
+  }, [data.robot_name, data.exploded_svg]);
 
   const prefix = useMemo(() => datasetKey(data), [data]);
   const engine = useNarrationEngine(prefix);

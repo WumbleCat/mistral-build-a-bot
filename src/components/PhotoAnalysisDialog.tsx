@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CircleX, FileJson, ImageIcon, LoaderCircle, Sparkles, TriangleAlert, Upload, X } from 'lucide-react';
 import { Modal } from './Shell';
 
@@ -25,8 +25,21 @@ export function PhotoAnalysisDialog({ onGenerated, onClose }: PhotoAnalysisDialo
   const [warnings, setWarnings] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+  const [genElapsed, setGenElapsed] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const jsonFileRef = useRef<HTMLInputElement>(null);
+
+  // Honest progress feedback: the whole generation is one blocking vision-model
+  // request, so show a live elapsed timer rather than fake stage percentages.
+  useEffect(() => {
+    if (!generating) {
+      setGenElapsed(0);
+      return;
+    }
+    const t0 = Date.now();
+    const iv = window.setInterval(() => setGenElapsed(Math.floor((Date.now() - t0) / 1000)), 1000);
+    return () => window.clearInterval(iv);
+  }, [generating]);
 
   const handleImageFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -256,6 +269,13 @@ export function PhotoAnalysisDialog({ onGenerated, onClose }: PhotoAnalysisDialo
         </p>
       )}
 
+      {generating && (
+        <p aria-live="polite" className="rounded-xl border border-line bg-sunken/60 p-3 text-xs text-body">
+          Analysing the photograph and {components?.length ?? 0} component entries with the Mistral vision
+          model — a single request. Elapsed: {genElapsed}s.
+        </p>
+      )}
+
       <div className="flex items-center gap-2 border-t border-line-soft pt-4">
         <button type="button" className="btn-ghost" onClick={onClose}>
           Cancel
@@ -265,7 +285,7 @@ export function PhotoAnalysisDialog({ onGenerated, onClose }: PhotoAnalysisDialo
           {generating ? (
             <>
               <LoaderCircle className="size-4 animate-spin" />
-              Generating workbook…
+              Generating… {genElapsed}s
             </>
           ) : (
             <>

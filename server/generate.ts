@@ -19,7 +19,13 @@ import { normalizeAssembly } from '../src/lib/adapter';
 import { validateAnalysis, type ComponentAnalysis } from '../src/lib/analysisAdapter';
 import type { AssemblyData } from '../src/types';
 
-const VISION_MODEL = process.env.MISTRAL_VISION_MODEL || 'mistral-large-latest';
+import { buildExplodedSvg } from './explodedSvg';
+
+// Vision model for /api/generate. mistral-medium-latest is the default: it is
+// ~10x faster than mistral-large-latest on this task with comparable output
+// quality (large spends ~11k reasoning tokens and hits the output cap).
+// Override with MISTRAL_VISION_MODEL (e.g. mistral-large-latest).
+const VISION_MODEL = process.env.MISTRAL_VISION_MODEL || 'mistral-medium-latest';
 
 const SYSTEM_PROMPT = `You are the BuildFromVision assembly-generation model. You receive (1) a photograph of a robot and (2) a JSON array of components detected/inferred by an image-analysis model. Produce a BuildFromVision workbook as STRICT JSON only (no markdown fences, no commentary).
 
@@ -33,6 +39,7 @@ HARD ACCURACY RULES:
 - Include battery/electrical safety notes as step "safety" fields where relevant.
 - Steps must reference part ids from the parts array via "component_ids", and "installed_components" must be cumulative.
 - Suggested top-level "tools" array lists tools/materials needed.
+- Be concise: one short sentence per prose field (instruction, narration, evidence, notes, warnings). Keep every required field; do not pad.
 - Also produce a "relationships" array: the component relationship & connection map.
   Each entry: { "from": partId, "to": partId, "type": one of "mounted-on"|"attached-to"|"above"|"beneath"|"mechanically-connected"|"adjacent"|"wired-to",
   "evidence": what in the photo/JSON supports it, "confidence": "high"|"medium"|"low",
@@ -88,7 +95,7 @@ export async function handleGenerate(
   }
   const components = validation.components;
 
-  const cacheKey = createHash('sha256').update(imageDataUrl.slice(0, 200000) + JSON.stringify(components)).digest('hex');
+  const cacheKey = createHash('sha256').update(VISION_MODEL + '|' + imageDataUrl.slice(0, 200000) + JSON.stringify(components)).digest('hex');
   const cached = genCache.get(cacheKey);
   if (cached) {
     sendJson(res, 200, { ...(cached as object), cached: true });
@@ -98,9 +105,9 @@ export async function handleGenerate(
   const userText = [
     'Here is the component-analysis JSON (detected/inferred components from an image-analysis model). Use it as the structured component inventory.',
     'Cross-check it against the photograph: note agreements, discrepancies, and anything visible in the photo but missing from the JSON.',
-    JSON.stringify(components, null, 1),
+    JSON.stringify(components),
     '',
-    'Now return the BuildFromVision workbook JSON per the schema. Strict JSON only.',
+    'Now return the BuildFromVision workbook JSON per the schema. Strict compact JSON only (no markdown, no pretty-print whitespace, no commentary).',
   ].join('\n');
 
   try {
@@ -207,6 +214,9 @@ export async function handleGenerate(
       }
     }
     data.photo = imageDataUrl; // session-only, for display + provenance
+    // Schematic exploded view built deterministically from parts + relationships
+    // (no extra AI call): gives photo+JSON workbooks the same exploded toggle.
+    data.exploded_svg = buildExplodedSvg(data);
     data.review_flags = data.parts.filter((p) => p.review_required || p.evidence === 'inferred').map((p) => p.id);
     if (Array.isArray((parsed as Record<string, unknown>).warnings)) data.warnings = (parsed as Record<string, unknown>).warnings as string[];
     if (Array.isArray((parsed as Record<string, unknown>).tools)) data.tools = (parsed as Record<string, unknown>).tools as string[];
