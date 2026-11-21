@@ -1,0 +1,831 @@
+{
+  "schema_version": 1,
+  "instructions": [
+    "Edit ONLY the 'bom' section. Leave 'baseline' untouched - it is used to build the audit trail.",
+    "Per component: set status to 'confirmed' or 'rejected'; correct visible_quantity; set required_quantity and purchase_quantity (0 = nothing to buy, e.g. custom or already owned).",
+    "Enter manufacturer / model / sku only when you have verified them on the physical part or its documentation. Leave them null if unknown - null is correct, a guess is not.",
+    "evidence_type describes what the PHOTOS show and normally stays as is; status records YOUR verification. A part you know exists but is not in any photo stays 'inferred'/'unknown' with status 'confirmed'.",
+    "Electrical specs are strings in 'specs': voltage_v (power source, motor), current_a (motor stall/peak), max_voltage_v / max_current_a / min_voltage_v (motor driver or relay board).",
+    "To close a warning or model-raised issue set its 'resolved' to true and add a 'resolution_note'. Rule-based CRITICAL issues close only when the component data they check is corrected.",
+    "Then run: robot-bom finalize <this file> --out <dir>. ready_to_purchase is recomputed; editing it by hand has no effect."
+  ],
+  "reviewer": null,
+  "bom": {
+    "project_name": "mock-rover",
+    "image_ids": [
+      "img1-rover-top-synthetic"
+    ],
+    "components": [
+      {
+        "id": "wheel-1",
+        "category": "wheel",
+        "name": "rubber wheel",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Four chunky black treaded tyres, one at each corner of the frame.",
+            "bbox_xyxy_norm": null
+          }
+        ],
+        "visible_quantity": 4,
+        "required_quantity": 4,
+        "purchase_quantity": 4,
+        "confidence": 0.93,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "confirmed",
+        "notes": []
+      },
+      {
+        "id": "chassis-1",
+        "category": "chassis",
+        "name": "green chassis frame",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Flat green frame/plate that everything is mounted on.",
+            "bbox_xyxy_norm": [
+              0.18,
+              0.12,
+              0.82,
+              0.88
+            ]
+          }
+        ],
+        "visible_quantity": 1,
+        "required_quantity": 1,
+        "purchase_quantity": 0,
+        "confidence": 0.9,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "confirmed",
+        "notes": [
+          "Reviewer: custom 3D-printed frame, nothing to buy."
+        ]
+      },
+      {
+        "id": "breadboard-1",
+        "category": "breadboard",
+        "name": "solderless breadboard",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "White solderless breadboard near the centre with components plugged in.",
+            "bbox_xyxy_norm": [
+              0.36,
+              0.3,
+              0.64,
+              0.5
+            ]
+          }
+        ],
+        "visible_quantity": 1,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.88,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": []
+      },
+      {
+        "id": "relay_module-1",
+        "category": "relay_module",
+        "name": "relay module board",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Blue PCB carrying relay blocks with screw terminals, wired to the breadboard.",
+            "bbox_xyxy_norm": [
+              0.38,
+              0.56,
+              0.62,
+              0.74
+            ]
+          }
+        ],
+        "visible_quantity": 1,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.8,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "Contains 2 x blue relay block (subcomponent seen in img1-rover-top-synthetic; not counted as a separate BOM line)."
+        ]
+      },
+      {
+        "id": "wiring-1",
+        "category": "wiring",
+        "name": "jumper wires",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Bundle of multicoloured jumper wires between breadboard and relay board; count not determinable.",
+            "bbox_xyxy_norm": null
+          }
+        ],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.85,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": []
+      },
+      {
+        "id": "led-1",
+        "category": "led",
+        "name": "LED",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Three small lit indicator LEDs on the breadboard.",
+            "bbox_xyxy_norm": null
+          }
+        ],
+        "visible_quantity": 3,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.7,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "rejected",
+        "notes": []
+      },
+      {
+        "id": "motor_driver-1",
+        "category": "motor_driver",
+        "name": "motor driver / motor switching stage",
+        "evidence_type": "unknown",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "Something must switch motor current; a relay board is visible but its role is not established.",
+          "Proposed by the inference pass; not seen in any photo, not confirmed."
+        ]
+      },
+      {
+        "id": "microcontroller-1",
+        "category": "microcontroller",
+        "name": "controller board",
+        "evidence_type": "unknown",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "No controller board is identifiable; it may be hidden or off-frame.",
+          "Proposed by the inference pass; not seen in any photo, not confirmed."
+        ]
+      },
+      {
+        "id": "fastener-1",
+        "category": "fastener",
+        "name": "mounting screws, nuts and standoffs",
+        "evidence_type": "inferred",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "Boards and wheels must be fixed to the frame; fasteners are not visible from this view.",
+          "Proposed by the inference pass; not seen in any photo, not confirmed."
+        ]
+      },
+      {
+        "id": "motor-1",
+        "category": "motor",
+        "name": "Drive motor(s) - count and type unknown",
+        "evidence_type": "unknown",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "No drive motor is visible. Wheel count does not establish motor count.",
+          "Placeholder added by a deterministic completeness rule; not a confirmed part."
+        ]
+      },
+      {
+        "id": "power_supply-1",
+        "category": "power_supply",
+        "name": "Power source - chemistry and voltage unknown",
+        "evidence_type": "unknown",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "No battery or power source is visible; voltage and chemistry are not established.",
+          "Placeholder added by a deterministic completeness rule; not a confirmed part."
+        ]
+      }
+    ],
+    "connections": [],
+    "issues": [
+      {
+        "severity": "warning",
+        "component_ids": [],
+        "message": "Wire routing between the relay board and the rest of the electronics cannot be traced from the photo.",
+        "next_action": "Sketch or photograph the wiring so each relay terminal's load is known.",
+        "id": "model.1",
+        "source": "model",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "critical",
+        "component_ids": [
+          "wheel-1",
+          "motor-1"
+        ],
+        "message": "4 wheel(s) are visible but no drive motor count is established. Wheels do not imply one motor each: the drivetrain layout (2WD, 4WD, skid-steer, free-rolling wheels) is unknown.",
+        "next_action": "Photograph the underside, then confirm the motor line in review with its required_quantity and type.",
+        "id": "drivetrain.unknown",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "warning",
+        "component_ids": [
+          "relay_module-1"
+        ],
+        "message": "A relay board is visible but no motor driver. Relay boards are not interchangeable with motor drivers: relays only switch on/off (no PWM speed control) and need an H-bridge arrangement to reverse direction.",
+        "next_action": "Check the intended motor control method (on/off relays vs. a PWM motor driver) before buying either.",
+        "id": "motor_control.relay_not_driver",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "critical",
+        "component_ids": [
+          "power_supply-1"
+        ],
+        "message": "The power source is not identified: chemistry, voltage and capacity are unknown.",
+        "next_action": "Photograph the battery/holder label, then confirm the power line in review and set specs.voltage_v.",
+        "id": "power.unknown",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "critical",
+        "component_ids": [
+          "microcontroller-1"
+        ],
+        "message": "No controller board is identified; its model, logic voltage and pin count are unknown.",
+        "next_action": "Take a close-up of the board's labels, then confirm the controller line in review.",
+        "id": "controller.unknown",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "critical",
+        "component_ids": [
+          "motor-1",
+          "motor_driver-1",
+          "power_supply-1"
+        ],
+        "message": "Electrical compatibility cannot be checked. Power source, operating voltage, motor current and driver current capacity must be confirmed before purchase. Missing: supply voltage in volts of 'power_supply-1' (specs.voltage_v); rated voltage in volts of 'motor-1' (specs.voltage_v); stall/peak current in amps of 'motor-1' (specs.current_a); maximum supply voltage in volts of 'motor_driver-1' (specs.max_voltage_v); per-channel current capacity in amps of 'motor_driver-1' (specs.max_current_a).",
+        "next_action": "Read the values from labels/datasheets and enter them as specs in review.",
+        "id": "compat.electrical_unconfirmed",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "info",
+        "component_ids": [
+          "chassis-1"
+        ],
+        "message": "The chassis may be a custom fabricated part (3D printed, laser cut or hand made). No vendor SKU is assumed for it.",
+        "next_action": "If it is custom, set purchase_quantity to 0 and note how it is made; otherwise enter the verified kit/part number.",
+        "id": "chassis.possibly_custom",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "warning",
+        "component_ids": [],
+        "message": "Physical mounting (hole patterns, shaft/hub fit, clearances) and connector types cannot be verified from photos.",
+        "next_action": "Measure mounting holes, shaft diameter and connector pitch before ordering; mark this issue resolved in review once checked.",
+        "id": "compat.mounting_connectors",
+        "source": "rule",
+        "resolved": true,
+        "resolution_note": "Measured hole spacing and connector pitch by hand."
+      },
+      {
+        "severity": "warning",
+        "component_ids": [],
+        "message": "No underside photo was supplied. A complete-looking top view does not establish motors, gearboxes, axles, couplers or underside fasteners.",
+        "next_action": "Add an underside photo and rerun the analysis.",
+        "id": "views.underside_missing",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      }
+    ],
+    "catalog_candidates": [],
+    "ready_to_purchase": false,
+    "requested_views": [
+      {
+        "view": "underside",
+        "reason": "Most informative missing view: shows drive motors, gearboxes, axles, couplers and fasteners.",
+        "priority": 1,
+        "source": "rule"
+      },
+      {
+        "view": "close-up of PCB labels",
+        "reason": "Readable silkscreen/labels are needed to identify: relay_module-1.",
+        "priority": 2,
+        "source": "rule"
+      },
+      {
+        "view": "battery / power source label",
+        "reason": "Needed to establish chemistry, voltage and capacity.",
+        "priority": 2,
+        "source": "rule"
+      }
+    ],
+    "catalog_status": "Catalog lookup not configured",
+    "image_views": {
+      "img1-rover-top-synthetic": "top"
+    },
+    "readiness_blockers": [
+      "4 unresolved critical issue(s): drivetrain.unknown, power.unknown, controller.unknown, compat.electrical_unconfirmed",
+      "Not yet reviewed by a human: wheel-1, chassis-1, breadboard-1, relay_module-1, wiring-1, led-1, motor_driver-1, microcontroller-1, fastener-1, motor-1, power_supply-1"
+    ],
+    "metadata": {
+      "stage": "draft",
+      "mode": "mock",
+      "vision_model": "mock",
+      "analyzed_at": "2026-11-21T12:36:20+00:00"
+    },
+    "audit_trail": []
+  },
+  "baseline": {
+    "project_name": "mock-rover",
+    "image_ids": [
+      "img1-rover-top-synthetic"
+    ],
+    "components": [
+      {
+        "id": "wheel-1",
+        "category": "wheel",
+        "name": "rubber wheel",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Four chunky black treaded tyres, one at each corner of the frame.",
+            "bbox_xyxy_norm": null
+          }
+        ],
+        "visible_quantity": 4,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.93,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": []
+      },
+      {
+        "id": "chassis-1",
+        "category": "chassis",
+        "name": "green chassis frame",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Flat green frame/plate that everything is mounted on.",
+            "bbox_xyxy_norm": [
+              0.18,
+              0.12,
+              0.82,
+              0.88
+            ]
+          }
+        ],
+        "visible_quantity": 1,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.9,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": []
+      },
+      {
+        "id": "breadboard-1",
+        "category": "breadboard",
+        "name": "solderless breadboard",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "White solderless breadboard near the centre with components plugged in.",
+            "bbox_xyxy_norm": [
+              0.36,
+              0.3,
+              0.64,
+              0.5
+            ]
+          }
+        ],
+        "visible_quantity": 1,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.88,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": []
+      },
+      {
+        "id": "relay_module-1",
+        "category": "relay_module",
+        "name": "relay module board",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Blue PCB carrying relay blocks with screw terminals, wired to the breadboard.",
+            "bbox_xyxy_norm": [
+              0.38,
+              0.56,
+              0.62,
+              0.74
+            ]
+          }
+        ],
+        "visible_quantity": 1,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.8,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "Contains 2 x blue relay block (subcomponent seen in img1-rover-top-synthetic; not counted as a separate BOM line)."
+        ]
+      },
+      {
+        "id": "wiring-1",
+        "category": "wiring",
+        "name": "jumper wires",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Bundle of multicoloured jumper wires between breadboard and relay board; count not determinable.",
+            "bbox_xyxy_norm": null
+          }
+        ],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.85,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": []
+      },
+      {
+        "id": "led-1",
+        "category": "led",
+        "name": "LED",
+        "evidence_type": "observed",
+        "evidence": [
+          {
+            "image_id": "img1-rover-top-synthetic",
+            "description": "Three small lit indicator LEDs on the breadboard.",
+            "bbox_xyxy_norm": null
+          }
+        ],
+        "visible_quantity": 3,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": 0.7,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": []
+      },
+      {
+        "id": "motor_driver-1",
+        "category": "motor_driver",
+        "name": "motor driver / motor switching stage",
+        "evidence_type": "unknown",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "Something must switch motor current; a relay board is visible but its role is not established.",
+          "Proposed by the inference pass; not seen in any photo, not confirmed."
+        ]
+      },
+      {
+        "id": "microcontroller-1",
+        "category": "microcontroller",
+        "name": "controller board",
+        "evidence_type": "unknown",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "No controller board is identifiable; it may be hidden or off-frame.",
+          "Proposed by the inference pass; not seen in any photo, not confirmed."
+        ]
+      },
+      {
+        "id": "fastener-1",
+        "category": "fastener",
+        "name": "mounting screws, nuts and standoffs",
+        "evidence_type": "inferred",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "Boards and wheels must be fixed to the frame; fasteners are not visible from this view.",
+          "Proposed by the inference pass; not seen in any photo, not confirmed."
+        ]
+      },
+      {
+        "id": "motor-1",
+        "category": "motor",
+        "name": "Drive motor(s) - count and type unknown",
+        "evidence_type": "unknown",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "No drive motor is visible. Wheel count does not establish motor count.",
+          "Placeholder added by a deterministic completeness rule; not a confirmed part."
+        ]
+      },
+      {
+        "id": "power_supply-1",
+        "category": "power_supply",
+        "name": "Power source - chemistry and voltage unknown",
+        "evidence_type": "unknown",
+        "evidence": [],
+        "visible_quantity": null,
+        "required_quantity": null,
+        "purchase_quantity": null,
+        "confidence": null,
+        "manufacturer": null,
+        "model": null,
+        "sku": null,
+        "specs": {},
+        "status": "needs_review",
+        "notes": [
+          "No battery or power source is visible; voltage and chemistry are not established.",
+          "Placeholder added by a deterministic completeness rule; not a confirmed part."
+        ]
+      }
+    ],
+    "connections": [],
+    "issues": [
+      {
+        "severity": "warning",
+        "component_ids": [],
+        "message": "Wire routing between the relay board and the rest of the electronics cannot be traced from the photo.",
+        "next_action": "Sketch or photograph the wiring so each relay terminal's load is known.",
+        "id": "model.1",
+        "source": "model",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "critical",
+        "component_ids": [
+          "wheel-1",
+          "motor-1"
+        ],
+        "message": "4 wheel(s) are visible but no drive motor count is established. Wheels do not imply one motor each: the drivetrain layout (2WD, 4WD, skid-steer, free-rolling wheels) is unknown.",
+        "next_action": "Photograph the underside, then confirm the motor line in review with its required_quantity and type.",
+        "id": "drivetrain.unknown",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "warning",
+        "component_ids": [
+          "relay_module-1"
+        ],
+        "message": "A relay board is visible but no motor driver. Relay boards are not interchangeable with motor drivers: relays only switch on/off (no PWM speed control) and need an H-bridge arrangement to reverse direction.",
+        "next_action": "Check the intended motor control method (on/off relays vs. a PWM motor driver) before buying either.",
+        "id": "motor_control.relay_not_driver",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "critical",
+        "component_ids": [
+          "power_supply-1"
+        ],
+        "message": "The power source is not identified: chemistry, voltage and capacity are unknown.",
+        "next_action": "Photograph the battery/holder label, then confirm the power line in review and set specs.voltage_v.",
+        "id": "power.unknown",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "critical",
+        "component_ids": [
+          "microcontroller-1"
+        ],
+        "message": "No controller board is identified; its model, logic voltage and pin count are unknown.",
+        "next_action": "Take a close-up of the board's labels, then confirm the controller line in review.",
+        "id": "controller.unknown",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "critical",
+        "component_ids": [
+          "motor-1",
+          "motor_driver-1",
+          "power_supply-1"
+        ],
+        "message": "Electrical compatibility cannot be checked. Power source, operating voltage, motor current and driver current capacity must be confirmed before purchase. Missing: supply voltage in volts of 'power_supply-1' (specs.voltage_v); rated voltage in volts of 'motor-1' (specs.voltage_v); stall/peak current in amps of 'motor-1' (specs.current_a); maximum supply voltage in volts of 'motor_driver-1' (specs.max_voltage_v); per-channel current capacity in amps of 'motor_driver-1' (specs.max_current_a).",
+        "next_action": "Read the values from labels/datasheets and enter them as specs in review.",
+        "id": "compat.electrical_unconfirmed",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "info",
+        "component_ids": [
+          "chassis-1"
+        ],
+        "message": "The chassis may be a custom fabricated part (3D printed, laser cut or hand made). No vendor SKU is assumed for it.",
+        "next_action": "If it is custom, set purchase_quantity to 0 and note how it is made; otherwise enter the verified kit/part number.",
+        "id": "chassis.possibly_custom",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "warning",
+        "component_ids": [],
+        "message": "Physical mounting (hole patterns, shaft/hub fit, clearances) and connector types cannot be verified from photos.",
+        "next_action": "Measure mounting holes, shaft diameter and connector pitch before ordering; mark this issue resolved in review once checked.",
+        "id": "compat.mounting_connectors",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      },
+      {
+        "severity": "warning",
+        "component_ids": [],
+        "message": "No underside photo was supplied. A complete-looking top view does not establish motors, gearboxes, axles, couplers or underside fasteners.",
+        "next_action": "Add an underside photo and rerun the analysis.",
+        "id": "views.underside_missing",
+        "source": "rule",
+        "resolved": false,
+        "resolution_note": null
+      }
+    ],
+    "catalog_candidates": [],
+    "ready_to_purchase": false,
+    "requested_views": [
+      {
+        "view": "underside",
+        "reason": "Most informative missing view: shows drive motors, gearboxes, axles, couplers and fasteners.",
+        "priority": 1,
+        "source": "rule"
+      },
+      {
+        "view": "close-up of PCB labels",
+        "reason": "Readable silkscreen/labels are needed to identify: relay_module-1.",
+        "priority": 2,
+        "source": "rule"
+      },
+      {
+        "view": "battery / power source label",
+        "reason": "Needed to establish chemistry, voltage and capacity.",
+        "priority": 2,
+        "source": "rule"
+      }
+    ],
+    "catalog_status": "Catalog lookup not configured",
+    "image_views": {
+      "img1-rover-top-synthetic": "top"
+    },
+    "readiness_blockers": [
+      "4 unresolved critical issue(s): drivetrain.unknown, power.unknown, controller.unknown, compat.electrical_unconfirmed",
+      "Not yet reviewed by a human: wheel-1, chassis-1, breadboard-1, relay_module-1, wiring-1, led-1, motor_driver-1, microcontroller-1, fastener-1, motor-1, power_supply-1"
+    ],
+    "metadata": {
+      "stage": "draft",
+      "mode": "mock",
+      "vision_model": "mock",
+      "analyzed_at": "2026-11-21T12:36:20+00:00"
+    },
+    "audit_trail": []
+  }
+}

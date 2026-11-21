@@ -1,0 +1,12 @@
+id,category,name,evidence_type,visible_quantity,required_quantity,purchase_quantity,manufacturer,model,sku,status,confidence,notes
+wheel-1,wheel,rubber wheel,observed,4,,,,,,needs_review,0.93,
+chassis-1,chassis,green chassis frame,observed,1,,,,,,needs_review,0.9,
+breadboard-1,breadboard,solderless breadboard,observed,1,,,,,,needs_review,0.88,
+relay_module-1,relay_module,relay module board,observed,1,,,,,,needs_review,0.8,Contains 2 x blue relay block (subcomponent seen in img1-rover-top-synthetic; not counted as a separate BOM line).
+wiring-1,wiring,jumper wires,observed,,,,,,,needs_review,0.85,
+led-1,led,LED,observed,3,,,,,,needs_review,0.7,
+motor_driver-1,motor_driver,motor driver / motor switching stage,unknown,,,,,,,needs_review,,"Something must switch motor current; a relay board is visible but its role is not established. | Proposed by the inference pass; not seen in any photo, not confirmed."
+microcontroller-1,microcontroller,controller board,unknown,,,,,,,needs_review,,"No controller board is identifiable; it may be hidden or off-frame. | Proposed by the inference pass; not seen in any photo, not confirmed."
+fastener-1,fastener,"mounting screws, nuts and standoffs",inferred,,,,,,,needs_review,,"Boards and wheels must be fixed to the frame; fasteners are not visible from this view. | Proposed by the inference pass; not seen in any photo, not confirmed."
+motor-1,motor,Drive motor(s) - count and type unknown,unknown,,,,,,,needs_review,,No drive motor is visible. Wheel count does not establish motor count. | Placeholder added by a deterministic completeness rule; not a confirmed part.
+power_supply-1,power_supply,Power source - chemistry and voltage unknown,unknown,,,,,,,needs_review,,No battery or power source is visible; voltage and chemistry are not established. | Placeholder added by a deterministic completeness rule; not a confirmed part.
